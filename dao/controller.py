@@ -1,5 +1,5 @@
 """
-This file is part of Giswater 2.0
+This file is part of TreeManage 1.0
 The program is free software: you can redistribute it and/or modify it under the terms of the GNU 
 General Public License as published by the Free Software Foundation, either version 3 of the License, 
 or (at your option) any later version.
@@ -29,11 +29,11 @@ class DaoController():
         self.iface = iface               
         self.translator = None           
         self.plugin_dir = None           
-        self.giswater = None                
+        self.tree_manage = None
         self.logged = False       
         
-    def set_giswater(self, giswater):
-        self.giswater = giswater
+    def set_tree_manage(self, tree_manage):
+        self.tree_manage = tree_manage
                 
     def set_schema_name(self, schema_name):
         self.schema_name = schema_name
@@ -108,7 +108,7 @@ class DaoController():
     def get_layer_source_from_credentials(self):
 
         # Get database parameters from layer 'version'
-        layer = self.get_layer_by_tablename("version")
+        layer = self.get_layer_by_tablename("v_edit_node")
         if not layer:
             self.last_error = self.tr("Layer not found") + ": 'version'"        
             return None
@@ -806,22 +806,22 @@ class DaoController():
         if role_admin:
             pass
         elif role_master:
-            self.giswater.enable_toolbar("master")
-            self.giswater.enable_toolbar("epa")
-            self.giswater.enable_toolbar("edit")
-            self.giswater.enable_toolbar("cad")
-            if self.giswater.wsoftware == 'ws':            
-                self.giswater.enable_toolbar("om_ws")
-            elif self.giswater.wsoftware == 'ud':                
-                self.giswater.enable_toolbar("om_ud")
+            self.tree_manage.enable_toolbar("master")
+            self.tree_manage.enable_toolbar("epa")
+            self.tree_manage.enable_toolbar("edit")
+            self.tree_manage.enable_toolbar("cad")
+            if self.tree_manage.wsoftware == 'ws':
+                self.tree_manage.enable_toolbar("om_ws")
+            elif self.tree_manage.wsoftware == 'ud':
+                self.tree_manage.enable_toolbar("om_ud")
         elif role_epa:
-            self.giswater.enable_toolbar("epa")
+            self.tree_manage.enable_toolbar("epa")
         elif role_edit:
-            self.giswater.enable_toolbar("edit")
-            self.giswater.enable_toolbar("cad")
+            self.tree_manage.enable_toolbar("edit")
+            self.tree_manage.enable_toolbar("cad")
         elif role_om:
-            if self.giswater.wsoftware == 'ws':            
-                self.giswater.enable_toolbar("om_ws")
-            elif self.giswater.wsoftware == 'ud':                
-                self.giswater.enable_toolbar("om_ud")
+            if self.tree_manage.wsoftware == 'ws':
+                self.tree_manage.enable_toolbar("om_ws")
+            elif self.tree_manage.wsoftware == 'ud':
+                self.tree_manage.enable_toolbar("om_ud")
         

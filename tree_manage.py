@@ -1,5 +1,5 @@
 """
-This file is part of Giswater 2.0
+This file is part of TreeManage 1.0
 The program is free software: you can redistribute it and/or modify it under the terms of the GNU 
 General Public License as published by the Free Software Foundation, either version 3 of the License, 
 or (at your option) any later version.
@@ -21,7 +21,7 @@ from dao.controller import DaoController
 from models.plugin_toolbar import PluginToolbar
 
 
-class Giswater(QObject):
+class TreeManage(QObject):
     
     def __init__(self, iface):
         """ Constructor 
@@ -30,7 +30,7 @@ class Giswater(QObject):
             application at run time.
         :type iface: QgsInterface
         """
-        super(Giswater, self).__init__()
+        super(TreeManage, self).__init__()
 
         # Initialize instance attributes
         self.iface = iface
@@ -41,9 +41,9 @@ class Giswater(QObject):
         # Initialize plugin directory
         self.plugin_dir = os.path.dirname(__file__)    
         self.plugin_name = os.path.basename(self.plugin_dir).lower()  
-        self.icon_folder = self.plugin_dir+'/icons/'    
+        self.icon_folder = self.plugin_dir+'/icons/'
 
-        # Initialize svg giswater directory
+        # Initialize svg tree_manage directory
         svg_plugin_dir = os.path.join(self.plugin_dir, 'svg')
         QgsExpressionContextUtils.setProjectVariable('svg_path', svg_plugin_dir)   
             
@@ -52,16 +52,16 @@ class Giswater(QObject):
         if not os.path.exists(setting_file):
             message = "Config file not found at: "+setting_file
             self.iface.messageBar().pushMessage("", message, 1, 20) 
-            return  
-          
+            return
+
         # Set plugin settings
         self.settings = QSettings(setting_file, QSettings.IniFormat)
         self.settings.setIniCodec(sys.getfilesystemencoding())  
         
         # Set QGIS settings. Stored in the registry (on Windows) or .ini file (on Unix) 
         self.qgis_settings = QSettings()
-        self.qgis_settings.setIniCodec(sys.getfilesystemencoding()) 
-        
+        self.qgis_settings.setIniCodec(sys.getfilesystemencoding())
+
         # Define signals
         self.set_signals()
         
@@ -72,9 +72,7 @@ class Giswater(QObject):
                
     def set_signals(self): 
         """ Define widget and event signals """
-        pass
-        # TODO
-        # self.iface.projectRead.connect(self.project_read)
+        self.iface.projectRead.connect(self.project_read)
 
   
     def tr(self, message):
@@ -94,29 +92,10 @@ class Giswater(QObject):
             action = self.actions[index_action]                
 
             # Basic toolbar actions
-            if int(index_action) in (01, 41, 48, 32):
+            if int(index_action) in (00, 01):
                 callback_function = getattr(self.basic, function_name)  
                 action.triggered.connect(callback_function)
-            # Mincut toolbar actions
-            elif int(index_action) in (26, 27):
-                callback_function = getattr(self.mincut, function_name)
-                action.triggered.connect(callback_function)
-            # OM toolbar actions
-            elif int(index_action) in (64, 65, 84):
-                callback_function = getattr(self.om, function_name)
-                action.triggered.connect(callback_function)
-            # Edit toolbar actions
-            elif int(index_action) in (01, 02, 19, 33, 34, 66, 67, 68, 98):
-                callback_function = getattr(self.edit, function_name)
-                action.triggered.connect(callback_function)
-            # Go2epa toolbar actions
-            elif int(index_action) in (23, 24, 25, 36):
-                callback_function = getattr(self.go2epa, function_name)
-                action.triggered.connect(callback_function)
-            # Master toolbar actions
-            elif int(index_action) in (45, 46, 47, 38, 49, 99):
-                callback_function = getattr(self.master, function_name)
-                action.triggered.connect(callback_function)
+
             # Generic function
             else:        
                 callback_function = getattr(self, 'action_triggered')  
@@ -164,8 +143,7 @@ class Giswater(QObject):
             return None
             
         # Buttons NOT checkable (normally because they open a form)
-        if int(index_action) in (23, 24, 25, 26, 27, 33, 34, 36, 38, 
-                                 41, 45, 46, 47, 48, 49, 64, 65, 66, 67, 68, 84, 98, 99):
+        if int(index_action) in (00, 01):
             action = self.create_action(index_action, text_action, toolbar, False, function_name, action_group)
         # Buttons checkable (normally related with 'map_tools')                
         else:
@@ -199,32 +177,11 @@ class Giswater(QObject):
         for plugin_toolbar in self.plugin_toolbars.itervalues():
             ag = QActionGroup(parent)
             for index_action in plugin_toolbar.list_actions:
-                self.add_action(index_action, plugin_toolbar.toolbar, ag)                                                                            
+                self.add_action(index_action, plugin_toolbar.toolbar, ag)
 
-        # Disable and hide all plugin_toolbars and actions
-        self.enable_toolbars(False) 
-        
-        self.basic.set_controller(self.controller)
-
-
-        # Enable only toobar 'basic'   
+        # Enable only toobar 'basic'
         self.enable_toolbar("basic")
-
-
-    def enable_toolbars(self, visible=True):
-        """ Enable/disable all plugin toolbars from QGIS GUI """
-
-        # Enable/Disable actions
-        self.enable_actions(visible)
-
-        try:
-            for plugin_toolbar in self.plugin_toolbars.itervalues():
-                if plugin_toolbar.enabled:
-                    plugin_toolbar.toolbar.setVisible(visible)
-        except AttributeError:
-            pass
-        except KeyError:
-            pass
+        self.basic.set_controller(self.controller)
 
 
     def enable_toolbar(self, toolbar_id, enable=True):
@@ -249,7 +206,6 @@ class Giswater(QObject):
            
     def initGui(self):
         """ Create the menu entries and toolbar icons inside the QGIS GUI """ 
-        
 
         # Force project read (to work with PluginReloader)
         self.project_read(False)
@@ -267,7 +223,7 @@ class Giswater(QObject):
                     plugin_toolbar.toolbar.setVisible(False)                
                     del plugin_toolbar.toolbar
 
-            # unload all loaded giswater related modules
+            # unload all loaded tree_manage related modules
             for modName, mod in sys.modules.items():
                 if mod and hasattr(mod, '__file__') and self.plugin_dir in mod.__file__:
                     del sys.modules[modName]
@@ -285,41 +241,39 @@ class Giswater(QObject):
 
     def project_read(self, show_warning=True): 
         """ Function executed when a user opens a QGIS project (*.qgs) """
-        
+
         # Set controller to handle settings and database connection
         self.controller = DaoController(self.settings, self.plugin_name, self.iface)
         self.controller.set_plugin_dir(self.plugin_dir)        
         self.controller.set_qgis_settings(self.qgis_settings)
-        self.controller.set_giswater(self)
+        self.controller.set_tree_manage(self)
         connection_status = self.controller.set_database_connection()
         if not connection_status:
-            msg = self.controller.last_error  
+            msg = self.controller.last_error
             if show_warning:
                 self.controller.show_warning(msg, 15) 
-            return 
-        
+            return
+
         # Cache error message with log_code = -1 (uncatched error)
         self.controller.get_error_message(-1)       
                 
         # Manage locale and corresponding 'i18n' file
         self.controller.manage_translation(self.plugin_name)
-                
         # Get schema name from table 'version' and set it in controller and in config file
-        layer_version = self.controller.get_layer_by_tablename("version")
-        layer_source = self.controller.get_layer_source(layer_version)  
+        layer_version = self.controller.get_layer_by_tablename("v_edit_node")
+        layer_source = self.controller.get_layer_source(layer_version)
         self.schema_name = layer_source['schema']
         self.controller.plugin_settings_set_value("schema_name", self.schema_name)   
-        self.controller.set_schema_name(self.schema_name) 
-          
+        self.controller.set_schema_name(self.schema_name)
+
         # Check if schema exists
-        self.schema_exists = self.controller.dao.check_schema(self.schema_name)
-        if not self.schema_exists:
-            if show_warning:
-                self.controller.show_warning("Selected schema not found", parameter=self.schema_name)
-        
+        # self.schema_exists = self.controller.dao.check_schema(self.schema_name)
+        # if not self.schema_exists:
+        #     if show_warning:
+        #         self.controller.show_warning("Selected schema not found", parameter=self.schema_name)
         # Set actions classes (define one class per plugin toolbar)
         self.basic = Basic(self.iface, self.settings, self.controller, self.plugin_dir)
-        self.basic.set_giswater(self)
+        self.basic.set_tree_manage(self)
 
 
         # Get SRID from table node

@@ -26,9 +26,9 @@ sys.path.append(plugin_path)
 
 # noinspection PyPep8Naming
 def classFactory(iface):  # pylint: disable=invalid-name
-    ''' Load Giswater class from file giswater.
+    ''' Load tree_manage class from file tree_manage.
     :param iface: A QGIS interface instance.
     :type iface: QgsInterface
     '''
-    from tree_manage import Giswater
-    return Giswater(iface)
+    from tree_manage import TreeManage
+    return TreeManage(iface)

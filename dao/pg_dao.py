@@ -126,7 +126,11 @@ class PgDao():
         exists = True
         schemaname = schemaname.replace('"', '')        
         sql = "SELECT nspname FROM pg_namespace WHERE nspname = '"+schemaname+"'";
-        self.cursor.execute(sql)         
+        print(sql)
+        print(schemaname)
+        print("TEST")
+        self.cursor.execute(sql)
+        print("TEST 2")
         if self.cursor.rowcount == 0:      
             exists = False
         return exists    
