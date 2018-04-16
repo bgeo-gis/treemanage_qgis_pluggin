@@ -4,6 +4,7 @@ The program is free software: you can redistribute it and/or modify it under the
 General Public License as published by the Free Software Foundation, either version 3 of the License, 
 or (at your option) any later version.
 '''
+import operator
 
 ''' Module with utility functions to interact with dialog and its widgets '''
 from PyQt4.QtGui import QLineEdit, QComboBox, QWidget, QPixmap, QDoubleSpinBox, QCheckBox, QLabel, QTextEdit, QDateEdit, QSpinBox, QTimeEdit
@@ -454,4 +455,25 @@ def get_item_data(widget, index=0):
             code = elem[index]            
 
     return code
+
+
+def set_item_data(combo, rows, index_to_show=0, combo_clear=True):
+    """ Populate @combo with list @rows and show field @index_to_show """
+
+    records = []
+    if rows is None:
+        return
+    for row in rows:
+        elem = [row[0], row[1]]
+        records.append(elem)
+
+    combo.blockSignals(True)
+    if combo_clear:
+        combo.clear()
+
+    records_sorted = sorted(records, key=operator.itemgetter(1))
+    for record in records_sorted:
+        combo.addItem(record[index_to_show], record)
+        combo.blockSignals(False)
+
 
