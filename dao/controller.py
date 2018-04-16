@@ -110,7 +110,7 @@ class DaoController():
         # Get database parameters from layer 'version'
         layer = self.get_layer_by_tablename("v_edit_node")
         if not layer:
-            self.last_error = self.tr("Layer not found") + ": 'version'"        
+            self.last_error = self.tr("Layer not found") + ": 'v_edit_node'"
             return None
         
         layer_source = self.get_layer_source(layer)    
@@ -317,7 +317,7 @@ class DaoController():
         return rows  
     
             
-    def execute_sql(self, sql, search_audit=True, log_sql=False, log_error=False, commit=True):
+    def execute_sql(self, sql, search_audit=False, log_sql=False, log_error=False, commit=True):
         """ Execute SQL. Check its result in log tables, and show it to the user """
 
         if log_sql:
