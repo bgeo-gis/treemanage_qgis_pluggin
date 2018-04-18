@@ -96,7 +96,7 @@ class Basic(ParentAction):
 
         # Filter field
         txt_search.textChanged.connect(partial(self.fill_main_table, qtable_all_rows, tbl_all_rows, txt_search, True))
-        txt_selected_filter.textChanged.connect(partial(self.fill_table, qtable_selected_rows, tbl_selected_rows, txt_selected_filter, expr=True, year=year, set_edit_triggers=QTableView.NoEditTriggers))
+        txt_selected_filter.textChanged.connect(partial(self.fill_table, qtable_selected_rows, tbl_selected_rows, txt_selected_filter, expr=True, year=year))
         # Button selec
         dlg_selector.btn_select.pressed.connect(partial(self.rows_selector, qtable_all_rows, qtable_selected_rows, id_table_left, tbl_selected_rows, id_table_right, 'id', year))
         qtable_all_rows.doubleClicked.connect(partial(self.rows_selector, qtable_all_rows, qtable_selected_rows, id_table_left, tbl_selected_rows, id_table_right, 'id'))
@@ -105,10 +105,11 @@ class Basic(ParentAction):
         dlg_selector.btn_unselect.pressed.connect(partial(self.rows_unselector, tbl_all_rows, tbl_selected_rows, id_table_right, txt_search))
 
         self.fill_main_table(qtable_all_rows, tbl_all_rows)
-        self.fill_table(qtable_selected_rows, tbl_selected_rows, txt_selected_filter, expr=True, year=year, set_edit_triggers=QTableView.NoEditTriggers)
+        self.fill_table(qtable_selected_rows, tbl_selected_rows, txt_selected_filter, expr=True, year=year)
 
         dlg_selector.btn_ok.pressed.connect(partial(self.accept_changes, qtable_selected_rows))
         dlg_selector.btn_ok.pressed.connect(partial(self.close_dialog, dlg_selector))
+        dlg_selector.btn_cancel.pressed.connect(partial(self.cancel_changes, qtable_selected_rows))
         dlg_selector.btn_cancel.pressed.connect(partial(self.close_dialog, dlg_selector))
         dlg_selector.rejected.connect(partial(self.close_dialog, dlg_selector))
 
@@ -121,6 +122,11 @@ class Basic(ParentAction):
             model.database().commit()
         else:
             model.database().rollback()
+
+    def cancel_changes(self, qtable):
+        model = qtable.model()
+        model.revertAll()
+        model.database().rollback()
 
     def fill_main_table(self, widget, table_name, txt_search=None, expr=None, set_edit_triggers=QTableView.NoEditTriggers):
         """ Set a model with selected filter.
@@ -151,7 +157,7 @@ class Basic(ParentAction):
         else:
             widget.setModel(model)
 
-    def fill_table(self, widget, table_name,  txt_selected_filter, expr=False, year=None, set_edit_triggers=QTableView.NoEditTriggers):
+    def fill_table(self, qtable, table_name,  txt_selected_filter, expr=False, year=None, set_edit_triggers=QTableView.NoEditTriggers):
         """ Set a model with selected filter.
         Attach that model to selected table
         @setEditStrategy:
@@ -167,7 +173,7 @@ class Basic(ParentAction):
         model.setSort(0, 0)
         model.select()
 
-        widget.setEditTriggers(set_edit_triggers)
+        qtable.setEditTriggers(set_edit_triggers)
         # Check for errors
         if model.lastError().isValid():
             self.controller.show_warning(model.lastError().text())
@@ -176,15 +182,17 @@ class Basic(ParentAction):
             expression = " mu_id::text ILIKE '%" + txt_selected_filter.text() + "%'"
             if year is not None:
                 expression += " AND plan_year ='" + str(year) + "'"
-            widget.setModel(model)
-            widget.model().setFilter(expression)
+            qtable.setModel(model)
+            qtable.model().setFilter(expression)
         else:
-            widget.setModel(model)
+            qtable.setModel(model)
 
         sql = ("SELECT * FROM " + self.schema_name+"."+table_name + " "
                 " WHERE plan_year = "+year+" ORDER BY plan_year")
-
         rows = self.controller.get_rows(sql)
+
+        #self.controller.log_info(str(model.headerData(1, Qt.Horizontal, 0)))
+
         for x in range(len(rows)):
             combo = QComboBox()
             sql = "SELECT DISTINCT(work_id) FROM " + self.schema_name+"."+table_name + " ORDER BY work_id"
@@ -193,16 +201,17 @@ class Basic(ParentAction):
             row = rows[x]
             priority = row[7]
             utils.setSelectedItem(combo, str(priority))
-            i = widget.model().index(x, 7)
-            widget.setIndexWidget(i, combo)
+            i = qtable.model().index(x, 7)
+
+            qtable.setIndexWidget(i, combo)
             combo.setStyleSheet("background:#E6E6E6")
-            combo.currentIndexChanged.connect(partial(self.update_combobox_values, widget, combo, x))
+            combo.currentIndexChanged.connect(partial(self.update_combobox_values, qtable, combo, x))
 
 
-    def update_combobox_values(self, widget, combo, x):
+    def update_combobox_values(self, qtable, combo, x):
         """ Insert combobox.currentText into widget (QTableView) """
-        index = widget.model().index(x, 7)
-        widget.model().setData(index, combo.currentText())
+        index = qtable.model().index(x, 7)
+        qtable.model().setData(index, combo.currentText())
 
     def rows_selector(self, qtable_all_rows, qtable_selected_rows, id_table_left, tableright, id_table_right, field_id, year):
         """ Copy the selected lines in the @qtable_all_rows and in the @table table """
