@@ -19,7 +19,7 @@
   <property name="windowTitle">
    <string>Tree manage</string>
   </property>
-  <widget class="QLineEdit" name="year">
+  <widget class="QLineEdit" name="txt_year">
    <property name="geometry">
     <rect>
      <x>110</x>

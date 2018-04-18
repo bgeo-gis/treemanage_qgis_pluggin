@@ -9,11 +9,9 @@ or (at your option) any later version.
 import os
 import sys
 
-from PyQt4.QtGui import QLayout
-
 from parent import ParentAction
 from PyQt4.QtSql import QSqlTableModel
-from PyQt4.QtGui import QAbstractItemView, QTableView, QLineEdit
+from PyQt4.QtGui import QAbstractItemView, QTableView, QLineEdit,QComboBox
 
 from ..ui.tree_manage import TreeManage
 from ..ui.multirow_selector import Multirow_selector
@@ -47,7 +45,7 @@ class Basic(ParentAction):
         self.load_settings(dlg_tree_manage)
         dlg_tree_manage.rejected.connect(partial(self.close_dialog, dlg_tree_manage))
         dlg_tree_manage.btn_cancel.pressed.connect(partial(self.close_dialog, dlg_tree_manage))
-        dlg_tree_manage.btn_accept.pressed.connect(partial(self.get_parameters, dlg_tree_manage))
+        dlg_tree_manage.btn_accept.pressed.connect(partial(self.get_year, dlg_tree_manage))
         table_name = 'planning'
         self.populate_cmb_years(table_name, dlg_tree_manage.cbx_years)
         dlg_tree_manage.exec_()
@@ -56,24 +54,28 @@ class Basic(ParentAction):
         sql = ("SELECT DISTINCT(plan_year)::text, plan_year::text FROM "+self.schema_name+"."+table_name +""
                " WHERE plan_year::text != ''")
         rows = self.controller.get_rows(sql, log_sql=True)
-        self.controller.log_info(str(rows))
         utils.set_item_data(combo, rows, 1)
 
 
-    def get_parameters(self, dialog):
+    def get_year(self, dialog):
         if utils.isChecked(dialog.chk_year):
             year = utils.get_item_data(dialog.cbx_years, 0)
-            self.close_dialog(dialog)
-            self.tree_selector(year)
+        elif dialog.txt_year.text() != '':
+            year = utils.getWidgetText(dialog.txt_year)
+        else:
+            return None
+
+        self.close_dialog(dialog)
+        self.tree_selector(year, utils.isChecked(dialog.chk_year))
 
 
 
-    def tree_selector(self, year):
+    def tree_selector(self, year=None , recover=False):
+
         dlg_selector = Multirow_selector()
         utils.setDialog(dlg_selector)
         self.load_settings(dlg_selector)
-        dlg_selector.btn_ok.pressed.connect(partial(self.close_dialog, dlg_selector))
-        dlg_selector.rejected.connect(partial(self.close_dialog, dlg_selector))
+
         dlg_selector.setWindowTitle("Tree selector")
         # tableleft = "node"
         # tableright = "v_edit_node"
@@ -85,7 +87,7 @@ class Basic(ParentAction):
         qtable_selected_rows = dlg_selector.findChild(QTableView, "selected_rows")
         qtable_selected_rows.setSelectionBehavior(QAbstractItemView.SelectRows)
         txt_search = dlg_selector.findChild(QLineEdit, "txt_search")
-
+        txt_selected_filter = dlg_selector.findChild(QLineEdit, "txt_selected_filter")
 
         tbl_all_rows = 'v_plan_mu'
         tbl_selected_rows = 'planning'
@@ -93,21 +95,34 @@ class Basic(ParentAction):
         id_table_right = 'mu_id'
 
         # Filter field
-        txt_search.textChanged.connect(partial(self.fill_table, qtable_all_rows, tbl_all_rows, QTableView.DoubleClicked, True, txt_search))
+        txt_search.textChanged.connect(partial(self.fill_main_table, qtable_all_rows, tbl_all_rows, txt_search, True))
+        txt_selected_filter.textChanged.connect(partial(self.fill_table, qtable_selected_rows, tbl_selected_rows, txt_selected_filter, expr=True, year=year, set_edit_triggers=QTableView.NoEditTriggers))
         # Button selec
-        dlg_selector.btn_select.pressed.connect(partial(self.rows_selector, qtable_all_rows, qtable_selected_rows, id_table_left, tbl_selected_rows, id_table_right, 'id'))
+        dlg_selector.btn_select.pressed.connect(partial(self.rows_selector, qtable_all_rows, qtable_selected_rows, id_table_left, tbl_selected_rows, id_table_right, 'id', year))
         qtable_all_rows.doubleClicked.connect(partial(self.rows_selector, qtable_all_rows, qtable_selected_rows, id_table_left, tbl_selected_rows, id_table_right, 'id'))
 
         # Button unselect
         dlg_selector.btn_unselect.pressed.connect(partial(self.rows_unselector, tbl_all_rows, tbl_selected_rows, id_table_right, txt_search))
 
-        self.fill_table(qtable_all_rows, tbl_all_rows)
-        self.fill_table(qtable_selected_rows, tbl_selected_rows)
+        self.fill_main_table(qtable_all_rows, tbl_all_rows)
+        self.fill_table(qtable_selected_rows, tbl_selected_rows, txt_selected_filter, expr=True, year=year, set_edit_triggers=QTableView.NoEditTriggers)
+
+        dlg_selector.btn_ok.pressed.connect(partial(self.accept_changes, qtable_selected_rows))
+        dlg_selector.btn_ok.pressed.connect(partial(self.close_dialog, dlg_selector))
+        dlg_selector.btn_cancel.pressed.connect(partial(self.close_dialog, dlg_selector))
+        dlg_selector.rejected.connect(partial(self.close_dialog, dlg_selector))
 
         dlg_selector.exec_()
 
+    def accept_changes(self, qtable):
+        model = qtable.model()
+        model.database().transaction()
+        if model.submitAll():
+            model.database().commit()
+        else:
+            model.database().rollback()
 
-    def fill_table(self, widget, table_name, set_edit_triggers=QTableView.NoEditTriggers, expr=False, txt_search=None):
+    def fill_main_table(self, widget, table_name, txt_search=None, expr=None, set_edit_triggers=QTableView.NoEditTriggers):
         """ Set a model with selected filter.
         Attach that model to selected table
         @setEditStrategy:
@@ -127,6 +142,7 @@ class Basic(ParentAction):
         # Check for errors
         if model.lastError().isValid():
             self.controller.show_warning(model.lastError().text())
+
         # Attach model to table view
         if expr:
             expression = " mu_name ILIKE '%" + txt_search.text() + "%'"
@@ -135,26 +151,87 @@ class Basic(ParentAction):
         else:
             widget.setModel(model)
 
-    def rows_selector(self, qtable_all_rows, qtable_selected_rows, id_table_left, tableright, id_table_right, field_id):
+    def fill_table(self, widget, table_name,  txt_selected_filter, expr=False, year=None, set_edit_triggers=QTableView.NoEditTriggers):
+        """ Set a model with selected filter.
+        Attach that model to selected table
+        @setEditStrategy:
+            0: OnFieldChange
+            1: OnRowChange
+            2: OnManualSubmit
+        """
+
+        # Set model
+        model = QSqlTableModel()
+        model.setTable(self.schema_name + "." + table_name)
+        model.setEditStrategy(QSqlTableModel.OnManualSubmit)
+        model.setSort(0, 0)
+        model.select()
+
+        widget.setEditTriggers(set_edit_triggers)
+        # Check for errors
+        if model.lastError().isValid():
+            self.controller.show_warning(model.lastError().text())
+        # Attach model to table view
+        if expr:
+            expression = " mu_id::text ILIKE '%" + txt_selected_filter.text() + "%'"
+            if year is not None:
+                expression += " AND plan_year ='" + str(year) + "'"
+            widget.setModel(model)
+            widget.model().setFilter(expression)
+        else:
+            widget.setModel(model)
+
+        sql = ("SELECT * FROM " + self.schema_name+"."+table_name + " "
+                " WHERE plan_year = "+year+" ORDER BY plan_year")
+
+        rows = self.controller.get_rows(sql)
+        for x in range(len(rows)):
+            combo = QComboBox()
+            sql = "SELECT DISTINCT(work_id) FROM " + self.schema_name+"."+table_name + " ORDER BY work_id"
+            row = self.controller.get_rows(sql)
+            utils.fillComboBox(combo, row, False)
+            row = rows[x]
+            priority = row[7]
+            utils.setSelectedItem(combo, str(priority))
+            i = widget.model().index(x, 7)
+            widget.setIndexWidget(i, combo)
+            combo.setStyleSheet("background:#E6E6E6")
+            combo.currentIndexChanged.connect(partial(self.update_combobox_values, widget, combo, x))
+
+
+    def update_combobox_values(self, widget, combo, x):
+        """ Insert combobox.currentText into widget (QTableView) """
+        index = widget.model().index(x, 7)
+        widget.model().setData(index, combo.currentText())
+
+    def rows_selector(self, qtable_all_rows, qtable_selected_rows, id_table_left, tableright, id_table_right, field_id, year):
         """ Copy the selected lines in the @qtable_all_rows and in the @table table """
-        selected_list = qtable_all_rows.selectionModel().selectedRows()
-        if len(selected_list) == 0:
+        left_selected_list = qtable_all_rows.selectionModel().selectedRows()
+        if len(left_selected_list) == 0:
             message = "Any record selected"
             self.controller.show_warning(message)
             return
+        # Get all selected ids
         field_list = []
-        for i in range(0, len(selected_list)):
-            row = selected_list[i].row()
+        for i in range(0, len(left_selected_list)):
+            row = left_selected_list[i].row()
             id_ = qtable_all_rows.model().record(row).value(id_table_left)
-            self.controller.log_info(str(id_))
             field_list.append(id_)
 
-        self.controller.log_info(str(field_list))
-        for i in range(0, len(selected_list)):
-            row = selected_list[i].row()
+        # Select all rows and get all id
+        qtable_selected_rows.selectAll()
+        right_selected_list = qtable_selected_rows.selectionModel().selectedRows()
+        right_field_list = []
+        for i in range(0, len(right_selected_list)):
+            row = right_selected_list[i].row()
+            id_ = qtable_all_rows.model().record(row).value(id_table_right)
+            right_field_list.append(id_)
+        qtable_selected_rows.clearSelection()
+
+
+        for i in range(0, len(left_selected_list)):
+            row = left_selected_list[i].row()
             values = ""
-
-
             if qtable_all_rows.model().record(row).value(id_table_left) != None:
                 values += "'" + str(qtable_all_rows.model().record(row).value(id_table_left)) + "', "
             else:
@@ -163,54 +240,51 @@ class Basic(ParentAction):
                 values += "'" + str(qtable_all_rows.model().record(row).value('work_id')) + "', "
             else:
                 values += 'null, '
-
             values = values[:len(values) - 2]
-            self.controller.log_info(str("VALUES: ")+str(values))
+
             # Check if expl_id already exists in expl_selector
             sql = ("SELECT " + id_table_right + ""
                    " FROM " + self.schema_name + "." + tableright + ""
                    " WHERE " + id_table_right + " = '" + str(field_list[i]) + "'")
-
-            self.controller.log_info(str(sql))
             row = self.controller.get_row(str(sql))
-            self.controller.log_info(str(row))
             if row is not None:
                 # if exist - show warning
                 message = "Id already selected"
                 self.controller.show_info_box(message, "Info", parameter=str(field_list[i]))
             else:
                 sql = ("INSERT INTO " + self.schema_name + "." + tableright + ""
-                       " (mu_id, work_id) "
+                       " (mu_id, work_id, year) "
                        " VALUES (" + values + ")")
                 self.controller.execute_sql(sql)
 
         # Refresh
         #expr = " psector_id = '" + str(utils_giswater.getWidgetText('psector_id')) + "'"
         # Refresh model with selected filter
-        self.fill_table(qtable_selected_rows, tableright, QTableView.DoubleClicked)
+        self.fill_table(qtable_selected_rows, tableright, None, QTableView.DoubleClicked)
         self.set_table_columns(qtable_selected_rows, tableright)
-
+    #
     def rows_unselector(self, tbl_selected_rows, tableright, field_id_right, txt_search):
-        query = ("DELETE FROM " + self.schema_name + "." + tableright + ""
-                 " WHERE  " + tableright + "." + field_id_right + " = ")
-        selected_list = tbl_selected_rows.selectionModel().selectedRows()
-        if len(selected_list) == 0:
-            message = "Any record selected"
-            self.controller.show_warning(message)
-            return
-            field_list = []
-        for i in range(0, len(selected_list)):
-            row = selected_list[i].row()
-            id_ = str(tbl_selected_rows.model().record(row).value(field_id_right))
-            field_list.append(id_)
-        for i in range(0, len(expl_id)):
-            sql = (query + "'" + str(field_list[i]) + "'")
-
-            self.controller.execute_sql(sql)
+        pass
+    #     query = ("DELETE FROM " + self.schema_name + "." + tableright + ""
+    #              " WHERE  " + tableright + "." + field_id_right + " = ")
+    #     selected_list = tbl_selected_rows.selectionModel().selectedRows()
+    #     if len(selected_list) == 0:
+    #         message = "Any record selected"
+    #         self.controller.show_warning(message)
+    #         return
+    #         field_list = []
+    #     for i in range(0, len(selected_list)):
+    #         row = selected_list[i].row()
+    #         id_ = str(tbl_selected_rows.model().record(row).value(field_id_right))
+    #         field_list.append(id_)
+    #     for i in range(0, len(expl_id)):
+    #         sql = (query + "'" + str(field_list[i]) + "'")
+    #
+    #         self.controller.execute_sql(sql)
 
 
         # Refresh model with selected filter
-        self.fill_table(tbl_selected_rows, tableright,  QTableView.DoubleClicked, True, txt_search)
+        self.fill_table(tbl_selected_rows, tableright, None, QTableView.DoubleClicked, True, txt_search)
         self.set_table_columns(tbl_selected_rows, tableright)
 
 
