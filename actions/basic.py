@@ -8,6 +8,10 @@ or (at your option) any later version.
 # -*- coding: utf-8 -*-
 import os
 import sys
+from datetime import date
+
+from PyQt4.QtGui import QIntValidator
+from PyQt4.QtGui import QItemSelectionModel
 
 from parent import ParentAction
 from PyQt4.QtSql import QSqlTableModel
@@ -43,40 +47,70 @@ class Basic(ParentAction):
         dlg_tree_manage.setFixedSize(300, 170)
 
         self.load_settings(dlg_tree_manage)
+
+        validator = QIntValidator(1, 9999999)
+        dlg_tree_manage.txt_year.setValidator(validator)
+        table_name = 'planning'
         dlg_tree_manage.rejected.connect(partial(self.close_dialog, dlg_tree_manage))
         dlg_tree_manage.btn_cancel.pressed.connect(partial(self.close_dialog, dlg_tree_manage))
-        dlg_tree_manage.btn_accept.pressed.connect(partial(self.get_year, dlg_tree_manage))
-        table_name = 'planning'
+        dlg_tree_manage.btn_accept.pressed.connect(partial(self.get_year, dlg_tree_manage, table_name))
         self.populate_cmb_years(table_name, dlg_tree_manage.cbx_years)
+
+        #TODO borrar estas tres lineas
+        utils.setWidgetText(dlg_tree_manage.txt_year, '2020')
+        utils.setChecked(dlg_tree_manage.chk_year, True)
+        utils.set_combo_itemData(dlg_tree_manage.cbx_years, '2020', 1)
+
         dlg_tree_manage.exec_()
 
     def populate_cmb_years(self, table_name, combo):
+        sql = ("SELECT current_database()")
+        self.controller.log_info(str(sql))
+        rows = self.controller.get_rows(sql)
+        self.controller.log_info(str(rows))
         sql = ("SELECT DISTINCT(plan_year)::text, plan_year::text FROM "+self.schema_name+"."+table_name +""
                " WHERE plan_year::text != ''")
-        rows = self.controller.get_rows(sql, log_sql=True)
+        self.controller.log_info(str(sql))
+
+        rows = self.controller.get_rows(sql)
+
+        self.controller.log_info(str(rows))
         utils.set_item_data(combo, rows, 1)
 
 
-    def get_year(self, dialog):
+    def get_year(self, dialog, table_name):
+        update = False
+        year = None
         if utils.isChecked(dialog.chk_year):
             year = utils.get_item_data(dialog.cbx_years, 0)
-        elif dialog.txt_year.text() != '':
-            year = utils.getWidgetText(dialog.txt_year)
         else:
+            sql = ("SELECT DISTINCT(plan_year) FROM "+self.schema_name+"."+table_name +""
+                   " WHERE plan_year='"+utils.getWidgetText(dialog.txt_year)+"'")
+            row = self.controller.get_row(sql)
+            if row:
+                update = True
+        if dialog.txt_year.text() != '':
+            year_to_plan = utils.getWidgetText(dialog.txt_year)
+            if update:
+                year = year_to_plan
+            self.close_dialog(dialog)
+
+            self.tree_selector(year, year_to_plan, utils.isChecked(dialog.chk_year), update)
+        else:
+            message = "Any recuperat es obligatori"
+            self.controller.show_warning(message)
             return None
 
-        self.close_dialog(dialog)
-        self.tree_selector(year, utils.isChecked(dialog.chk_year))
 
 
-
-    def tree_selector(self, year=None , recover=False):
+    def tree_selector(self, year=None , year_to_plan=None, update = False, recover=False):
 
         dlg_selector = Multirow_selector()
         utils.setDialog(dlg_selector)
         self.load_settings(dlg_selector)
 
         dlg_selector.setWindowTitle("Tree selector")
+
         # tableleft = "node"
         # tableright = "v_edit_node"
         # field_id_left = "node_id"
@@ -96,37 +130,50 @@ class Basic(ParentAction):
 
         # Filter field
         txt_search.textChanged.connect(partial(self.fill_main_table, qtable_all_rows, tbl_all_rows, txt_search, True))
-        txt_selected_filter.textChanged.connect(partial(self.fill_table, qtable_selected_rows, tbl_selected_rows, txt_selected_filter, expr=True, year=year))
+        txt_selected_filter.textChanged.connect(partial(self.fill_table, qtable_selected_rows, tbl_selected_rows, txt_selected_filter, expr=True, year=year, year_to_plan=year_to_plan))
         # Button selec
-        dlg_selector.btn_select.pressed.connect(partial(self.rows_selector, qtable_all_rows, qtable_selected_rows, id_table_left, tbl_selected_rows, id_table_right, 'id', year))
-        qtable_all_rows.doubleClicked.connect(partial(self.rows_selector, qtable_all_rows, qtable_selected_rows, id_table_left, tbl_selected_rows, id_table_right, 'id'))
+        dlg_selector.btn_select.pressed.connect(partial(self.rows_selector, dlg_selector, id_table_left, tbl_selected_rows, id_table_right,  year))
+        qtable_all_rows.doubleClicked.connect(partial(self.rows_selector, dlg_selector, id_table_left, tbl_selected_rows, id_table_right))
 
         # Button unselect
         dlg_selector.btn_unselect.pressed.connect(partial(self.rows_unselector, tbl_all_rows, tbl_selected_rows, id_table_right, txt_search))
 
         self.fill_main_table(qtable_all_rows, tbl_all_rows)
-        self.fill_table(qtable_selected_rows, tbl_selected_rows, txt_selected_filter, expr=True, year=year)
+        self.fill_table(qtable_selected_rows, tbl_selected_rows, txt_selected_filter, expr=True, year=year, year_to_plan=year_to_plan)
 
-        dlg_selector.btn_ok.pressed.connect(partial(self.accept_changes, qtable_selected_rows))
+        #dlg_selector.btn_ok.pressed.connect(partial(self.accept_changes, qtable_selected_rows))
+        dlg_selector.btn_cancel.pressed.connect(partial(self.accept, qtable_selected_rows, 'planning', year, update))
         dlg_selector.btn_ok.pressed.connect(partial(self.close_dialog, dlg_selector))
-        dlg_selector.btn_cancel.pressed.connect(partial(self.cancel_changes, qtable_selected_rows))
+        #dlg_selector.btn_cancel.pressed.connect(partial(self.cancel_changes, qtable_selected_rows))
         dlg_selector.btn_cancel.pressed.connect(partial(self.close_dialog, dlg_selector))
         dlg_selector.rejected.connect(partial(self.close_dialog, dlg_selector))
 
         dlg_selector.exec_()
 
-    def accept_changes(self, qtable):
+    def accept(self, qtable, table_name=None, year=None, update=False):
+        columns_name = self.get_table_columns(table_name)
         model = qtable.model()
-        model.database().transaction()
-        if model.submitAll():
-            model.database().commit()
-        else:
-            model.database().rollback()
 
-    def cancel_changes(self, qtable):
-        model = qtable.model()
-        model.revertAll()
-        model.database().rollback()
+        qtable.selectAll()
+        selected_list = qtable.selectionModel().selectedRows()
+
+        row = selected_list[0].row()
+        psector_id = qtable.model().record(row).value('plan_month_start')
+
+        self.controller.log_info(str(psector_id.toString("yyyy.MM.dd")))
+
+
+
+        for row in range(0, model.rowCount()):
+            sql = ("INSERT INTO " + self.schema_name + "."+table_name+" (mu_id, plan_year, work_id) ")
+            values = " VALUES("
+            values += "'"+str(qtable.model().record(row).value('mu_id'))+"', "
+            values += "'" + str(qtable.model().record(row).value('plan_year')) + "', "
+            values += "'" + str(qtable.model().record(row).value('work_id')) + "', "
+            sql += values[:-2]+")"
+
+            self.controller.log_info(str(sql))
+
 
     def fill_main_table(self, widget, table_name, txt_search=None, expr=None, set_edit_triggers=QTableView.NoEditTriggers):
         """ Set a model with selected filter.
@@ -157,7 +204,7 @@ class Basic(ParentAction):
         else:
             widget.setModel(model)
 
-    def fill_table(self, qtable, table_name,  txt_selected_filter, expr=False, year=None, set_edit_triggers=QTableView.NoEditTriggers):
+    def fill_table(self, qtable, table_name,  txt_selected_filter, expr=False, year=None, year_to_plan=None, set_edit_triggers=QTableView.NoEditTriggers):
         """ Set a model with selected filter.
         Attach that model to selected table
         @setEditStrategy:
@@ -179,7 +226,9 @@ class Basic(ParentAction):
             self.controller.show_warning(model.lastError().text())
         # Attach model to table view
         if expr:
+            self.controller.log_info(str(expr))
             expression = " mu_id::text ILIKE '%" + txt_selected_filter.text() + "%'"
+            self.controller.log_info(str(expression))
             if year is not None:
                 expression += " AND plan_year ='" + str(year) + "'"
             qtable.setModel(model)
@@ -187,11 +236,17 @@ class Basic(ParentAction):
         else:
             qtable.setModel(model)
 
+        # Set year to plan to all rows in list
+        for x in range(0, model.rowCount()):
+            index = qtable.model().index(x,2)
+            model.setData(index, year_to_plan)
+
+
+
         sql = ("SELECT * FROM " + self.schema_name+"."+table_name + " "
                 " WHERE plan_year = "+year+" ORDER BY plan_year")
         rows = self.controller.get_rows(sql)
 
-        #self.controller.log_info(str(model.headerData(1, Qt.Horizontal, 0)))
 
         for x in range(len(rows)):
             combo = QComboBox()
@@ -213,9 +268,9 @@ class Basic(ParentAction):
         index = qtable.model().index(x, 7)
         qtable.model().setData(index, combo.currentText())
 
-    def rows_selector(self, qtable_all_rows, qtable_selected_rows, id_table_left, tableright, id_table_right, field_id, year):
+    def rows_selector(self, dialog, id_table_left, tableright, id_table_right, plan_year):
         """ Copy the selected lines in the @qtable_all_rows and in the @table table """
-        left_selected_list = qtable_all_rows.selectionModel().selectedRows()
+        left_selected_list = dialog.all_rows.selectionModel().selectedRows()
         if len(left_selected_list) == 0:
             message = "Any record selected"
             self.controller.show_warning(message)
@@ -224,37 +279,32 @@ class Basic(ParentAction):
         field_list = []
         for i in range(0, len(left_selected_list)):
             row = left_selected_list[i].row()
-            id_ = qtable_all_rows.model().record(row).value(id_table_left)
+            id_ = dialog.all_rows.model().record(row).value(id_table_left)
             field_list.append(id_)
 
         # Select all rows and get all id
-        qtable_selected_rows.selectAll()
-        right_selected_list = qtable_selected_rows.selectionModel().selectedRows()
-        right_field_list = []
-        for i in range(0, len(right_selected_list)):
-            row = right_selected_list[i].row()
-            id_ = qtable_all_rows.model().record(row).value(id_table_right)
-            right_field_list.append(id_)
-        qtable_selected_rows.clearSelection()
-
+        self.select_all_rows(dialog.selected_rows, id_table_right)
 
         for i in range(0, len(left_selected_list)):
             row = left_selected_list[i].row()
             values = ""
-            if qtable_all_rows.model().record(row).value(id_table_left) != None:
-                values += "'" + str(qtable_all_rows.model().record(row).value(id_table_left)) + "', "
+            if dialog.all_rows.model().record(row).value(id_table_left) != None:
+                values += "'" + str(dialog.all_rows.model().record(row).value(id_table_left)) + "', "
             else:
                 values += 'null, '
-            if qtable_all_rows.model().record(row).value('work_id') != None:
-                values += "'" + str(qtable_all_rows.model().record(row).value('work_id')) + "', "
+            if dialog.all_rows.model().record(row).value('work_id') != None:
+                values += "'" + str(dialog.all_rows.model().record(row).value('work_id')) + "', "
             else:
                 values += 'null, '
+            values += "'"+plan_year+"', "
             values = values[:len(values) - 2]
 
-            # Check if expl_id already exists in expl_selector
+            # Check if mul_id and year_ already exists in planning
             sql = ("SELECT " + id_table_right + ""
                    " FROM " + self.schema_name + "." + tableright + ""
-                   " WHERE " + id_table_right + " = '" + str(field_list[i]) + "'")
+                   " WHERE " + id_table_right + " = '" + str(field_list[i]) + "'"
+                   " AND plan_year ='"+str(plan_year)+"'")
+
             row = self.controller.get_row(str(sql))
             if row is not None:
                 # if exist - show warning
@@ -262,16 +312,31 @@ class Basic(ParentAction):
                 self.controller.show_info_box(message, "Info", parameter=str(field_list[i]))
             else:
                 sql = ("INSERT INTO " + self.schema_name + "." + tableright + ""
-                       " (mu_id, work_id, year) "
+                       " (mu_id, work_id, plan_year) "
                        " VALUES (" + values + ")")
                 self.controller.execute_sql(sql)
 
         # Refresh
         #expr = " psector_id = '" + str(utils_giswater.getWidgetText('psector_id')) + "'"
         # Refresh model with selected filter
-        self.fill_table(qtable_selected_rows, tableright, None, QTableView.DoubleClicked)
-        self.set_table_columns(qtable_selected_rows, tableright)
-    #
+
+        self.fill_table(dialog.selected_rows, tableright, dialog.txt_selected_filter,True, plan_year, plan_year, QTableView.DoubleClicked)
+        #self.set_table_columns(dialog.selected_rows, tableright)
+
+    def select_all_rows(self, qtable, id, clear_selection=True):
+        """ retrun list of index in @qtable"""
+        # Select all rows and get all id
+        qtable.selectAll()
+        right_selected_list = qtable.selectionModel().selectedRows()
+        right_field_list = []
+        for i in range(0, len(right_selected_list)):
+            row = right_selected_list[i].row()
+            id_ = qtable.model().record(row).value(id)
+            right_field_list.append(id_)
+        if clear_selection:
+            qtable.clearSelection()
+        return right_field_list
+
     def rows_unselector(self, tbl_selected_rows, tableright, field_id_right, txt_search):
         pass
     #     query = ("DELETE FROM " + self.schema_name + "." + tableright + ""
@@ -295,12 +360,27 @@ class Basic(ParentAction):
         # Refresh model with selected filter
         self.fill_table(tbl_selected_rows, tableright, None, QTableView.DoubleClicked, True, txt_search)
         self.set_table_columns(tbl_selected_rows, tableright)
+    def get_table_columns(self, tablename):
+        # Get columns name in order of the table
+        sql = ("SELECT column_name FROM information_schema.columns"
+               " WHERE table_name = '" + tablename +"'"
+               " AND table_schema = '" + self.schema_name.replace('"', '') + "'"
+               " ORDER BY ordinal_position")
+        column_name = self.controller.get_rows(sql)
+        return column_name
 
 
 
+    def accept_changes(self, qtable):
+        model = qtable.model()
+        model.database().transaction()
+        if model.submitAll():
+            model.database().commit()
+        else:
+            model.database().rollback()
 
 
-
-
-
-
+    def cancel_changes(self, qtable):
+        model = qtable.model()
+        model.revertAll()
+        model.database().rollback()
