@@ -102,7 +102,7 @@ class Basic(ParentAction):
             return None
 
 
-    def tree_selector(self, update = False, recover=False):
+    def tree_selector(self, update = False):
 
         dlg_selector = Multirow_selector()
         utils.setDialog(dlg_selector)
@@ -133,9 +133,10 @@ class Basic(ParentAction):
         dlg_selector.txt_search.textChanged.connect(partial(self.fill_main_table, dlg_selector, tableleft, set_edit_triggers=QTableView.NoEditTriggers))
         dlg_selector.txt_selected_filter.textChanged.connect(partial(self.fill_table, dlg_selector, tableright, tableleft, set_edit_triggers=QTableView.NoEditTriggers))
 
-
-
+        dlg_selector.btn_close.pressed.connect(partial(self.accept_changes, dlg_selector.selected_rows))
         dlg_selector.btn_close.pressed.connect(partial(self.close_dialog, dlg_selector))
+
+        dlg_selector.rejected.connect(partial(self.accept_changes, dlg_selector.selected_rows))
         dlg_selector.rejected.connect(partial(self.close_dialog, dlg_selector))
 
         dlg_selector.exec_()
@@ -288,7 +289,6 @@ class Basic(ParentAction):
                 sql = ("INSERT INTO " + self.schema_name + "." + tableright + ""
                        " (mu_id, work_id, plan_year) "
                        " VALUES (" + values + ")")
-                self.controller.log_info(str(sql))
                 self.controller.execute_sql(sql)
 
         # Refresh
