@@ -45,22 +45,9 @@
          </spacer>
         </item>
         <item>
-         <widget class="QPushButton" name="btn_ok">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
+         <widget class="QPushButton" name="btn_close">
           <property name="text">
-           <string>Ok</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="btn_cancel">
-          <property name="text">
-           <string>Cancel</string>
+           <string>Close</string>
           </property>
          </widget>
         </item>
