@@ -128,17 +128,21 @@ class Basic(ParentAction):
         id_table_left = 'mu_id'
         id_table_right = 'mu_id'
 
-        # # Filter field
-        txt_search.textChanged.connect(partial(self.fill_main_table, dlg_selector, tbl_all_rows))
-        # txt_selected_filter.textChanged.connect(partial(self.fill_table, qtable_selected_rows, tbl_selected_rows, txt_selected_filter))
+
         # # Button selec
         # dlg_selector.btn_select.pressed.connect(partial(self.rows_selector, dlg_selector, id_table_left, tbl_selected_rows, id_table_right))
         # qtable_all_rows.doubleClicked.connect(partial(self.rows_selector, dlg_selector, id_table_left, tbl_selected_rows, id_table_right))
 
         # Button unselect
         #dlg_selector.btn_unselect.pressed.connect(partial(self.rows_unselector, tbl_all_rows, tbl_selected_rows, id_table_right, txt_search))
+        # Populate QTableView
         self.fill_table(dlg_selector, tbl_selected_rows)
         self.fill_main_table(dlg_selector, tbl_all_rows)
+
+        # Filter field
+        txt_search.textChanged.connect(partial(self.fill_main_table, dlg_selector, tbl_all_rows, set_edit_triggers=QTableView.NoEditTriggers))
+        # txt_selected_filter.textChanged.connect(partial(self.fill_table, qtable_selected_rows, tbl_selected_rows, txt_selected_filter))
+
 
 
         #dlg_selector.btn_ok.pressed.connect(partial(self.accept_changes, qtable_selected_rows))
@@ -183,7 +187,6 @@ class Basic(ParentAction):
             1: OnRowChange
             2: OnManualSubmit
         """
-
         # Set model
         model = QSqlTableModel()
         model.setTable(self.schema_name + "." + table_name)
