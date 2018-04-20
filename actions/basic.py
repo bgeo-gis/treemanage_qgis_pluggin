@@ -32,6 +32,8 @@ class Basic(ParentAction):
         """ Class to control toolbar 'basic' """
         self.minor_version = "3.0"
         ParentAction.__init__(self, iface, settings, controller, plugin_dir)
+        self.selected_year = None
+        self.plan_year = None
 
     def set_tree_manage(self, tree_manage):
         self.tree_manage = tree_manage
@@ -64,14 +66,12 @@ class Basic(ParentAction):
         dlg_tree_manage.exec_()
 
     def populate_cmb_years(self, table_name, combo):
-        sql = ("SELECT current_database()")
-        self.controller.log_info(str(sql))
-        rows = self.controller.get_rows(sql)
-        self.controller.log_info(str(rows))
+        # """
+        # sql = ("SELECT current_database()")
+        # rows = self.controller.get_rows(sql)
+        # """
         sql = ("SELECT DISTINCT(plan_year)::text, plan_year::text FROM "+self.schema_name+"."+table_name +""
                " WHERE plan_year::text != ''")
-        self.controller.log_info(str(sql))
-
         rows = self.controller.get_rows(sql)
 
         self.controller.log_info(str(rows))
@@ -80,22 +80,22 @@ class Basic(ParentAction):
 
     def get_year(self, dialog, table_name):
         update = False
-        year = None
+        self.selected_year = None
         if utils.isChecked(dialog.chk_year):
-            year = utils.get_item_data(dialog.cbx_years, 0)
+            self.selected_year = utils.get_item_data(dialog.cbx_years, 0)
         else:
             sql = ("SELECT DISTINCT(plan_year) FROM "+self.schema_name+"."+table_name +""
-                   " WHERE plan_year='"+utils.getWidgetText(dialog.txt_year)+"'")
+                   " WHERE plan_year ='"+utils.getWidgetText(dialog.txt_year)+"'")
             row = self.controller.get_row(sql)
             if row:
                 update = True
         if dialog.txt_year.text() != '':
-            year_to_plan = utils.getWidgetText(dialog.txt_year)
+            self.plan_year = utils.getWidgetText(dialog.txt_year)
             if update:
-                year = year_to_plan
+                self.selected_year = self.plan_year
             self.close_dialog(dialog)
 
-            self.tree_selector(year, year_to_plan, utils.isChecked(dialog.chk_year), update)
+            self.tree_selector(utils.isChecked(dialog.chk_year), update)
         else:
             message = "Any recuperat es obligatori"
             self.controller.show_warning(message)
@@ -103,7 +103,7 @@ class Basic(ParentAction):
 
 
 
-    def tree_selector(self, year=None , year_to_plan=None, update = False, recover=False):
+    def tree_selector(self, update = False, recover=False):
 
         dlg_selector = Multirow_selector()
         utils.setDialog(dlg_selector)
@@ -128,21 +128,21 @@ class Basic(ParentAction):
         id_table_left = 'mu_id'
         id_table_right = 'mu_id'
 
-        # Filter field
-        txt_search.textChanged.connect(partial(self.fill_main_table, qtable_all_rows, tbl_all_rows, txt_search, True))
-        txt_selected_filter.textChanged.connect(partial(self.fill_table, qtable_selected_rows, tbl_selected_rows, txt_selected_filter, expr=True, year=year, year_to_plan=year_to_plan))
-        # Button selec
-        dlg_selector.btn_select.pressed.connect(partial(self.rows_selector, dlg_selector, id_table_left, tbl_selected_rows, id_table_right,  year))
-        qtable_all_rows.doubleClicked.connect(partial(self.rows_selector, dlg_selector, id_table_left, tbl_selected_rows, id_table_right))
+        # # Filter field
+        txt_search.textChanged.connect(partial(self.fill_main_table, dlg_selector, tbl_all_rows))
+        # txt_selected_filter.textChanged.connect(partial(self.fill_table, qtable_selected_rows, tbl_selected_rows, txt_selected_filter))
+        # # Button selec
+        # dlg_selector.btn_select.pressed.connect(partial(self.rows_selector, dlg_selector, id_table_left, tbl_selected_rows, id_table_right))
+        # qtable_all_rows.doubleClicked.connect(partial(self.rows_selector, dlg_selector, id_table_left, tbl_selected_rows, id_table_right))
 
         # Button unselect
-        dlg_selector.btn_unselect.pressed.connect(partial(self.rows_unselector, tbl_all_rows, tbl_selected_rows, id_table_right, txt_search))
+        #dlg_selector.btn_unselect.pressed.connect(partial(self.rows_unselector, tbl_all_rows, tbl_selected_rows, id_table_right, txt_search))
+        self.fill_table(dlg_selector, tbl_selected_rows)
+        self.fill_main_table(dlg_selector, tbl_all_rows)
 
-        self.fill_main_table(qtable_all_rows, tbl_all_rows)
-        self.fill_table(qtable_selected_rows, tbl_selected_rows, txt_selected_filter, expr=True, year=year, year_to_plan=year_to_plan)
 
         #dlg_selector.btn_ok.pressed.connect(partial(self.accept_changes, qtable_selected_rows))
-        dlg_selector.btn_cancel.pressed.connect(partial(self.accept, qtable_selected_rows, 'planning', year, update))
+        dlg_selector.btn_cancel.pressed.connect(partial(self.accept, qtable_selected_rows, 'planning', update))
         dlg_selector.btn_ok.pressed.connect(partial(self.close_dialog, dlg_selector))
         #dlg_selector.btn_cancel.pressed.connect(partial(self.cancel_changes, qtable_selected_rows))
         dlg_selector.btn_cancel.pressed.connect(partial(self.close_dialog, dlg_selector))
@@ -175,7 +175,7 @@ class Basic(ParentAction):
             self.controller.log_info(str(sql))
 
 
-    def fill_main_table(self, widget, table_name, txt_search=None, expr=None, set_edit_triggers=QTableView.NoEditTriggers):
+    def fill_main_table(self, dialog, table_name,  set_edit_triggers=QTableView.NoEditTriggers):
         """ Set a model with selected filter.
         Attach that model to selected table
         @setEditStrategy:
@@ -191,20 +191,29 @@ class Basic(ParentAction):
         model.setSort(0, 0)
         model.select()
 
-        widget.setEditTriggers(set_edit_triggers)
+        dialog.all_rows.setEditTriggers(set_edit_triggers)
         # Check for errors
         if model.lastError().isValid():
             self.controller.show_warning(model.lastError().text())
 
-        # Attach model to table view
-        if expr:
-            expression = " mu_name ILIKE '%" + txt_search.text() + "%'"
-            widget.setModel(model)
-            widget.model().setFilter(expression)
-        else:
-            widget.setModel(model)
+        # Get all ids from Qtable selected_rows
+        id_all_selected_rows = self.select_all_rows(dialog.selected_rows, 'mu_id')
 
-    def fill_table(self, qtable, table_name,  txt_selected_filter, expr=False, year=None, year_to_plan=None, set_edit_triggers=QTableView.NoEditTriggers):
+        # Convert id_all_selected_rows to string
+        ids = ""
+        for x in range(0, len(id_all_selected_rows)):
+            ids += str(id_all_selected_rows[x]) + (", ")
+        ids = ids[:-2] + ""
+
+        # Attach model to table view
+        expr = " mu_name ILIKE '%" + dialog.txt_search.text() + "%'"
+        expr += " AND mu_id NOT IN ("+ids+")"
+        self.controller.log_info(str(expr))
+        dialog.all_rows.setModel(model)
+        dialog.all_rows.model().setFilter(expr)
+
+
+    def fill_table(self, dialog, table_name, set_edit_triggers=QTableView.NoEditTriggers):
         """ Set a model with selected filter.
         Attach that model to selected table
         @setEditStrategy:
@@ -220,31 +229,29 @@ class Basic(ParentAction):
         model.setSort(0, 0)
         model.select()
 
-        qtable.setEditTriggers(set_edit_triggers)
+        dialog.selected_rows.setEditTriggers(set_edit_triggers)
         # Check for errors
         if model.lastError().isValid():
             self.controller.show_warning(model.lastError().text())
         # Attach model to table view
-        if expr:
-            self.controller.log_info(str(expr))
-            expression = " mu_id::text ILIKE '%" + txt_selected_filter.text() + "%'"
-            self.controller.log_info(str(expression))
-            if year is not None:
-                expression += " AND plan_year ='" + str(year) + "'"
-            qtable.setModel(model)
-            qtable.model().setFilter(expression)
-        else:
-            qtable.setModel(model)
+
+        expr = " mu_id::text ILIKE '%" + dialog.txt_selected_filter.text() + "%'"
+
+        if self.selected_year is not None:
+            expr += " AND plan_year ='" + str(self.selected_year) + "'"
+        dialog.selected_rows.setModel(model)
+        dialog.selected_rows.model().setFilter(expr)
+
 
         # Set year to plan to all rows in list
         for x in range(0, model.rowCount()):
-            index = qtable.model().index(x,2)
-            model.setData(index, year_to_plan)
+            index = dialog.selected_rows.model().index(x,2)
+            model.setData(index, self.plan_year)
 
 
 
         sql = ("SELECT * FROM " + self.schema_name+"."+table_name + " "
-                " WHERE plan_year = "+year+" ORDER BY plan_year")
+                " WHERE plan_year = "+self.selected_year+" ORDER BY plan_year")
         rows = self.controller.get_rows(sql)
 
 
@@ -256,11 +263,11 @@ class Basic(ParentAction):
             row = rows[x]
             priority = row[7]
             utils.setSelectedItem(combo, str(priority))
-            i = qtable.model().index(x, 7)
+            i = dialog.selected_rows.model().index(x, 7)
 
-            qtable.setIndexWidget(i, combo)
+            dialog.selected_rows.setIndexWidget(i, combo)
             combo.setStyleSheet("background:#E6E6E6")
-            combo.currentIndexChanged.connect(partial(self.update_combobox_values, qtable, combo, x))
+            combo.currentIndexChanged.connect(partial(self.update_combobox_values, dialog.selected_rows, combo, x))
 
 
     def update_combobox_values(self, qtable, combo, x):
@@ -268,7 +275,7 @@ class Basic(ParentAction):
         index = qtable.model().index(x, 7)
         qtable.model().setData(index, combo.currentText())
 
-    def rows_selector(self, dialog, id_table_left, tableright, id_table_right, plan_year):
+    def rows_selector(self, dialog, id_table_left, tableright, id_table_right):
         """ Copy the selected lines in the @qtable_all_rows and in the @table table """
         left_selected_list = dialog.all_rows.selectionModel().selectedRows()
         if len(left_selected_list) == 0:
