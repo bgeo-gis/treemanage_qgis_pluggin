@@ -141,7 +141,7 @@ class Basic(ParentAction):
 
         # Filter field
         txt_search.textChanged.connect(partial(self.fill_main_table, dlg_selector, tbl_all_rows, set_edit_triggers=QTableView.NoEditTriggers))
-        # txt_selected_filter.textChanged.connect(partial(self.fill_table, qtable_selected_rows, tbl_selected_rows, txt_selected_filter))
+        txt_selected_filter.textChanged.connect(partial(self.fill_table, dlg_selector, tbl_selected_rows, set_edit_triggers=QTableView.NoEditTriggers))
 
 
 
