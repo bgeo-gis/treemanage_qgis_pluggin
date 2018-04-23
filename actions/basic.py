@@ -114,9 +114,17 @@ class Basic(ParentAction):
         tableright = 'planning'
         id_table_left = 'mu_id'
         id_table_right = 'mu_id'
-
-        dlg_selector.selected_rows.setSelectionBehavior(QAbstractItemView.SelectRows)
+        sql = ("SELECT * FROM " + self.schema_name + "." + tableright + " "
+               " WHERE plan_year = " + self.selected_year + " order by id")
+        rows = self.controller.get_rows(sql)
+        self.refresh = len((rows))
+        self.controller.log_info(str(self.refresh))
         dlg_selector.all_rows.setSelectionBehavior(QAbstractItemView.SelectRows)
+        dlg_selector.selected_rows.setSelectionBehavior(QAbstractItemView.SelectRows)
+        sql =("SELECT DISTINCT(work_id), work_name FROM "+self.schema_name +"."+tableleft)
+        rows = self.controller.get_rows(sql)
+        self.controller.log_info(str(rows))
+        utils.set_item_data(dlg_selector.cmb_poda_type, rows, 1)
 
         # Button selec
         dlg_selector.btn_select.pressed.connect(partial(self.rows_selector, dlg_selector, id_table_left, tableright, id_table_right, tableleft))
@@ -124,19 +132,21 @@ class Basic(ParentAction):
 
         # Button unselect
         dlg_selector.btn_unselect.pressed.connect(partial(self.rows_unselector, dlg_selector, tableright, id_table_right, tableleft))
-        dlg_selector.selected_rows.doubleClicked.connect(partial(self.rows_unselector, dlg_selector, tableright, id_table_right, tableleft))
+        #dlg_selector.selected_rows.doubleClicked.connect(partial(self.rows_unselector, dlg_selector, tableright, id_table_right, tableleft))
         # Populate QTableView
-        self.fill_table(dlg_selector, tableright, tableleft)
+        self.fill_table(dlg_selector, tableright, tableleft, QTableView.DoubleClicked)
+        self.set_table_columns(dlg_selector.selected_rows, tableright)
+        self.fill_table(dlg_selector, tableright, tableleft, QTableView.DoubleClicked)
         self.fill_main_table(dlg_selector, tableleft)
 
         # Filter field
         dlg_selector.txt_search.textChanged.connect(partial(self.fill_main_table, dlg_selector, tableleft, set_edit_triggers=QTableView.NoEditTriggers))
-        dlg_selector.txt_selected_filter.textChanged.connect(partial(self.fill_table, dlg_selector, tableright, tableleft, set_edit_triggers=QTableView.NoEditTriggers))
+        dlg_selector.txt_selected_filter.textChanged.connect(partial(self.fill_table, dlg_selector, tableright, tableleft, set_edit_triggers=QTableView.DoubleClicked))
 
-        dlg_selector.btn_close.pressed.connect(partial(self.accept_changes, dlg_selector.selected_rows))
+        dlg_selector.btn_close.pressed.connect(partial(self.close_dialog, dlg_selector))
         dlg_selector.btn_close.pressed.connect(partial(self.close_dialog, dlg_selector))
 
-        dlg_selector.rejected.connect(partial(self.accept_changes, dlg_selector.selected_rows))
+        dlg_selector.rejected.connect(partial(self.close_dialog, dlg_selector))
         dlg_selector.rejected.connect(partial(self.close_dialog, dlg_selector))
 
         dlg_selector.exec_()
@@ -188,13 +198,14 @@ class Basic(ParentAction):
             2: OnManualSubmit
         """
 
+
         # Set model
         model = QSqlTableModel()
+
         model.setTable(self.schema_name + "." + tableright)
-        model.setEditStrategy(QSqlTableModel.OnManualSubmit)
+        model.setEditStrategy(QSqlTableModel.OnFieldChange)
         model.setSort(0, 0)
         model.select()
-
         dialog.selected_rows.setEditTriggers(set_edit_triggers)
         # Check for errors
         if model.lastError().isValid():
@@ -210,14 +221,19 @@ class Basic(ParentAction):
 
         # Set year to plan to all rows in list
         for x in range(0, model.rowCount()):
-            index = dialog.selected_rows.model().index(x,2)
+            index = dialog.selected_rows.model().index(x, 2)
             model.setData(index, self.plan_year)
 
-        sql = ("SELECT * FROM " + self.schema_name+"."+tableright + " "
-               " WHERE plan_year = "+self.selected_year+" order by id")
-        rows = self.controller.get_rows(sql)
+        #self.populate_combos(dialog, tableleft, tableright)
 
-        for x in range(len(rows)):
+
+
+    def populate_combos(self, dialog, tableleft, tableright):
+        sql = ("SELECT * FROM " + self.schema_name + "." + tableright + " "
+               " WHERE plan_year = " + self.selected_year + " order by id")
+        rows = self.controller.get_rows(sql)
+        for x in range(0, len(rows)):
+            self.controller.log_info(str(x))
             combo = QComboBox()
             sql = "SELECT DISTINCT(work_id) FROM " + self.schema_name+"."+tableleft + " ORDER BY work_id"
             row = self.controller.get_rows(sql)
@@ -233,6 +249,19 @@ class Basic(ParentAction):
             combo.setStyleSheet("background:#E6E6E6")
             combo.currentIndexChanged.connect(partial(self.update_combobox_values, dialog.selected_rows, combo, x))
 
+        self.refresh = len(rows)
+
+
+    # def refresh_table(self, widget):
+    #     """ Refresh qTableView 'selected_rows' """
+    #
+    #     widget.selectAll()
+    #     selected_list = widget.selectionModel().selectedRows()
+    #     widget.clearSelection()
+    #     for i in range(0, len(selected_list)):
+    #         row = selected_list[i].row()
+    #         if str(widget.model().record(row).value('psector_id')) != utils_giswater.getWidgetText('psector_id'):
+    #             widget.hideRow(i)
 
     def update_combobox_values(self, qtable, combo, x):
         """ Insert combobox.currentText into widget (QTableView) """
@@ -290,9 +319,9 @@ class Basic(ParentAction):
                        " (mu_id, work_id, plan_year) "
                        " VALUES (" + values + ")")
                 self.controller.execute_sql(sql)
-
+                #self.controller.log_info(str("TEST 10"))
         # Refresh
-        self.fill_table(dialog, tableright, tableleft)
+        self.fill_table(dialog, tableright, tableleft, QTableView.DoubleClicked)
         self.fill_main_table(dialog, tableleft)
         #self.set_table_columns(dialog.selected_rows, tableright)
 
@@ -328,7 +357,7 @@ class Basic(ParentAction):
             sql = (query + "'" + str(field_list[i]) + "'")
             self.controller.execute_sql(sql)
         # Refresh model with selected filter
-        self.fill_table(dialog, tableright, tableleft)
+        self.fill_table(dialog, tableright, tableleft, QTableView.DoubleClicked)
         self.fill_main_table(dialog, tableleft)
 
 
@@ -343,16 +372,34 @@ class Basic(ParentAction):
 
 
 
-    def accept_changes(self, qtable):
-        model = qtable.model()
+    def accept_changes(self, dialog, tableleft):
+        model = dialog.selected_rows.model()
         model.database().transaction()
         if model.submitAll():
             model.database().commit()
+
+            dialog.selected_rows.selectAll()
+            id_all_selected_rows = dialog.selected_rows.selectionModel().selectedRows()
+            self.controller.log_info(str("LEN:")+str(len(id_all_selected_rows)))
+
+            for x in range(0, len(id_all_selected_rows)):
+                row = id_all_selected_rows[x].row()
+                self.controller.log_info(str(dialog.selected_rows.model().record(row).value('work_id')))
+                if dialog.selected_rows.model().record(row).value('work_id') != None:
+                    work_id = str(dialog.selected_rows.model().record(row).value('work_id'))
+                    mu_id = str(dialog.selected_rows.model().record(row).value('mu_id'))
+                    self.controller.log_info(str("work_id:")+str(work_id))
+                    self.controller.log_info(str("mu_id:")+str(mu_id))
+                    sql = ("UPDATE " +self.schema_name+"."+tableleft + ""
+                           " SET work_id= '"+str(work_id)+"' "
+                           " WHERE mu_id= '"+str(mu_id)+"'")
+                    self.controller.log_info(str(sql))
+                    self.controller.execute_sql(sql)
         else:
             model.database().rollback()
 
 
-    def cancel_changes(self, qtable):
-        model = qtable.model()
+    def cancel_changes(self, dialog):
+        model = dialog.selected_rows.model()
         model.revertAll()
         model.database().rollback()
