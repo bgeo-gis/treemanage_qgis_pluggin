@@ -260,7 +260,7 @@ class TreeManage(QObject):
         # Manage locale and corresponding 'i18n' file
         self.controller.manage_translation(self.plugin_name)
         # Get schema name from table 'version' and set it in controller and in config file
-        layer_version = self.controller.get_layer_by_tablename("v_edit_node")
+        layer_version = self.controller.get_layer_by_tablename("version")
         layer_source = self.controller.get_layer_source(layer_version)
         self.schema_name = layer_source['schema']
         self.controller.plugin_settings_set_value("schema_name", self.schema_name)   

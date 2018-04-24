@@ -108,9 +108,9 @@ class DaoController():
     def get_layer_source_from_credentials(self):
 
         # Get database parameters from layer 'version'
-        layer = self.get_layer_by_tablename("v_edit_node")
+        layer = self.get_layer_by_tablename("version")
         if not layer:
-            self.last_error = self.tr("Layer not found") + ": 'v_edit_node'"
+            self.last_error = self.tr("Layer not found") + ": 'version'"
             return None
         
         layer_source = self.get_layer_source(layer)    
