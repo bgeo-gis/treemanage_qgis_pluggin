@@ -132,7 +132,7 @@ class Basic(ParentAction):
 
         # Button unselect
         dlg_selector.btn_unselect.pressed.connect(partial(self.rows_unselector, dlg_selector, tableright, id_table_right, tableleft))
-        #dlg_selector.selected_rows.doubleClicked.connect(partial(self.rows_unselector, dlg_selector, tableright, id_table_right, tableleft))
+        dlg_selector.selected_rows.doubleClicked.connect(partial(self.rows_unselector, dlg_selector, tableright, id_table_right, tableleft))
         # Populate QTableView
         self.fill_table(dlg_selector, tableright, tableleft, QTableView.DoubleClicked)
         self.set_table_columns(dlg_selector.selected_rows, tableright)
