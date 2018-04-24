@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1027</width>
+    <width>814</width>
     <height>694</height>
    </rect>
   </property>
@@ -158,7 +158,7 @@
               <item>
                <layout class="QHBoxLayout" name="horizontalLayout_3">
                 <item>
-                 <widget class="QCheckBox" name="checkBox">
+                 <widget class="QCheckBox" name="chk_current">
                   <property name="text">
                    <string>Canviar tipus de poda per aquesta anualitat:</string>
                   </property>
@@ -169,7 +169,7 @@
               <item>
                <layout class="QHBoxLayout" name="horizontalLayout_6">
                 <item>
-                 <widget class="QCheckBox" name="checkBox_2">
+                 <widget class="QCheckBox" name="chk_permanent">
                   <property name="text">
                    <string>Canviar tipus de poda per defecte:</string>
                   </property>
