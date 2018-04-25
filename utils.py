@@ -457,7 +457,7 @@ def get_item_data(widget, index=0):
     return code
 
 
-def set_item_data(combo, rows, index_to_show=0, combo_clear=True):
+def set_item_data(combo, rows, index_to_show=0, reverse=False, combo_clear=True):
     """ Populate @combo with list @rows and show field @index_to_show """
 
     records = []
@@ -471,7 +471,7 @@ def set_item_data(combo, rows, index_to_show=0, combo_clear=True):
     if combo_clear:
         combo.clear()
 
-    records_sorted = sorted(records, key=operator.itemgetter(1))
+    records_sorted = sorted(records, key=operator.itemgetter(1), reverse=reverse)
     for record in records_sorted:
         combo.addItem(record[index_to_show], record)
         combo.blockSignals(False)
