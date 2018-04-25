@@ -54,7 +54,7 @@ class Basic(ParentAction):
         dlg_tree_manage.rejected.connect(partial(self.close_dialog, dlg_tree_manage))
         dlg_tree_manage.btn_cancel.pressed.connect(partial(self.close_dialog, dlg_tree_manage))
         dlg_tree_manage.btn_accept.pressed.connect(partial(self.get_year, dlg_tree_manage, table_name))
-
+      
 
         #TODO borrar estas tres lineas
         now = datetime.datetime.now()
@@ -72,7 +72,7 @@ class Basic(ParentAction):
         """
         sql = ("SELECT DISTINCT(plan_year)::text, plan_year::text FROM "+self.schema_name+"."+table_name + ""
                " WHERE plan_year::text != ''")
-        rows = self.controller.get_rows(sql, log_info=True, log_sql=True)
+        rows = self.controller.get_rows(sql)
         if rows is None:
             return
 
