@@ -55,7 +55,6 @@ class Basic(ParentAction):
         dlg_tree_manage.btn_cancel.pressed.connect(partial(self.close_dialog, dlg_tree_manage))
         dlg_tree_manage.btn_accept.pressed.connect(partial(self.get_year, dlg_tree_manage, table_name))
       
-
         #TODO borrar estas tres lineas
         now = datetime.datetime.now()
         utils.setWidgetText(dlg_tree_manage.txt_year, str(now.year + 1))
@@ -136,12 +135,15 @@ class Basic(ParentAction):
         dlg_selector.selected_rows.doubleClicked.connect(partial(self.rows_unselector, dlg_selector, tableright, id_table_right, tableleft))
 
         # Populate QTableView
-        self.fill_table(dlg_selector, tableright)
+        self.fill_table(dlg_selector, tableright, set_edit_triggers=QTableView.NoEditTriggers, update=True)
+        if update:
+            self.insert_into_planning(dlg_selector, id_table_left, tableright)
+
         # Need fill table before set table columns, and need re-fill table for upgrade fields
         self.set_table_columns(dlg_selector.selected_rows, tableright)
+
         self.fill_table(dlg_selector, tableright, QTableView.DoubleClicked)
         self.fill_main_table(dlg_selector, tableleft)
-
         # Filter field
         dlg_selector.txt_search.textChanged.connect(partial(self.fill_main_table, dlg_selector, tableleft))
         dlg_selector.txt_selected_filter.textChanged.connect(partial(self.fill_table, dlg_selector, tableright, tableleft))
@@ -196,7 +198,7 @@ class Basic(ParentAction):
         dialog.all_rows.model().setFilter(expr)
 
 
-    def fill_table(self, dialog, tableright, set_edit_triggers=QTableView.NoEditTriggers):
+    def fill_table(self, dialog, tableright, set_edit_triggers=QTableView.NoEditTriggers, update=False):
         """ Set a model with selected filter.
         Attach that model to selected table
         @setEditStrategy:
@@ -219,8 +221,10 @@ class Basic(ParentAction):
         # Create expresion
         expr = " mu_id::text ILIKE '%" + dialog.txt_selected_filter.text() + "%'"
         if self.selected_year is not None:
-            expr += " AND plan_year ='" + str(self.selected_year) + "'"
-            expr += "OR plan_year ='" + str(self.plan_year) + "'"
+            expr += " AND plan_year ='" + str(self.plan_year) + "'"
+            if update:
+                expr += " OR plan_year ='" + str(self.selected_year) + "'"
+
         # Attach model to table or view
         dialog.selected_rows.setModel(model)
         dialog.selected_rows.model().setFilter(expr)
@@ -230,6 +234,22 @@ class Basic(ParentAction):
             i = int(dialog.selected_rows.model().fieldIndex('plan_year'))
             index = dialog.selected_rows.model().index(x, i)
             model.setData(index, self.plan_year)
+        self.calculate_total_price(dialog)
+
+
+
+    def calculate_total_price(self, dialog):
+        """ Update QLabel @lbl_totala_price with sum of all price in @select_rows """
+        selected_list = dialog.selected_rows.model()
+        if selected_list is None:
+            return
+        total = 0
+
+        for x in range(0, selected_list.rowCount()):
+            if str(dialog.selected_rows.model().record(x).value('plan_year')) == str(self.plan_year):
+                if str(dialog.selected_rows.model().record(x).value('price')) != 'NULL':
+                    total += float(dialog.selected_rows.model().record(x).value('price'))
+        utils.setText(dialog.lbl_totala_price, str(total))
 
 
     def populate_combos(self, dialog, tableleft, tableright):
@@ -282,10 +302,62 @@ class Basic(ParentAction):
         dialog.selected_rows.setModel(model)
         dialog.selected_rows.model().setFilter(expr)
 
+    def insert_into_planning(self, dialog, id_table_left, tableright):
+        dialog.selected_rows.selectAll()
+        left_selected_list = dialog.selected_rows.selectionModel().selectedRows()
+        if len(left_selected_list) == 0:
+            return
+
+        field_list = []
+        for i in range(0, len(left_selected_list)):
+            row = left_selected_list[i].row()
+            id_ = dialog.selected_rows.model().record(row).value(id_table_left)
+            field_list.append(id_)
+
+        for i in range(0, len(left_selected_list)):
+            row = left_selected_list[i].row()
+            insert_values = ""
+            function_values = ""
+            if dialog.selected_rows.model().record(row).value('mu_id') is not None:
+                insert_values += "'" + str(dialog.selected_rows.model().record(row).value('mu_id')) + "', "
+                function_values += "'" + str(dialog.selected_rows.model().record(row).value('mu_id')) + "', "
+            else:
+                insert_values += 'null, '
+            if dialog.selected_rows.model().record(row).value('work_id') is not None:
+                insert_values += "'" + str(dialog.selected_rows.model().record(row).value('work_id')) + "', "
+                function_values += "'" + str(dialog.selected_rows.model().record(row).value('work_id')) + "', "
+            else:
+                insert_values += 'null, '
+            if str(dialog.selected_rows.model().record(row).value('price')) != 'NULL':
+                insert_values += "'" + str(dialog.selected_rows.model().record(row).value('price')) + "', "
+            else:
+                insert_values += 'null, '
+            insert_values += "'"+self.plan_year+"', "
+            insert_values = insert_values[:len(insert_values) - 2]
+            function_values += ""+self.plan_year+", "
+            function_values = function_values[:len(function_values) - 2]
+
+            # Check if mul_id and year_ already exists in planning
+            sql = ("SELECT  mu_id  "
+                   " FROM " + self.schema_name + "." + tableright + ""
+                   " WHERE mu_id = '" + str(field_list[i]) + "'"
+                   " AND plan_year ='"+str(self.plan_year)+"'")
+            row = self.controller.get_row(sql)
+
+            if row is None:
+                #     # Put a new row in QTableView
+                #     # dialog.selected_rows.model().insertRow(dialog.selected_rows.verticalHeader().count())
+                #
+                sql = ("INSERT INTO " + self.schema_name + "." + tableright + ""
+                       " (mu_id, work_id, price, plan_year) "
+                       " VALUES (" + insert_values + ")")
+                self.controller.execute_sql(sql)
+                sql = ("SELECT " + self.schema_name + ".set_plan_price(" + function_values + ")")
+                self.controller.execute_sql(sql)
 
 
     def rows_selector(self, dialog, id_table_left, tableright, id_table_right, tableleft):
-        """ Copy the selected lines in the @qtable_all_rows and in the @table table """
+        """ Copy the selected lines in the qtable_all_rows and in the table """
         left_selected_list = dialog.all_rows.selectionModel().selectedRows()
         if len(left_selected_list) == 0:
             message = "Any record selected"
@@ -313,8 +385,6 @@ class Basic(ParentAction):
                        " SET work_id ='"+str(current_poda_type)+"' "
                        " WHERE id ='"+str(dialog.all_rows.model().record(row).value('mu_id'))+"'")
                 self.controller.execute_sql(sql)
-
-
 
         for i in range(0, len(left_selected_list)):
             row = left_selected_list[i].row()
@@ -350,6 +420,8 @@ class Basic(ParentAction):
                 sql = ("INSERT INTO " + self.schema_name + "." + tableright + ""
                        " (mu_id, work_id, plan_year) "
                        " VALUES (" + values + ")")
+                self.controller.execute_sql(sql)
+                sql = ("SELECT " + self.schema_name + ".set_plan_price(" + values + ")")
                 self.controller.execute_sql(sql)
 
         # Refresh

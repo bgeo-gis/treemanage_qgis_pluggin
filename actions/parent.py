@@ -170,9 +170,7 @@ class ParentAction(object):
                " FROM " + self.schema_name + ".config_client_forms"
                " WHERE table_id = '" + table_name + "'"
                " ORDER BY column_index")
-        self.controller.log_info(str(sql))
         rows = self.controller.get_rows(sql, log_info=False)
-        self.controller.log_info(str(rows))
         if not rows:
             return
 
