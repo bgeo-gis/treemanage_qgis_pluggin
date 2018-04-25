@@ -1,5 +1,5 @@
 """
-This file is part of Giswater 2.0
+This file is part of tree_manage 1.0
 The program is free software: you can redistribute it and/or modify it under the terms of the GNU 
 General Public License as published by the Free Software Foundation, either version 3 of the License, 
 or (at your option) any later version.
@@ -9,6 +9,7 @@ or (at your option) any later version.
 import os
 import sys
 import datetime
+
 
 from parent import ParentAction
 from PyQt4.QtSql import QSqlTableModel
@@ -29,6 +30,7 @@ class Basic(ParentAction):
         """ Class to control toolbar 'basic' """
         self.minor_version = "3.0"
         ParentAction.__init__(self, iface, settings, controller, plugin_dir)
+
         self.selected_year = None
         self.plan_year = None
 
@@ -37,7 +39,9 @@ class Basic(ParentAction):
 
     def set_project_type(self, project_type):
         self.project_type = project_type
-
+    def basic_month_manage(self):
+        """ Button 01: Tree selector """
+        self.controller.log_info(str("TEST"))
     def main_tree_manage(self):
         """ Button 01: Tree selector """
 
@@ -53,7 +57,7 @@ class Basic(ParentAction):
         self.populate_cmb_years(table_name, dlg_tree_manage.cbx_years)
         dlg_tree_manage.rejected.connect(partial(self.close_dialog, dlg_tree_manage))
         dlg_tree_manage.btn_cancel.pressed.connect(partial(self.close_dialog, dlg_tree_manage))
-        dlg_tree_manage.btn_accept.pressed.connect(partial(self.get_year, dlg_tree_manage, table_name))
+        dlg_tree_manage.btn_accept.pressed.connect(partial(self.get_year, dlg_tree_manage))
       
         #TODO borrar estas tres lineas
         now = datetime.datetime.now()
@@ -78,20 +82,26 @@ class Basic(ParentAction):
         utils.set_item_data(combo, rows, 1)
 
 
-    def get_year(self, dialog, table_name):
+    def get_year(self, dialog):
         update = False
         self.selected_year = None
 
         if dialog.txt_year.text() != '':
             self.plan_year = utils.getWidgetText(dialog.txt_year)
-            sql = ("SELECT DISTINCT(plan_year) FROM "+self.schema_name+"."+table_name + ""
-                   " WHERE plan_year ='"+utils.getWidgetText(dialog.txt_year)+"'")
+            sql = ("SELECT year from "+self.schema_name+".v_plan_mu "
+                   " WHERE year='"+self.plan_year+"'")
             row = self.controller.get_row(sql)
-            if row:
-                update = True
-
+            if row is None:
+                message = "No hi ha preus per aquest any"
+                self.controller.show_warning(message)
+                return None
             if utils.isChecked(dialog.chk_year) and utils.get_item_data(dialog.cbx_years, 0) != -1:
                 self.selected_year = utils.get_item_data(dialog.cbx_years, 0)
+                sql = ("SELECT DISTINCT(plan_year) FROM " + self.schema_name + ".planning"
+                       " WHERE plan_year ='" + str(self.selected_year) + "'")
+                row = self.controller.get_row(sql)
+                if row:
+                    update = True
             else:
                 self.selected_year = self.plan_year
             self.close_dialog(dialog)
@@ -103,7 +113,7 @@ class Basic(ParentAction):
             return None
 
 
-    def tree_selector(self, update = False):
+    def tree_selector(self, update=False):
 
         dlg_selector = Multirow_selector()
         utils.setDialog(dlg_selector)
@@ -144,7 +154,8 @@ class Basic(ParentAction):
 
         self.fill_table(dlg_selector, tableright, QTableView.DoubleClicked)
         self.fill_main_table(dlg_selector, tableleft)
-        # Filter field
+        self.set_table_columns(dlg_selector.all_rows, tableleft)
+        # # Filter field
         dlg_selector.txt_search.textChanged.connect(partial(self.fill_main_table, dlg_selector, tableleft))
         dlg_selector.txt_selected_filter.textChanged.connect(partial(self.fill_table, dlg_selector, tableright, tableleft))
 
@@ -194,6 +205,7 @@ class Basic(ParentAction):
         # Attach model to table view
         expr = " mu_name ILIKE '%" + dialog.txt_search.text() + "%'"
         expr += " AND mu_id NOT IN ("+ids+")"
+        expr += " AND year::text ILIKE '%"+str(self.plan_year)+"%'"
         dialog.all_rows.setModel(model)
         dialog.all_rows.model().setFilter(expr)
 
