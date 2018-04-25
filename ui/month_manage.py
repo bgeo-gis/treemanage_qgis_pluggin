@@ -2,13 +2,14 @@
 from PyQt4 import QtGui, uic
 import os
 
-FORM_CLASS, _ = uic.loadUiType(os.path.join(os.path.dirname(__file__), 'multirow_selector.ui'))
+FORM_CLASS, _ = uic.loadUiType(os.path.join(os.path.dirname(__file__), 'month_manage.ui'))
 
 
-class Multirow_selector(QtGui.QDialog, FORM_CLASS):
+class MonthManage(QtGui.QDialog, FORM_CLASS):
+
     def __init__(self, parent=None):
         """ Constructor """
-        super(Multirow_selector, self).__init__(parent)
+        super(MonthManage, self).__init__(parent)
         # Set up the user interface from Designer.
         # After setupUI you can access any designer object by doing
         # self.<objectname>, and you can use autoconnect slots - see

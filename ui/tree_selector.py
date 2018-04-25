@@ -2,13 +2,13 @@
 from PyQt4 import QtGui, uic
 import os
 
-FORM_CLASS, _ = uic.loadUiType(os.path.join(os.path.dirname(__file__), 'month_selector.ui'))
+FORM_CLASS, _ = uic.loadUiType(os.path.join(os.path.dirname(__file__), 'tree_selector.ui'))
 
 
-class MonthSelector(QtGui.QDialog, FORM_CLASS):
+class TreeSelector(QtGui.QDialog, FORM_CLASS):
     def __init__(self, parent=None):
         """ Constructor """
-        super(MonthSelector, self).__init__(parent)
+        super(TreeSelector, self).__init__(parent)
         # Set up the user interface from Designer.
         # After setupUI you can access any designer object by doing
         # self.<objectname>, and you can use autoconnect slots - see
