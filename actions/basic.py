@@ -8,6 +8,7 @@ or (at your option) any later version.
 # -*- coding: utf-8 -*-
 import os
 import sys
+import datetime
 
 from parent import ParentAction
 from PyQt4.QtSql import QSqlTableModel
@@ -49,27 +50,32 @@ class Basic(ParentAction):
         validator = QIntValidator(1, 9999999)
         dlg_tree_manage.txt_year.setValidator(validator)
         table_name = 'planning'
+        self.populate_cmb_years(table_name, dlg_tree_manage.cbx_years)
         dlg_tree_manage.rejected.connect(partial(self.close_dialog, dlg_tree_manage))
         dlg_tree_manage.btn_cancel.pressed.connect(partial(self.close_dialog, dlg_tree_manage))
         dlg_tree_manage.btn_accept.pressed.connect(partial(self.get_year, dlg_tree_manage, table_name))
-        self.populate_cmb_years(table_name, dlg_tree_manage.cbx_years)
+
 
         #TODO borrar estas tres lineas
-        utils.setWidgetText(dlg_tree_manage.txt_year, '2020')
+        now = datetime.datetime.now()
+        utils.setWidgetText(dlg_tree_manage.txt_year, str(now.year + 1))
         utils.setChecked(dlg_tree_manage.chk_year, True)
-        utils.set_combo_itemData(dlg_tree_manage.cbx_years, '2020', 1)
+        utils.set_combo_itemData(dlg_tree_manage.cbx_years, str(now.year + 1), 1)
 
         dlg_tree_manage.exec_()
 
     def populate_cmb_years(self, table_name, combo):
-        # """
-        # sql = ("SELECT current_database()")
-        # rows = self.controller.get_rows(sql)
-        # """
+        """
+        sql = ("SELECT current_database()")
+        rows = self.controller.get_rows(sql)
+        self.controller.log_info(str(rows))
+        """
         sql = ("SELECT DISTINCT(plan_year)::text, plan_year::text FROM "+self.schema_name+"."+table_name + ""
                " WHERE plan_year::text != ''")
-        self.controller.log_info(str(sql))
-        rows = self.controller.get_rows(sql)
+        rows = self.controller.get_rows(sql, log_info=True, log_sql=True)
+        if rows is None:
+            return
+
         utils.set_item_data(combo, rows, 1)
 
 
@@ -84,7 +90,8 @@ class Basic(ParentAction):
             row = self.controller.get_row(sql)
             if row:
                 update = True
-            if utils.isChecked(dialog.chk_year):
+
+            if utils.isChecked(dialog.chk_year) and utils.get_item_data(dialog.cbx_years, 0) != -1:
                 self.selected_year = utils.get_item_data(dialog.cbx_years, 0)
             else:
                 self.selected_year = self.plan_year
@@ -115,8 +122,10 @@ class Basic(ParentAction):
 
         sql = ("SELECT DISTINCT(work_id), work_name FROM "+self.schema_name + "." + tableleft)
         rows = self.controller.get_rows(sql)
-        self.controller.log_info(str(rows))
         utils.set_item_data(dlg_selector.cmb_poda_type, rows, 1)
+
+        # CheckBox
+        dlg_selector.chk_permanent.stateChanged.connect(partial(self.force_chk_current, dlg_selector))
 
         # Button selec
         dlg_selector.btn_select.pressed.connect(partial(self.rows_selector, dlg_selector, id_table_left, tableright, id_table_right, tableleft))
@@ -125,15 +134,17 @@ class Basic(ParentAction):
         # Button unselect
         dlg_selector.btn_unselect.pressed.connect(partial(self.rows_unselector, dlg_selector, tableright, id_table_right, tableleft))
         dlg_selector.selected_rows.doubleClicked.connect(partial(self.rows_unselector, dlg_selector, tableright, id_table_right, tableleft))
+
         # Populate QTableView
-        self.fill_table(dlg_selector, tableright, QTableView.DoubleClicked)
+        self.fill_table(dlg_selector, tableright)
+        # Need fill table before set table columns, and need re-fill table for upgrade fields
         self.set_table_columns(dlg_selector.selected_rows, tableright)
         self.fill_table(dlg_selector, tableright, QTableView.DoubleClicked)
         self.fill_main_table(dlg_selector, tableleft)
 
         # Filter field
-        dlg_selector.txt_search.textChanged.connect(partial(self.fill_main_table, dlg_selector, tableleft, set_edit_triggers=QTableView.NoEditTriggers))
-        dlg_selector.txt_selected_filter.textChanged.connect(partial(self.fill_table, dlg_selector, tableright, tableleft, set_edit_triggers=QTableView.DoubleClicked))
+        dlg_selector.txt_search.textChanged.connect(partial(self.fill_main_table, dlg_selector, tableleft))
+        dlg_selector.txt_selected_filter.textChanged.connect(partial(self.fill_table, dlg_selector, tableright, tableleft))
 
         dlg_selector.btn_close.pressed.connect(partial(self.close_dialog, dlg_selector))
         dlg_selector.btn_close.pressed.connect(partial(self.close_dialog, dlg_selector))
@@ -143,6 +154,10 @@ class Basic(ParentAction):
 
         dlg_selector.exec_()
 
+
+    def force_chk_current(self, dialog):
+        if utils.isChecked(dialog.chk_permanent):
+            utils.setChecked(dialog.chk_current, True)
 
 
     def fill_main_table(self, dialog, table_name,  set_edit_triggers=QTableView.NoEditTriggers):
@@ -190,33 +205,31 @@ class Basic(ParentAction):
             2: OnManualSubmit
         """
 
-
         # Set model
         model = QSqlTableModel()
-
         model.setTable(self.schema_name + "." + tableright)
-        model.setEditStrategy(QSqlTableModel.OnFieldChange)
+        model.setEditStrategy(QSqlTableModel.OnManualSubmit)
         model.setSort(0, 0)
         model.select()
         dialog.selected_rows.setEditTriggers(set_edit_triggers)
         # Check for errors
         if model.lastError().isValid():
             self.controller.show_warning(model.lastError().text())
-        # Attach model to table view
 
+        # Create expresion
         expr = " mu_id::text ILIKE '%" + dialog.txt_selected_filter.text() + "%'"
-
         if self.selected_year is not None:
             expr += " AND plan_year ='" + str(self.selected_year) + "'"
+            expr += "OR plan_year ='" + str(self.plan_year) + "'"
+        # Attach model to table or view
         dialog.selected_rows.setModel(model)
         dialog.selected_rows.model().setFilter(expr)
 
         # Set year to plan to all rows in list
         for x in range(0, model.rowCount()):
-            index = dialog.selected_rows.model().index(x, 2)
+            i = int(dialog.selected_rows.model().fieldIndex('plan_year'))
+            index = dialog.selected_rows.model().index(x, i)
             model.setData(index, self.plan_year)
-
-        # self.populate_combos(dialog, tableleft, tableright)
 
 
     def populate_combos(self, dialog, tableleft, tableright):
@@ -247,16 +260,27 @@ class Basic(ParentAction):
         qtable.model().setData(index, combo.currentText())
 
 
-    # def refresh_table(self, widget):
-    #     """ Refresh qTableView 'selected_rows' """
-    #
-    #     widget.selectAll()
-    #     selected_list = widget.selectionModel().selectedRows()
-    #     widget.clearSelection()
-    #     for i in range(0, len(selected_list)):
-    #         row = selected_list[i].row()
-    #         if str(widget.model().record(row).value('psector_id')) != utils_giswater.getWidgetText('psector_id'):
-    #             widget.hideRow(i)
+    def refresh_table(self, dialog, tableright, set_edit_triggers=QTableView.NoEditTriggers):
+        """ Refresh qTableView 'selected_rows' """
+        # Set model
+        model = QSqlTableModel()
+
+        model.setTable(self.schema_name + "." + tableright)
+        model.setEditStrategy(QSqlTableModel.OnFieldChange)
+        model.setSort(0, 0)
+        model.select()
+        dialog.selected_rows.setEditTriggers(set_edit_triggers)
+        # Check for errors
+        if model.lastError().isValid():
+            self.controller.show_warning(model.lastError().text())
+        # Attach model to table view
+
+        expr = " mu_id::text ILIKE '%" + dialog.txt_selected_filter.text() + "%'"
+
+        if self.selected_year is not None:
+            expr += " AND plan_year ='" + str(self.selected_year) + "'"
+        dialog.selected_rows.setModel(model)
+        dialog.selected_rows.model().setFilter(expr)
 
 
 
@@ -276,17 +300,34 @@ class Basic(ParentAction):
 
         # Select all rows and get all id
         self.select_all_rows(dialog.selected_rows, id_table_right)
+        if utils.isChecked(dialog.chk_current):
+            current_poda_type = utils.get_item_data(dialog.cmb_poda_type, 0)
+            if current_poda_type is None:
+                message = "No heu seleccionat cap poda"
+                self.controller.show_warning(message)
+                return
+        if utils.isChecked(dialog.chk_permanent):
+            for i in range(0, len(left_selected_list)):
+                row = left_selected_list[i].row()
+                sql = ("UPDATE " + self.schema_name + ".cat_mu "
+                       " SET work_id ='"+str(current_poda_type)+"' "
+                       " WHERE id ='"+str(dialog.all_rows.model().record(row).value('mu_id'))+"'")
+                self.controller.execute_sql(sql)
+
+
 
         for i in range(0, len(left_selected_list)):
-            self.controller.log_info(str(left_selected_list[i]))
             row = left_selected_list[i].row()
             values = ""
-            if dialog.all_rows.model().record(row).value(id_table_left) is not None:
-                values += "'" + str(dialog.all_rows.model().record(row).value(id_table_left)) + "', "
+            if dialog.all_rows.model().record(row).value('mu_id') is not None:
+                values += "'" + str(dialog.all_rows.model().record(row).value('mu_id')) + "', "
             else:
                 values += 'null, '
             if dialog.all_rows.model().record(row).value('work_id') is not None:
-                values += "'" + str(dialog.all_rows.model().record(row).value('work_id')) + "', "
+                if utils.isChecked(dialog.chk_current):
+                    values += "'" + str(current_poda_type) + "', "
+                else:
+                    values += "'" + str(dialog.all_rows.model().record(row).value('work_id')) + "', "
             else:
                 values += 'null, '
             values += "'"+self.plan_year+"', "
@@ -297,8 +338,7 @@ class Basic(ParentAction):
                    " FROM " + self.schema_name + "." + tableright + ""
                    " WHERE " + id_table_right + " = '" + str(field_list[i]) + "'"
                    " AND plan_year ='"+str(self.plan_year)+"'")
-
-            row = self.controller.get_row(str(sql))
+            row = self.controller.get_row(sql)
             if row is not None:
                 # if exist - show warning
                 message = "Id already selected"
@@ -313,7 +353,7 @@ class Basic(ParentAction):
                 self.controller.execute_sql(sql)
 
         # Refresh
-        self.fill_table(dialog, tableright, QTableView.DoubleClicked)
+        self.fill_table(dialog, tableright)
         self.fill_main_table(dialog, tableleft)
 
 
@@ -330,6 +370,7 @@ class Basic(ParentAction):
         if clear_selection:
             qtable.clearSelection()
         return right_field_list
+
 
     def rows_unselector(self, dialog, tableright, field_id_right, tableleft):
 
@@ -349,7 +390,7 @@ class Basic(ParentAction):
             sql = (query + "'" + str(field_list[i]) + "'")
             self.controller.execute_sql(sql)
         # Refresh model with selected filter
-        self.fill_table(dialog, tableright, QTableView.DoubleClicked)
+        self.fill_table(dialog, tableright)
         self.fill_main_table(dialog, tableleft)
 
 
@@ -372,20 +413,15 @@ class Basic(ParentAction):
 
             dialog.selected_rows.selectAll()
             id_all_selected_rows = dialog.selected_rows.selectionModel().selectedRows()
-            self.controller.log_info(str("LEN:")+str(len(id_all_selected_rows)))
 
             for x in range(0, len(id_all_selected_rows)):
                 row = id_all_selected_rows[x].row()
-                self.controller.log_info(str(dialog.selected_rows.model().record(row).value('work_id')))
                 if dialog.selected_rows.model().record(row).value('work_id') is not None:
                     work_id = str(dialog.selected_rows.model().record(row).value('work_id'))
                     mu_id = str(dialog.selected_rows.model().record(row).value('mu_id'))
-                    self.controller.log_info(str("work_id:")+str(work_id))
-                    self.controller.log_info(str("mu_id:")+str(mu_id))
                     sql = ("UPDATE " + self.schema_name+"."+tableleft + ""
                            " SET work_id= '"+str(work_id)+"' "
                            " WHERE mu_id= '"+str(mu_id)+"'")
-                    self.controller.log_info(str(sql))
                     self.controller.execute_sql(sql)
         else:
             model.database().rollback()

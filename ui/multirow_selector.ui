@@ -133,16 +133,16 @@
                  <number>80</number>
                 </property>
                 <item>
-                 <widget class="QPushButton" name="btn_unselect">
+                 <widget class="QPushButton" name="btn_select">
                   <property name="text">
-                   <string>&lt;&lt;</string>
+                   <string>&gt;&gt;</string>
                   </property>
                  </widget>
                 </item>
                 <item>
-                 <widget class="QPushButton" name="btn_select">
+                 <widget class="QPushButton" name="btn_unselect">
                   <property name="text">
-                   <string>&gt;&gt;</string>
+                   <string>&lt;&lt;</string>
                   </property>
                  </widget>
                 </item>
