@@ -15,8 +15,11 @@ from parent import ParentAction
 from PyQt4.QtSql import QSqlTableModel
 from PyQt4.QtGui import QAbstractItemView, QTableView, QIntValidator, QComboBox
 
-from ..ui.tree_manage import TreeManage
+
+from ..ui.month_selector import Month_selector
 from ..ui.multirow_selector import Multirow_selector
+from ..ui.tree_manage import TreeManage
+
 import utils
 
 from functools import partial
@@ -39,9 +42,7 @@ class Basic(ParentAction):
 
     def set_project_type(self, project_type):
         self.project_type = project_type
-    def basic_month_manage(self):
-        """ Button 01: Tree selector """
-        self.controller.log_info(str("TEST"))
+
     def main_tree_manage(self):
         """ Button 01: Tree selector """
 
@@ -249,7 +250,6 @@ class Basic(ParentAction):
         self.calculate_total_price(dialog)
 
 
-
     def calculate_total_price(self, dialog):
         """ Update QLabel @lbl_totala_price with sum of all price in @select_rows """
         selected_list = dialog.selected_rows.model()
@@ -263,56 +263,6 @@ class Basic(ParentAction):
                     total += float(dialog.selected_rows.model().record(x).value('price'))
         utils.setText(dialog.lbl_totala_price, str(total))
 
-
-    def populate_combos(self, dialog, tableleft, tableright):
-        """ Set one column of a QtableView as QComboBox with values from database. """
-        sql = ("SELECT * FROM " + self.schema_name + "." + tableright + " "
-               " WHERE plan_year = " + self.selected_year + " order by id")
-        rows = self.controller.get_rows(sql)
-        for x in range(0, len(rows)):
-            combo = QComboBox()
-            sql = "SELECT DISTINCT(work_id) FROM " + self.schema_name+"."+tableleft + " ORDER BY work_id"
-            row = self.controller.get_rows(sql)
-
-            utils.fillComboBox(combo, row, False)
-            row = rows[x]
-            priority = row[7]
-
-            utils.setSelectedItem(combo, str(priority))
-            i = dialog.selected_rows.model().index(x, 7)
-
-            dialog.selected_rows.setIndexWidget(i, combo)
-            combo.setStyleSheet("background:#E6E6E6")
-            combo.currentIndexChanged.connect(partial(self.update_combobox_values, dialog.selected_rows, combo, x))
-
-
-    def update_combobox_values(self, qtable, combo, x):
-        """ Insert combobox.currentText into widget (QTableView) """
-        index = qtable.model().index(x, 7)
-        qtable.model().setData(index, combo.currentText())
-
-
-    def refresh_table(self, dialog, tableright, set_edit_triggers=QTableView.NoEditTriggers):
-        """ Refresh qTableView 'selected_rows' """
-        # Set model
-        model = QSqlTableModel()
-
-        model.setTable(self.schema_name + "." + tableright)
-        model.setEditStrategy(QSqlTableModel.OnFieldChange)
-        model.setSort(0, 0)
-        model.select()
-        dialog.selected_rows.setEditTriggers(set_edit_triggers)
-        # Check for errors
-        if model.lastError().isValid():
-            self.controller.show_warning(model.lastError().text())
-        # Attach model to table view
-
-        expr = " mu_id::text ILIKE '%" + dialog.txt_selected_filter.text() + "%'"
-
-        if self.selected_year is not None:
-            expr += " AND plan_year ='" + str(self.selected_year) + "'"
-        dialog.selected_rows.setModel(model)
-        dialog.selected_rows.model().setFilter(expr)
 
     def insert_into_planning(self, dialog, id_table_left, tableright):
         dialog.selected_rows.selectAll()
@@ -441,19 +391,7 @@ class Basic(ParentAction):
         self.fill_main_table(dialog, tableleft)
 
 
-    def select_all_rows(self, qtable, id, clear_selection=True):
-        """ retrun list of index in @qtable"""
-        # Select all rows and get all id
-        qtable.selectAll()
-        right_selected_list = qtable.selectionModel().selectedRows()
-        right_field_list = []
-        for i in range(0, len(right_selected_list)):
-            row = right_selected_list[i].row()
-            id_ = qtable.model().record(row).value(id)
-            right_field_list.append(id_)
-        if clear_selection:
-            qtable.clearSelection()
-        return right_field_list
+
 
 
     def rows_unselector(self, dialog, tableright, field_id_right, tableleft):
@@ -478,6 +416,37 @@ class Basic(ParentAction):
         self.fill_main_table(dialog, tableleft)
 
 
+    def basic_month_manage(self):
+        """ Button 01: Tree selector """
+        self.controller.log_info(str("TEST"))
+        dlg_month_selector = Month_selector()
+        utils.setDialog(dlg_month_selector)
+        self.load_settings(dlg_month_selector)
+
+        dlg_month_selector.setWindowTitle("Planificador mensual")
+        dlg_month_selector.exec_()
+
+
+
+
+
+
+
+
+    def select_all_rows(self, qtable, id, clear_selection=True):
+        """ retrun list of index in @qtable"""
+        # Select all rows and get all id
+        qtable.selectAll()
+        right_selected_list = qtable.selectionModel().selectedRows()
+        right_field_list = []
+        for i in range(0, len(right_selected_list)):
+            row = right_selected_list[i].row()
+            id_ = qtable.model().record(row).value(id)
+            right_field_list.append(id_)
+        if clear_selection:
+            qtable.clearSelection()
+        return right_field_list
+
     def get_table_columns(self, tablename):
         # Get columns name in order of the table
         sql = ("SELECT column_name FROM information_schema.columns"
@@ -486,7 +455,6 @@ class Basic(ParentAction):
                " ORDER BY ordinal_position")
         column_name = self.controller.get_rows(sql)
         return column_name
-
 
 
     def accept_changes(self, dialog, tableleft):
@@ -515,3 +483,56 @@ class Basic(ParentAction):
         model = dialog.selected_rows.model()
         model.revertAll()
         model.database().rollback()
+
+
+
+
+        # def populate_combos(self, dialog, tableleft, tableright):
+        #     """ Set one column of a QtableView as QComboBox with values from database. """
+        #     sql = ("SELECT * FROM " + self.schema_name + "." + tableright + " "
+        #            " WHERE plan_year = " + self.selected_year + " order by id")
+        #     rows = self.controller.get_rows(sql)
+        #     for x in range(0, len(rows)):
+        #         combo = QComboBox()
+        #         sql = "SELECT DISTINCT(work_id) FROM " + self.schema_name+"."+tableleft + " ORDER BY work_id"
+        #         row = self.controller.get_rows(sql)
+        #
+        #         utils.fillComboBox(combo, row, False)
+        #         row = rows[x]
+        #         priority = row[7]
+        #
+        #         utils.setSelectedItem(combo, str(priority))
+        #         i = dialog.selected_rows.model().index(x, 7)
+        #
+        #         dialog.selected_rows.setIndexWidget(i, combo)
+        #         combo.setStyleSheet("background:#E6E6E6")
+        #         combo.currentIndexChanged.connect(partial(self.update_combobox_values, dialog.selected_rows, combo, x))
+        #
+        #
+        # def update_combobox_values(self, qtable, combo, x):
+        #     """ Insert combobox.currentText into widget (QTableView) """
+        #     index = qtable.model().index(x, 7)
+        #     qtable.model().setData(index, combo.currentText())
+        #
+        #
+        # def refresh_table(self, dialog, tableright, set_edit_triggers=QTableView.NoEditTriggers):
+        #     """ Refresh qTableView 'selected_rows' """
+        #     # Set model
+        #     model = QSqlTableModel()
+        #
+        #     model.setTable(self.schema_name + "." + tableright)
+        #     model.setEditStrategy(QSqlTableModel.OnFieldChange)
+        #     model.setSort(0, 0)
+        #     model.select()
+        #     dialog.selected_rows.setEditTriggers(set_edit_triggers)
+        #     # Check for errors
+        #     if model.lastError().isValid():
+        #         self.controller.show_warning(model.lastError().text())
+        #     # Attach model to table view
+        #
+        #     expr = " mu_id::text ILIKE '%" + dialog.txt_selected_filter.text() + "%'"
+        #
+        #     if self.selected_year is not None:
+        #         expr += " AND plan_year ='" + str(self.selected_year) + "'"
+        #     dialog.selected_rows.setModel(model)
+        #     dialog.selected_rows.model().setFilter(expr)
