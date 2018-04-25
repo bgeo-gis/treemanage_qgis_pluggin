@@ -15,9 +15,10 @@ from parent import ParentAction
 from PyQt4.QtSql import QSqlTableModel
 from PyQt4.QtGui import QAbstractItemView, QTableView, QIntValidator, QComboBox
 
+from ..ui.month_manage import MonthManage
+from ..ui.month_selector import MonthSelector
 
-from ..ui.month_selector import Month_selector
-from ..ui.multirow_selector import Multirow_selector
+from ..ui.tree_selector import TreeSelector
 from ..ui.tree_manage import TreeManage
 
 import utils
@@ -68,7 +69,7 @@ class Basic(ParentAction):
 
         dlg_tree_manage.exec_()
 
-    def populate_cmb_years(self, table_name, combo):
+    def populate_cmb_years(self, table_name, combo, reverse=False):
         """
         sql = ("SELECT current_database()")
         rows = self.controller.get_rows(sql)
@@ -76,11 +77,11 @@ class Basic(ParentAction):
         """
         sql = ("SELECT DISTINCT(plan_year)::text, plan_year::text FROM "+self.schema_name+"."+table_name + ""
                " WHERE plan_year::text != ''")
-        rows = self.controller.get_rows(sql)
+        rows = self.controller.get_rows(sql, log_sql=True)
         if rows is None:
             return
 
-        utils.set_item_data(combo, rows, 1)
+        utils.set_item_data(combo, rows, 1, reverse)
 
 
     def get_year(self, dialog):
@@ -116,7 +117,7 @@ class Basic(ParentAction):
 
     def tree_selector(self, update=False):
 
-        dlg_selector = Multirow_selector()
+        dlg_selector = TreeSelector()
         utils.setDialog(dlg_selector)
         self.load_settings(dlg_selector)
 
@@ -322,7 +323,7 @@ class Basic(ParentAction):
         """ Copy the selected lines in the qtable_all_rows and in the table """
         left_selected_list = dialog.all_rows.selectionModel().selectedRows()
         if len(left_selected_list) == 0:
-            message = "Any record selected"
+            message = "Cap registre seleccionat"
             self.controller.show_warning(message)
             return
         # Get all selected ids
@@ -373,7 +374,7 @@ class Basic(ParentAction):
             row = self.controller.get_row(sql)
             if row is not None:
                 # if exist - show warning
-                message = "Id already selected"
+                message = "Aquest registre ja esta seleccionat"
                 self.controller.show_info_box(message, "Info", parameter=str(field_list[i]))
             else:
                 # Put a new row in QTableView
@@ -400,7 +401,7 @@ class Basic(ParentAction):
                  " WHERE  plan_year='" + self.plan_year + "' AND " + field_id_right + " = ")
         selected_list = dialog.selected_rows.selectionModel().selectedRows()
         if len(selected_list) == 0:
-            message = "Any record selected"
+            message = "Cap registre seleccionat"
             self.controller.show_warning(message)
             return
         field_list = []
@@ -416,21 +417,95 @@ class Basic(ParentAction):
         self.fill_main_table(dialog, tableleft)
 
 
+
+
+
     def basic_month_manage(self):
-        """ Button 01: Tree selector """
-        self.controller.log_info(str("TEST"))
-        dlg_month_selector = Month_selector()
+        """ Button 02: Planned year manage """
+        dlg_month_manage = MonthManage()
+        utils.setDialog(dlg_month_manage)
+        self.load_settings(dlg_month_manage)
+        dlg_month_manage.setWindowTitle("Planificador mensual")
+
+        table_name = 'planning'
+        self.populate_cmb_years(table_name, dlg_month_manage.cbx_years, reverse=True)
+
+        dlg_month_manage.rejected.connect(partial(self.close_dialog, dlg_month_manage))
+        dlg_month_manage.btn_cancel.pressed.connect(partial(self.close_dialog, dlg_month_manage))
+        dlg_month_manage.btn_accept.pressed.connect(partial(self.get_planned_year, dlg_month_manage))
+
+        dlg_month_manage.exec_()
+
+
+    def get_planned_year(self, dialog):
+
+        if str(utils.getWidgetText(dialog.txt_info)) == 'null':
+            message = "El camp text a no pot estar vuit"
+            self.controller.show_warning(message)
+            return
+
+
+        self.text = str(utils.getWidgetText(dialog.txt_info))
+        self.planned_year = utils.get_item_data(dialog.cbx_years, 0)
+        self.controller.log_info(str(self.planned_year))
+        self.close_dialog(dialog)
+        self.month_selector()
+
+
+
+
+    def month_selector(self):
+        dlg_month_selector = MonthSelector()
         utils.setDialog(dlg_month_selector)
         self.load_settings(dlg_month_selector)
-
         dlg_month_selector.setWindowTitle("Planificador mensual")
+        tableright = 'planning'
+        self.controller.log_info(str(self.text))
+        dlg_month_selector.lbl_info.setText(self.text)
+
+        self.fill_table_planned_year(dlg_month_selector, tableright, set_edit_triggers=QTableView.NoEditTriggers)
+
+
+        # Filter field
+        #dlg_month_selector.txt_search.textChanged.connect(partial(self.filter_by_text, dlg_month_selector.all_rows, tableright, 'mu_id'))
+        dlg_month_selector.txt_selected_filter.textChanged.connect(partial(self.fill_table, dlg_selector, tableright, tableleft))
+
         dlg_month_selector.exec_()
+    def filter_by_text(self, table, widget_txt, tablename, field):
 
+        result_select = utils.getWidgetText(widget_txt)
+        if result_select != 'null':
+            expr = field + "  ILIKE '%" + result_select + "%'"
+            # Refresh model with selected filter
+            table.model().setFilter(expr)
+            table.model().select()
+        else:
+            self.fill_table_planned_year(table, tablename)
 
+    def fill_table_planned_year(self, dialog, tableright, set_edit_triggers=QTableView.NoEditTriggers):
 
+        """ Set a model with selected filter.
+        Attach that model to selected table
+        @setEditStrategy:
+            0: OnFieldChange
+            1: OnRowChange
+            2: OnManualSubmit
+        """
 
-
-
+        # Set model
+        model = QSqlTableModel()
+        model.setTable(self.schema_name + "." + tableright)
+        model.setEditStrategy(QSqlTableModel.OnManualSubmit)
+        model.setSort(0, 0)
+        model.select()
+        #dialog.all_rows.setEditTriggers(set_edit_triggers)
+        # Check for errors
+        if model.lastError().isValid():
+            self.controller.show_warning(model.lastError().text())
+        # Create expresion
+        expr = " plan_year = '" + str(self.planned_year) + "'"
+        dialog.all_rows.setModel(model)
+        dialog.all_rows.model().setFilter(expr)
 
 
     def select_all_rows(self, qtable, id, clear_selection=True):
