@@ -393,9 +393,6 @@ class Basic(ParentAction):
         self.fill_main_table(dialog, tableleft)
 
 
-
-
-
     def rows_unselector(self, dialog, tableright, field_id_right, tableleft):
 
         query = ("DELETE FROM " + self.schema_name + "." + tableright + ""
@@ -416,9 +413,6 @@ class Basic(ParentAction):
         # Refresh model with selected filter
         self.fill_table(dialog, tableright, set_edit_triggers=QTableView.NoEditTriggers)
         self.fill_main_table(dialog, tableleft)
-
-
-
 
 
     def basic_month_manage(self):
@@ -467,6 +461,7 @@ class Basic(ParentAction):
 
         utils.setCalendarDate(dlg_month_selector.date_fi, QDate.currentDate().addDays(1))
         self.fill_table_planned_year(dlg_month_selector, tableleft, set_edit_triggers=QTableView.NoEditTriggers)
+        self.fill_table_planned_month(dlg_month_selector, tableleft, set_edit_triggers=QTableView.NoEditTriggers)
         #TODO mejorar set_table_columns para formularios independientes
         # Need fill table before set table columns, and need re-fill table for upgrade fields
         # self.set_table_columns(dlg_month_selector.all_rows, tableleft)
@@ -507,6 +502,27 @@ class Basic(ParentAction):
 
         dialog.all_rows.setModel(model)
         dialog.all_rows.model().setFilter(expr)
+
+
+    def fill_table_planned_month(self, dialog, tableright, set_edit_triggers=QTableView.NoEditTriggers):
+        # Set model
+        model = QSqlTableModel()
+        model.setTable(self.schema_name + "." + tableright)
+        model.setEditStrategy(QSqlTableModel.OnManualSubmit)
+        model.setSort(1, 0)
+        model.select()
+        dialog.selected_rows.setEditTriggers(set_edit_triggers)
+        # Check for errors
+        if model.lastError().isValid():
+            self.controller.show_warning(model.lastError().text())
+        # Create expresion
+        expr = " mu_id::text ILIKE '%" + str(dialog.txt_selected_filter.text()) + "%' "
+        expr += " AND plan_year = '" + str(self.planned_year) + "'"
+        expr += " AND plan_code = '" + str(self.plan_code) + "'"
+
+        dialog.selected_rows.setModel(model)
+        dialog.selected_rows.model().setFilter(expr)
+
 
 
     def select_all_rows(self, qtable, id, clear_selection=True):
