@@ -39,39 +39,36 @@
     </rect>
    </property>
    <property name="text">
-    <string>Any planificat:</string>
-   </property>
-  </widget>
-  <widget class="QCheckBox" name="chk_year">
-   <property name="geometry">
-    <rect>
-     <x>5</x>
-     <y>65</y>
-     <width>136</width>
-     <height>17</height>
-    </rect>
-   </property>
-   <property name="layoutDirection">
-    <enum>Qt::RightToLeft</enum>
-   </property>
-   <property name="text">
-    <string>Recuperar planificacio:</string>
+    <string>Text identificatiu:</string>
    </property>
   </widget>
   <widget class="QComboBox" name="cbx_years">
    <property name="geometry">
     <rect>
-     <x>155</x>
+     <x>140</x>
      <y>65</y>
-     <width>116</width>
+     <width>131</width>
      <height>22</height>
     </rect>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="btn_accept">
+   <property name="geometry">
+    <rect>
+     <x>125</x>
+     <y>130</y>
+     <width>75</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Accept</string>
    </property>
   </widget>
   <widget class="QPushButton" name="btn_cancel">
    <property name="geometry">
     <rect>
-     <x>195</x>
+     <x>210</x>
      <y>130</y>
      <width>75</width>
      <height>23</height>
@@ -81,17 +78,17 @@
     <string>Cancel</string>
    </property>
   </widget>
-  <widget class="QPushButton" name="btn_accept">
+  <widget class="QLabel" name="label">
    <property name="geometry">
     <rect>
-     <x>105</x>
-     <y>130</y>
-     <width>75</width>
-     <height>23</height>
+     <x>15</x>
+     <y>70</y>
+     <width>116</width>
+     <height>16</height>
     </rect>
    </property>
    <property name="text">
-    <string>Accept</string>
+    <string>Recuperar planificacio:</string>
    </property>
   </widget>
  </widget>

@@ -38,7 +38,7 @@
             <item>
              <widget class="QLabel" name="label">
               <property name="text">
-               <string>TextLabel</string>
+               <string>Filter by mu_name:</string>
               </property>
              </widget>
             </item>
@@ -78,7 +78,7 @@
             <item>
              <widget class="QLabel" name="label_2">
               <property name="text">
-               <string>TextLabel</string>
+               <string>Filter by mu_id:</string>
               </property>
              </widget>
             </item>
