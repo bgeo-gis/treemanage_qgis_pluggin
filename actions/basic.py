@@ -498,11 +498,13 @@ class Basic(ParentAction):
         # Check for errors
         if model.lastError().isValid():
             self.controller.show_warning(model.lastError().text())
-  
+
         # Create expresion
         expr = " mu_id::text ILIKE '%" + str(dialog.txt_search.text()) + "%' "
         expr += " AND plan_year = '" + str(self.planned_year) + "'"
-        expr += " AND plan_code != '" + str(self.planned_year) + "'"
+        expr += " AND (plan_code != '" + str(self.plan_code) + "'"
+        expr += " OR plan_code is NULL)"
+
         dialog.all_rows.setModel(model)
         dialog.all_rows.model().setFilter(expr)
 
