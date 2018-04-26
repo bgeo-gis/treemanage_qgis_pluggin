@@ -129,7 +129,7 @@
                 <item>
                  <layout class="QHBoxLayout" name="horizontalLayout_14">
                   <item>
-                   <widget class="QLabel" name="lbl_info">
+                   <widget class="QLabel" name="lbl_plan_code">
                     <property name="text">
                      <string>TextLabel</string>
                     </property>

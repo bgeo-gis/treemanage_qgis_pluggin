@@ -19,7 +19,7 @@
   <property name="windowTitle">
    <string>Month manage</string>
   </property>
-  <widget class="QLineEdit" name="txt_info">
+  <widget class="QLineEdit" name="txt_plan_code">
    <property name="geometry">
     <rect>
      <x>110</x>

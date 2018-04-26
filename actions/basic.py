@@ -12,6 +12,7 @@ import datetime
 
 
 from parent import ParentAction
+from PyQt4.Qt import QDate
 from PyQt4.QtSql import QSqlTableModel
 from PyQt4.QtGui import QAbstractItemView, QTableView, QIntValidator, QComboBox
 
@@ -153,8 +154,8 @@ class Basic(ParentAction):
 
         # Need fill table before set table columns, and need re-fill table for upgrade fields
         self.set_table_columns(dlg_selector.selected_rows, tableright)
-
         self.fill_table(dlg_selector, tableright, set_edit_triggers=QTableView.NoEditTriggers)
+
         self.fill_main_table(dlg_selector, tableleft)
         self.set_table_columns(dlg_selector.all_rows, tableleft)
         # # Filter field
@@ -187,7 +188,7 @@ class Basic(ParentAction):
         model = QSqlTableModel()
         model.setTable(self.schema_name + "." + table_name)
         model.setEditStrategy(QSqlTableModel.OnFieldChange)
-        model.setSort(0, 0)
+        model.setSort(1, 0)
         model.select()
 
         dialog.all_rows.setEditTriggers(set_edit_triggers)
@@ -225,7 +226,7 @@ class Basic(ParentAction):
         model = QSqlTableModel()
         model.setTable(self.schema_name + "." + tableright)
         model.setEditStrategy(QSqlTableModel.OnFieldChange)
-        model.setSort(0, 0)
+        model.setSort(1, 0)
         model.select()
         dialog.selected_rows.setEditTriggers(set_edit_triggers)
         # Check for errors
@@ -427,9 +428,9 @@ class Basic(ParentAction):
         self.load_settings(dlg_month_manage)
         dlg_month_manage.setWindowTitle("Planificador mensual")
         # TODO borrar esta linea
-        utils.setWidgetText(dlg_month_manage.txt_info, "")
+        utils.setWidgetText(dlg_month_manage.txt_plan_code, "")
         table_name = 'planning'
-        self.set_completer_object(table_name, dlg_month_manage.txt_info, 'plan_code')
+        self.set_completer_object(table_name, dlg_month_manage.txt_plan_code, 'plan_code')
         self.populate_cmb_years(table_name, dlg_month_manage.cbx_years, reverse=True)
 
         dlg_month_manage.rejected.connect(partial(self.close_dialog, dlg_month_manage))
@@ -441,48 +442,41 @@ class Basic(ParentAction):
 
     def get_planned_year(self, dialog):
 
-        if str(utils.getWidgetText(dialog.txt_info)) == 'null':
+        if str(utils.getWidgetText(dialog.txt_plan_code)) == 'null':
             message = "El camp text a no pot estar vuit"
             self.controller.show_warning(message)
             return
 
-
-        self.text = str(utils.getWidgetText(dialog.txt_info))
+        self.plan_code = str(utils.getWidgetText(dialog.txt_plan_code))
         self.planned_year = utils.get_item_data(dialog.cbx_years, 0)
-        self.controller.log_info(str(self.planned_year))
         self.close_dialog(dialog)
         self.month_selector()
-
-
 
 
     def month_selector(self):
         dlg_month_selector = MonthSelector()
         utils.setDialog(dlg_month_selector)
         self.load_settings(dlg_month_selector)
+        dlg_month_selector.all_rows.setSelectionBehavior(QAbstractItemView.SelectRows)
+        dlg_month_selector.selected_rows.setSelectionBehavior(QAbstractItemView.SelectRows)
         dlg_month_selector.setWindowTitle("Planificador mensual")
-        tableright = 'planning'
-        self.controller.log_info(str(self.text))
-        dlg_month_selector.lbl_info.setText(self.text)
 
-        self.fill_table_planned_year(dlg_month_selector, tableright, set_edit_triggers=QTableView.NoEditTriggers)
+        tableleft = 'planning'
+        dlg_month_selector.lbl_plan_code.setText(self.plan_code)
+        utils.setCalendarDate(dlg_month_selector.date_inici, None, True)
 
-
+        utils.setCalendarDate(dlg_month_selector.date_fi, QDate.currentDate().addDays(1))
+        self.fill_table_planned_year(dlg_month_selector, tableleft, set_edit_triggers=QTableView.NoEditTriggers)
+        #TODO mejorar set_table_columns para formularios independientes
+        # Need fill table before set table columns, and need re-fill table for upgrade fields
+        # self.set_table_columns(dlg_month_selector.all_rows, tableleft)
+        dlg_month_selector.all_rows.hideColumn(0)
         # Filter field
-        dlg_month_selector.txt_search.textChanged.connect(partial(self.filter_by_text, dlg_month_selector.all_rows, tableright, 'mu_id'))
-        #dlg_month_selector.txt_selected_filter.textChanged.connect(partial(self.fill_table, dlg_selector, tableright, tableleft))
+        dlg_month_selector.txt_search.textChanged.connect(partial(self.fill_table_planned_year, dlg_month_selector, tableleft, set_edit_triggers=QTableView.NoEditTriggers))
+        #dlg_month_selector.txt_selected_filter.textChanged.connect(partial(self.fill_table, dlg_selector, tableright))
 
         dlg_month_selector.exec_()
-    def filter_by_text(self, table, widget_txt, tablename, field):
 
-        result_select = utils.getWidgetText(widget_txt)
-        if result_select != 'null':
-            expr = field + "  ILIKE '%" + result_select + "%'"
-            # Refresh model with selected filter
-            table.model().setFilter(expr)
-            table.model().select()
-        else:
-            self.fill_table_planned_year(table, tablename)
 
     def fill_table_planned_year(self, dialog, tableright, set_edit_triggers=QTableView.NoEditTriggers):
 
@@ -498,14 +492,17 @@ class Basic(ParentAction):
         model = QSqlTableModel()
         model.setTable(self.schema_name + "." + tableright)
         model.setEditStrategy(QSqlTableModel.OnManualSubmit)
-        model.setSort(0, 0)
+        model.setSort(1, 0)
         model.select()
         dialog.all_rows.setEditTriggers(set_edit_triggers)
         # Check for errors
         if model.lastError().isValid():
             self.controller.show_warning(model.lastError().text())
+  
         # Create expresion
-        expr = " plan_year = '" + str(self.planned_year) + "'"
+        expr = " mu_id::text ILIKE '%" + str(dialog.txt_search.text()) + "%' "
+        expr += " AND plan_year = '" + str(self.planned_year) + "'"
+        expr += " AND plan_code != '" + str(self.planned_year) + "'"
         dialog.all_rows.setModel(model)
         dialog.all_rows.model().setFilter(expr)
 
