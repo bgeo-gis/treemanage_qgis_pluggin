@@ -154,12 +154,12 @@ class Basic(ParentAction):
         # Need fill table before set table columns, and need re-fill table for upgrade fields
         self.set_table_columns(dlg_selector.selected_rows, tableright)
 
-        self.fill_table(dlg_selector, tableright, QTableView.DoubleClicked)
+        self.fill_table(dlg_selector, tableright, set_edit_triggers=QTableView.NoEditTriggers)
         self.fill_main_table(dlg_selector, tableleft)
         self.set_table_columns(dlg_selector.all_rows, tableleft)
         # # Filter field
-        dlg_selector.txt_search.textChanged.connect(partial(self.fill_main_table, dlg_selector, tableleft))
-        dlg_selector.txt_selected_filter.textChanged.connect(partial(self.fill_table, dlg_selector, tableright, tableleft))
+        dlg_selector.txt_search.textChanged.connect(partial(self.fill_main_table, dlg_selector, tableleft, set_edit_triggers=QTableView.NoEditTriggers))
+        dlg_selector.txt_selected_filter.textChanged.connect(partial(self.fill_table, dlg_selector, tableright, set_edit_triggers=QTableView.NoEditTriggers))
 
         dlg_selector.btn_close.pressed.connect(partial(self.close_dialog, dlg_selector))
         dlg_selector.btn_close.pressed.connect(partial(self.close_dialog, dlg_selector))
@@ -224,7 +224,7 @@ class Basic(ParentAction):
         # Set model
         model = QSqlTableModel()
         model.setTable(self.schema_name + "." + tableright)
-        model.setEditStrategy(QSqlTableModel.OnManualSubmit)
+        model.setEditStrategy(QSqlTableModel.OnFieldChange)
         model.setSort(0, 0)
         model.select()
         dialog.selected_rows.setEditTriggers(set_edit_triggers)
@@ -388,7 +388,7 @@ class Basic(ParentAction):
                 self.controller.execute_sql(sql)
 
         # Refresh
-        self.fill_table(dialog, tableright)
+        self.fill_table(dialog, tableright, set_edit_triggers=QTableView.NoEditTriggers)
         self.fill_main_table(dialog, tableleft)
 
 
@@ -413,7 +413,7 @@ class Basic(ParentAction):
             sql = (query + "'" + str(field_list[i]) + "'")
             self.controller.execute_sql(sql)
         # Refresh model with selected filter
-        self.fill_table(dialog, tableright)
+        self.fill_table(dialog, tableright, set_edit_triggers=QTableView.NoEditTriggers)
         self.fill_main_table(dialog, tableleft)
 
 
@@ -467,8 +467,8 @@ class Basic(ParentAction):
 
 
         # Filter field
-        #dlg_month_selector.txt_search.textChanged.connect(partial(self.filter_by_text, dlg_month_selector.all_rows, tableright, 'mu_id'))
-        dlg_month_selector.txt_selected_filter.textChanged.connect(partial(self.fill_table, dlg_selector, tableright, tableleft))
+        dlg_month_selector.txt_search.textChanged.connect(partial(self.filter_by_text, dlg_month_selector.all_rows, tableright, 'mu_id'))
+        #dlg_month_selector.txt_selected_filter.textChanged.connect(partial(self.fill_table, dlg_selector, tableright, tableleft))
 
         dlg_month_selector.exec_()
     def filter_by_text(self, table, widget_txt, tablename, field):
@@ -498,7 +498,7 @@ class Basic(ParentAction):
         model.setEditStrategy(QSqlTableModel.OnManualSubmit)
         model.setSort(0, 0)
         model.select()
-        #dialog.all_rows.setEditTriggers(set_edit_triggers)
+        dialog.all_rows.setEditTriggers(set_edit_triggers)
         # Check for errors
         if model.lastError().isValid():
             self.controller.show_warning(model.lastError().text())
