@@ -319,7 +319,7 @@ def setWidgetEnabled(widget, enabled=True):
         widget.setEnabled(enabled)
                 
 
-def setImage(widget,cat_shape):
+def setImage(widget, cat_shape):
     ''' Set pictures for UD'''
     
     element = cat_shape.lower()

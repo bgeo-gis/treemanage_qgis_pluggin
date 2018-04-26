@@ -426,8 +426,10 @@ class Basic(ParentAction):
         utils.setDialog(dlg_month_manage)
         self.load_settings(dlg_month_manage)
         dlg_month_manage.setWindowTitle("Planificador mensual")
-
+        # TODO borrar esta linea
+        utils.setWidgetText(dlg_month_manage.txt_info, "")
         table_name = 'planning'
+        self.set_completer_object(table_name, dlg_month_manage.txt_info, 'plan_code')
         self.populate_cmb_years(table_name, dlg_month_manage.cbx_years, reverse=True)
 
         dlg_month_manage.rejected.connect(partial(self.close_dialog, dlg_month_manage))

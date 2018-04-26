@@ -8,8 +8,8 @@ or (at your option) any later version.
 # -*- coding: utf-8 -*-
 from qgis.core import QgsExpression
 from PyQt4.QtCore import Qt, QSettings
-from PyQt4.QtGui import QAbstractItemView, QTableView, QFileDialog, QIcon, QApplication, QCursor, QPixmap
-from PyQt4.QtSql import QSqlTableModel, QSqlQueryModel
+from PyQt4.QtGui import QStringListModel, QCompleter
+
 
 import os
 import sys
@@ -191,6 +191,29 @@ class ParentAction(object):
         # Delete columns
         for column in columns_to_delete:
             widget.hideColumn(column)
+
+    def set_completer_object(self, tablename, widget, field_id):
+        """ Set autocomplete of widget @table_object + "_id"
+            getting id's from selected @table_object
+        """
+        if not widget:
+            return
+
+        # Set SQL
+        sql = ("SELECT DISTINCT(" + field_id + ")"
+               " FROM " + self.schema_name + "." + tablename)
+        row = self.controller.get_rows(sql)
+        for i in range(0, len(row)):
+            aux = row[i]
+            row[i] = str(aux[0])
+
+        # Set completer and model: add autocomplete in the widget
+        self.completer = QCompleter()
+        self.completer.setCaseSensitivity(Qt.CaseInsensitive)
+        widget.setCompleter(self.completer)
+        model = QStringListModel()
+        model.setStringList(row)
+        self.completer.setModel(model)
 
 
 
