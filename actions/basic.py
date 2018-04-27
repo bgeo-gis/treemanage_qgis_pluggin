@@ -456,24 +456,38 @@ class Basic(ParentAction):
         dlg_month_selector.setWindowTitle("Planificador mensual")
 
         tableleft = 'planning'
-        dlg_month_selector.lbl_plan_code.setText(self.plan_code)
-        utils.setCalendarDate(dlg_month_selector.date_inici, None, True)
 
+        # Set label with selected text from previus dialog
+        dlg_month_selector.lbl_plan_code.setText(self.plan_code)
+
+        # Set default dates to actual day (today) and actual day +1 (tomorrow)
+        utils.setCalendarDate(dlg_month_selector.date_inici, None, True)
         utils.setCalendarDate(dlg_month_selector.date_fi, QDate.currentDate().addDays(1))
-        self.fill_table_planned_year(dlg_month_selector, tableleft, set_edit_triggers=QTableView.NoEditTriggers)
-        self.fill_table_planned_month(dlg_month_selector, tableleft, set_edit_triggers=QTableView.NoEditTriggers)
+
+        expr = " AND (plan_code != '" + str(self.plan_code) + "'"
+        expr += " OR plan_code is NULL)"
+        self.fill_table_planned_month(dlg_month_selector.all_rows, dlg_month_selector.txt_search, tableleft, expr)
+        dlg_month_selector.txt_search.textChanged.connect(partial(self.fill_table_planned_month, dlg_month_selector.all_rows, dlg_month_selector.txt_search, tableleft, expr, QTableView.NoEditTriggers))
+        dlg_month_selector.btn_select.pressed.connect(partial())
+        dlg_month_selector.all_rows.hideColumn(0)
+
+        expr = " AND plan_code = '" + str(self.plan_code) + "'"
+        self.fill_table_planned_month(dlg_month_selector.selected_rows, dlg_month_selector.txt_selected_filter, tableleft, expr)
+        dlg_month_selector.txt_selected_filter.textChanged.connect(partial(self.fill_table_planned_month, dlg_month_selector.selected_rows, dlg_month_selector.txt_selected_filter, tableleft, expr, QTableView.NoEditTriggers))
+        dlg_month_selector.selected_rows.hideColumn(0)
+
         #TODO mejorar set_table_columns para formularios independientes
         # Need fill table before set table columns, and need re-fill table for upgrade fields
         # self.set_table_columns(dlg_month_selector.all_rows, tableleft)
-        dlg_month_selector.all_rows.hideColumn(0)
+
         # Filter field
-        dlg_month_selector.txt_search.textChanged.connect(partial(self.fill_table_planned_year, dlg_month_selector, tableleft, set_edit_triggers=QTableView.NoEditTriggers))
-        #dlg_month_selector.txt_selected_filter.textChanged.connect(partial(self.fill_table, dlg_selector, tableright))
+
+
 
         dlg_month_selector.exec_()
 
 
-    def fill_table_planned_year(self, dialog, tableright, set_edit_triggers=QTableView.NoEditTriggers):
+    def fill_table_planned_month(self, qtable, txt_filter, tableright, expression=None, set_edit_triggers=QTableView.NoEditTriggers):
 
         """ Set a model with selected filter.
         Attach that model to selected table
@@ -489,22 +503,22 @@ class Basic(ParentAction):
         model.setEditStrategy(QSqlTableModel.OnManualSubmit)
         model.setSort(1, 0)
         model.select()
-        dialog.all_rows.setEditTriggers(set_edit_triggers)
+        qtable.setEditTriggers(set_edit_triggers)
         # Check for errors
         if model.lastError().isValid():
             self.controller.show_warning(model.lastError().text())
 
         # Create expresion
-        expr = " mu_id::text ILIKE '%" + str(dialog.txt_search.text()) + "%' "
-        expr += " AND plan_year = '" + str(self.planned_year) + "'"
-        expr += " AND (plan_code != '" + str(self.plan_code) + "'"
-        expr += " OR plan_code is NULL)"
+        expr = " mu_id::text ILIKE '%" + str(txt_filter.text()) + "%' "
+        expr += " AND plan_year = '" + str(self.planned_year) + "' "
+        if expression is not None:
+            expr += expression
 
-        dialog.all_rows.setModel(model)
-        dialog.all_rows.model().setFilter(expr)
+        qtable.setModel(model)
+        qtable.model().setFilter(expr)
 
 
-    def fill_table_planned_month(self, dialog, tableright, set_edit_triggers=QTableView.NoEditTriggers):
+    def _fill_table_planned_month(self, dialog, tableright, set_edit_triggers=QTableView.NoEditTriggers):
         # Set model
         model = QSqlTableModel()
         model.setTable(self.schema_name + "." + tableright)
