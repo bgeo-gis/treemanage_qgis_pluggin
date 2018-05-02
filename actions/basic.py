@@ -284,8 +284,6 @@ class Basic(ParentAction):
                     insert_values += 'null, '
                 if row['mu_name'] is not None:
                     insert_values += "'" + str(row['mu_name'].replace("'", "''")) + "', "
-                    # aux = str(row['mu_name'].replace("'", "''"))
-                    # insert_values += "'" + str(aux.replace('"', '""')) + "', "
                 else:
                     insert_values += 'null, '
                 if row['work_id'] is not None:
