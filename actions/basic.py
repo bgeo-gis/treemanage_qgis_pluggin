@@ -249,7 +249,7 @@ class Basic(ParentAction):
             i = int(dialog.selected_rows.model().fieldIndex('plan_year'))
             index = dialog.selected_rows.model().index(x, i)
             model.setData(index, self.plan_year)
-        self.calculate_total_price(dialog)
+        self.calculate_total_price(dialog, self.plan_year)
 
 
     def calculate_total_price(self, dialog, year):
@@ -260,7 +260,7 @@ class Basic(ParentAction):
         total = 0
 
         for x in range(0, selected_list.rowCount()):
-            if str(dialog.selected_rows.model().record(x).value('plan_year')) == str(self.plan_year):
+            if str(dialog.selected_rows.model().record(x).value('plan_year')) == str(year):
                 if str(dialog.selected_rows.model().record(x).value('price')) != 'NULL':
                     total += float(dialog.selected_rows.model().record(x).value('price'))
         utils.setText(dialog.lbl_total_price, str(total))
