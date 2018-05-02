@@ -156,8 +156,7 @@ class ParentAction(object):
 
 
 
-
-    def set_table_columns(self, widget, table_name):
+    def set_table_columns(self, widget, table_name, project_type=None):
         """ Configuration of tables. Set visibility and width of columns """
 
         widget = utils.getWidget(widget)
@@ -168,8 +167,12 @@ class ParentAction(object):
         columns_to_delete = []
         sql = ("SELECT column_index, width, alias, status"
                " FROM " + self.schema_name + ".config_client_forms"
-               " WHERE table_id = '" + table_name + "'"
-               " ORDER BY column_index")
+               " WHERE table_id = '" + table_name + "'")
+        if project_type is not None:
+            sql += (" AND project_type = '" + project_type + "' ")
+        sql += (" ORDER BY column_index")
+
+
         rows = self.controller.get_rows(sql, log_info=False)
         if not rows:
             return

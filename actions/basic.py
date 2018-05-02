@@ -123,7 +123,7 @@ class Basic(ParentAction):
         self.load_settings(dlg_selector)
 
         dlg_selector.setWindowTitle("Tree selector")
-
+        # utils.setWidgetText(dlg_selector.lbl_year, self.plan_year)
         tableleft = 'v_plan_mu'
         tableright = 'planning'
         id_table_left = 'mu_id'
@@ -150,15 +150,16 @@ class Basic(ParentAction):
         # Populate QTableView
         self.fill_table(dlg_selector, tableright, set_edit_triggers=QTableView.NoEditTriggers, update=True)
         if update:
-            self.insert_into_planning(dlg_selector, id_table_left, tableright)
+            self.insert_into_planning(tableright)
 
         # Need fill table before set table columns, and need re-fill table for upgrade fields
-        self.set_table_columns(dlg_selector.selected_rows, tableright)
+        self.set_table_columns(dlg_selector.selected_rows, tableright, 'basic_month_left')
         self.fill_table(dlg_selector, tableright, set_edit_triggers=QTableView.NoEditTriggers)
 
         self.fill_main_table(dlg_selector, tableleft)
         self.set_table_columns(dlg_selector.all_rows, tableleft)
-        # # Filter field
+
+        # Filter field
         dlg_selector.txt_search.textChanged.connect(partial(self.fill_main_table, dlg_selector, tableleft, set_edit_triggers=QTableView.NoEditTriggers))
         dlg_selector.txt_selected_filter.textChanged.connect(partial(self.fill_table, dlg_selector, tableright, set_edit_triggers=QTableView.NoEditTriggers))
 
@@ -208,7 +209,8 @@ class Basic(ParentAction):
         # Attach model to table view
         expr = " mu_name ILIKE '%" + dialog.txt_search.text() + "%'"
         expr += " AND mu_id NOT IN ("+ids+")"
-        expr += " AND year::text ILIKE '%"+str(self.plan_year)+"%'"
+        #expr += " AND year::text ILIKE '%" + str(self.selected_year) + "%'"
+        expr += " AND year::text ILIKE '%" + str(self.plan_year) + "%'"
         dialog.all_rows.setModel(model)
         dialog.all_rows.model().setFilter(expr)
 
@@ -225,7 +227,7 @@ class Basic(ParentAction):
         # Set model
         model = QSqlTableModel()
         model.setTable(self.schema_name + "." + tableright)
-        model.setEditStrategy(QSqlTableModel.OnFieldChange)
+        model.setEditStrategy(QSqlTableModel.OnManualSubmit)
         model.setSort(1, 0)
         model.select()
         dialog.selected_rows.setEditTriggers(set_edit_triggers)
@@ -234,7 +236,7 @@ class Basic(ParentAction):
             self.controller.show_warning(model.lastError().text())
 
         # Create expresion
-        expr = " mu_id::text ILIKE '%" + dialog.txt_selected_filter.text() + "%'"
+        expr = " mu_name ILIKE '%" + dialog.txt_selected_filter.text() + "%'"
         if self.selected_year is not None:
             expr += " AND plan_year ='" + str(self.plan_year) + "'"
             if update:
@@ -265,8 +267,63 @@ class Basic(ParentAction):
                     total += float(dialog.selected_rows.model().record(x).value('price'))
         utils.setText(dialog.lbl_total_price, str(total))
 
+    def insert_into_planning(self, tableright):
+        sql = ("SELECT * FROM " + self.schema_name+"."+tableright + " "
+               " WHERE plan_year::text ='"+str(self.selected_year) + "'")
+        self.controller.log_info(str(sql))
+        rows = self.controller.get_rows(sql)
 
-    def insert_into_planning(self, dialog, id_table_left, tableright):
+        if rows:
+            for row in rows:
+                insert_values = ""
+                function_values = ""
+                self.controller.log_info(str(row['mu_id']))
+
+                if row['mu_id'] is not None:
+                    insert_values += "'" + str(row['mu_id']) + "', "
+                    function_values += "'" + str(row['mu_id']) + "', "
+                else:
+                    insert_values += 'null, '
+                if row['mu_name'] is not None:
+                    insert_values += "'" + str(row['mu_name'].replace("'", "''")) + "', "
+                else:
+                    insert_values += 'null, '
+                if row['work_id'] is not None:
+                    insert_values += "'" + str(row['work_id']) + "', "
+                    function_values += "'" + str(row['work_id']) + "', "
+                else:
+                    insert_values += 'null, '
+                if row['work_name'] is not None:
+                    insert_values += "'" + str(row['work_name'].replace("'", "''")) + "', "
+                else:
+                    insert_values += 'null, '
+                if str(row['price']) != 'NULL':
+                    insert_values += "'" + str(row['price']) + "', "
+                else:
+                    insert_values += 'null, '
+                insert_values += "'" + self.plan_year + "', "
+                insert_values = insert_values[:len(insert_values) - 2]
+                function_values += "" + self.plan_year + ", "
+                function_values = function_values[:len(function_values) - 2]
+                # Check if mul_id and year_ already exists in planning
+                sql = ("SELECT  mu_id  "
+                       " FROM " + self.schema_name + "." + tableright + ""
+                       " WHERE mu_id = '" + str(row['mu_id']) + "'"
+                       " AND plan_year ='" + str(self.plan_year) + "'")
+                rowx = self.controller.get_row(sql)
+
+                if rowx is None:
+                    #     # Put a new row in QTableView
+                    #     # dialog.selected_rows.model().insertRow(dialog.selected_rows.verticalHeader().count())
+                    #
+                    sql = ("INSERT INTO " + self.schema_name + "." + tableright + ""
+                           " (mu_id, mu_name, work_id, work_name, price, plan_year) "
+                           " VALUES (" + insert_values + ")")
+                    self.controller.execute_sql(sql, log_sql=True)
+                    sql = ("SELECT " + self.schema_name + ".set_plan_price(" + function_values + ")")
+                    self.controller.execute_sql(sql)
+
+    def insert_into_planning_(self, dialog, id_table_left, tableright):
         dialog.selected_rows.selectAll()
         left_selected_list = dialog.selected_rows.selectionModel().selectedRows()
         if len(left_selected_list) == 0:
@@ -340,6 +397,7 @@ class Basic(ParentAction):
         self.select_all_rows(dialog.selected_rows, id_table_right)
         if utils.isChecked(dialog.chk_current):
             current_poda_type = utils.get_item_data(dialog.cmb_poda_type, 0)
+            current_poda_name = utils.get_item_data(dialog.cmb_poda_type, 1)
             if current_poda_type is None:
                 message = "No heu seleccionat cap poda"
                 self.controller.show_warning(message)
@@ -355,19 +413,37 @@ class Basic(ParentAction):
         for i in range(0, len(left_selected_list)):
             row = left_selected_list[i].row()
             values = ""
+            function_values = ""
             if dialog.all_rows.model().record(row).value('mu_id') is not None:
                 values += "'" + str(dialog.all_rows.model().record(row).value('mu_id')) + "', "
+                function_values += "'" + str(dialog.all_rows.model().record(row).value('mu_id')) + "', "
+            else:
+                values += 'null, '
+
+            if dialog.all_rows.model().record(row).value('mu_name') is not None:
+                values += "'" + str(dialog.all_rows.model().record(row).value('mu_name').replace("'", "''")) + "', "
             else:
                 values += 'null, '
             if dialog.all_rows.model().record(row).value('work_id') is not None:
                 if utils.isChecked(dialog.chk_current):
                     values += "'" + str(current_poda_type) + "', "
+                    function_values += "'" + str(current_poda_type) + "', "
                 else:
                     values += "'" + str(dialog.all_rows.model().record(row).value('work_id')) + "', "
+                    function_values += "'" + str(dialog.all_rows.model().record(row).value('work_id')) + "', "
+            else:
+                values += 'null, '
+            if dialog.all_rows.model().record(row).value('work_name') is not None:
+                if utils.isChecked(dialog.chk_current):
+                    values += "'" + str(current_poda_name) + "', "
+                else:
+                    values += "'" + str(dialog.all_rows.model().record(row).value('work_name').replace("'", "''")) + "', "
             else:
                 values += 'null, '
             values += "'"+self.plan_year+"', "
             values = values[:len(values) - 2]
+            function_values += "'"+self.plan_year+"', "
+            function_values = function_values[:len(function_values) - 2]
 
             # Check if mul_id and year_ already exists in planning
             sql = ("SELECT " + id_table_right + ""
@@ -384,10 +460,10 @@ class Basic(ParentAction):
                 # dialog.selected_rows.model().insertRow(dialog.selected_rows.verticalHeader().count())
 
                 sql = ("INSERT INTO " + self.schema_name + "." + tableright + ""
-                       " (mu_id, work_id, plan_year) "
+                       " (mu_id, mu_name, work_id, work_name, plan_year) "
                        " VALUES (" + values + ")")
                 self.controller.execute_sql(sql)
-                sql = ("SELECT " + self.schema_name + ".set_plan_price(" + values + ")")
+                sql = ("SELECT " + self.schema_name + ".set_plan_price(" + function_values + ")")
                 self.controller.execute_sql(sql)
 
         # Refresh
@@ -461,8 +537,8 @@ class Basic(ParentAction):
         id_table_left = 'mu_id'
 
         # Set label with selected text from previus dialog
-        dlg_month_selector.lbl_plan_code.setText("Plan code: " + self.plan_code)
-        dlg_month_selector.lbl_year.setText("Plan year: " + str(self.planned_year))
+        dlg_month_selector.lbl_plan_code.setText(self.plan_code)
+        dlg_month_selector.lbl_year.setText(str(self.planned_year))
 
         # Set default dates to actual day (today) and actual day +1 (tomorrow)
         utils.setCalendarDate(dlg_month_selector.date_inici, None, True)
@@ -474,14 +550,15 @@ class Basic(ParentAction):
         self.fill_table_planned_month(dlg_month_selector.all_rows, dlg_month_selector.txt_search, tableleft, expr)
         dlg_month_selector.txt_search.textChanged.connect(partial(self.fill_table_planned_month, dlg_month_selector.all_rows, dlg_month_selector.txt_search, tableleft, expr, QTableView.NoEditTriggers))
         dlg_month_selector.btn_select.pressed.connect(partial(self.month_selector_row, dlg_month_selector, id_table_left, tableleft))
-        dlg_month_selector.all_rows.hideColumn(0)
-
+        #dlg_month_selector.all_rows.hideColumn(0)
+        self.set_table_columns(dlg_month_selector.all_rows, tableleft, 'basic_month_left')
         # Right QTableView
         expr = " AND plan_code = '" + str(self.plan_code) + "'"
         self.fill_table_planned_month(dlg_month_selector.selected_rows, dlg_month_selector.txt_selected_filter, tableleft, expr)
         dlg_month_selector.txt_selected_filter.textChanged.connect(partial(self.fill_table_planned_month, dlg_month_selector.selected_rows, dlg_month_selector.txt_selected_filter, tableleft, expr, QTableView.NoEditTriggers))
         dlg_month_selector.btn_unselect.pressed.connect(partial(self.month_unselector_row, dlg_month_selector, id_table_left, tableleft))
-        dlg_month_selector.selected_rows.hideColumn(0)
+        #dlg_month_selector.selected_rows.hideColumn(0)
+        self.set_table_columns(dlg_month_selector.selected_rows, tableleft, 'basic_month_right')
 
         #TODO mejorar set_table_columns para formularios independientes
         # Need fill table before set table columns, and need re-fill table for upgrade fields
@@ -491,6 +568,11 @@ class Basic(ParentAction):
 
         self.calculate_total_price(dlg_month_selector, self.planned_year)
 
+        dlg_month_selector.btn_close.pressed.connect(partial(self.close_dialog, dlg_month_selector))
+        dlg_month_selector.btn_close.pressed.connect(partial(self.close_dialog, dlg_month_selector))
+
+        dlg_month_selector.rejected.connect(partial(self.close_dialog, dlg_month_selector))
+        dlg_month_selector.rejected.connect(partial(self.close_dialog, dlg_month_selector))
         dlg_month_selector.exec_()
 
 
@@ -515,12 +597,13 @@ class Basic(ParentAction):
         # Get year from string
         calendar_year = QDate.fromString(plan_month_start, 'yyyy/MM/dd').year()
         if int(calendar_year) < int(self.planned_year):
-            self.controller.show_details(detail_text="La data d'inici no pot ser anterior a Plan year")
+            self.controller.show_details(detail_text="La data d'inici no pot ser anterior a 'Any planificacio'")
             return
 
         if plan_month_start > plan_month_end:
             self.controller.show_details(detail_text="La data d'inici no pot ser posterior a la data final")
             return
+
         # Update values
         for i in range(0, len(left_selected_list)):
             row = left_selected_list[i].row()
@@ -528,7 +611,8 @@ class Basic(ParentAction):
                    " SET plan_code ='" + str(self.plan_code) + "', "
                    " plan_month_start = '"+plan_month_start+"', "
                    " plan_month_end = '"+plan_month_end+"' "
-                   " WHERE mu_id ='" + str(dialog.all_rows.model().record(row).value('mu_id')) + "'"
+                   " WHERE id='" + str(dialog.all_rows.model().record(row).value('id')) + "'"
+                   " AND mu_id ='" + str(dialog.all_rows.model().record(row).value('mu_id')) + "'"
                    " AND plan_year = '"+self.planned_year+"'")
             self.controller.execute_sql(sql)
 
@@ -596,7 +680,7 @@ class Basic(ParentAction):
             self.controller.show_warning(model.lastError().text())
 
         # Create expresion
-        expr = " mu_id::text ILIKE '%" + str(txt_filter.text()) + "%' "
+        expr = " mu_name ILIKE '%" + str(txt_filter.text()) + "%' "
         expr += " AND plan_year = '" + str(self.planned_year) + "' "
         if expression is not None:
             expr += expression
