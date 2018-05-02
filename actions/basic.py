@@ -284,6 +284,8 @@ class Basic(ParentAction):
                     insert_values += 'null, '
                 if row['mu_name'] is not None:
                     insert_values += "'" + str(row['mu_name'].replace("'", "''")) + "', "
+                    # aux = str(row['mu_name'].replace("'", "''"))
+                    # insert_values += "'" + str(aux.replace('"', '""')) + "', "
                 else:
                     insert_values += 'null, '
                 if row['work_id'] is not None:
@@ -317,64 +319,9 @@ class Basic(ParentAction):
                     sql = ("INSERT INTO " + self.schema_name + "." + tableright + ""
                            " (mu_id, mu_name, work_id, work_name, price, plan_year) "
                            " VALUES (" + insert_values + ")")
-                    self.controller.execute_sql(sql, log_sql=True)
+                    self.controller.execute_sql(sql)
                     sql = ("SELECT " + self.schema_name + ".set_plan_price(" + function_values + ")")
                     self.controller.execute_sql(sql)
-
-    def insert_into_planning_(self, dialog, id_table_left, tableright):
-        dialog.selected_rows.selectAll()
-        left_selected_list = dialog.selected_rows.selectionModel().selectedRows()
-        if len(left_selected_list) == 0:
-            return
-
-        # Get all selected ids
-        field_list = []
-        for i in range(0, len(left_selected_list)):
-            row = left_selected_list[i].row()
-            id_ = dialog.selected_rows.model().record(row).value(id_table_left)
-            field_list.append(id_)
-
-        # Create a querry
-        for i in range(0, len(left_selected_list)):
-            row = left_selected_list[i].row()
-            insert_values = ""
-            function_values = ""
-            if dialog.selected_rows.model().record(row).value('mu_id') is not None:
-                insert_values += "'" + str(dialog.selected_rows.model().record(row).value('mu_id')) + "', "
-                function_values += "'" + str(dialog.selected_rows.model().record(row).value('mu_id')) + "', "
-            else:
-                insert_values += 'null, '
-            if dialog.selected_rows.model().record(row).value('work_id') is not None:
-                insert_values += "'" + str(dialog.selected_rows.model().record(row).value('work_id')) + "', "
-                function_values += "'" + str(dialog.selected_rows.model().record(row).value('work_id')) + "', "
-            else:
-                insert_values += 'null, '
-            if str(dialog.selected_rows.model().record(row).value('price')) != 'NULL':
-                insert_values += "'" + str(dialog.selected_rows.model().record(row).value('price')) + "', "
-            else:
-                insert_values += 'null, '
-            insert_values += "'"+self.plan_year+"', "
-            insert_values = insert_values[:len(insert_values) - 2]
-            function_values += ""+self.plan_year+", "
-            function_values = function_values[:len(function_values) - 2]
-
-            # Check if mul_id and year_ already exists in planning
-            sql = ("SELECT  mu_id  "
-                   " FROM " + self.schema_name + "." + tableright + ""
-                   " WHERE mu_id = '" + str(field_list[i]) + "'"
-                   " AND plan_year ='"+str(self.plan_year)+"'")
-            row = self.controller.get_row(sql)
-
-            if row is None:
-                #     # Put a new row in QTableView
-                #     # dialog.selected_rows.model().insertRow(dialog.selected_rows.verticalHeader().count())
-                #
-                sql = ("INSERT INTO " + self.schema_name + "." + tableright + ""
-                       " (mu_id, work_id, price, plan_year) "
-                       " VALUES (" + insert_values + ")")
-                self.controller.execute_sql(sql)
-                sql = ("SELECT " + self.schema_name + ".set_plan_price(" + function_values + ")")
-                self.controller.execute_sql(sql)
 
 
     def rows_selector(self, dialog, id_table_left, tableright, id_table_right, tableleft):
@@ -417,7 +364,6 @@ class Basic(ParentAction):
                 function_values += "'" + str(dialog.all_rows.model().record(row).value('mu_id')) + "', "
             else:
                 values += 'null, '
-
             if dialog.all_rows.model().record(row).value('mu_name') is not None:
                 values += "'" + str(dialog.all_rows.model().record(row).value('mu_name').replace("'", "''")) + "', "
             else:
@@ -460,6 +406,7 @@ class Basic(ParentAction):
                 sql = ("INSERT INTO " + self.schema_name + "." + tableright + ""
                        " (mu_id, mu_name, work_id, work_name, plan_year) "
                        " VALUES (" + values + ")")
+                self.controller.log_info(str(sql))
                 self.controller.execute_sql(sql)
                 sql = ("SELECT " + self.schema_name + ".set_plan_price(" + function_values + ")")
                 self.controller.execute_sql(sql)
