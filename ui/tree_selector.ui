@@ -242,7 +242,7 @@
                </widget>
               </item>
               <item>
-               <widget class="QLabel" name="lbl_totala_price">
+               <widget class="QLabel" name="lbl_total_price">
                 <property name="text">
                  <string>TextLabel</string>
                 </property>
