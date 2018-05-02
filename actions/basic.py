@@ -511,6 +511,13 @@ class Basic(ParentAction):
         # Get dates
         plan_month_start = utils.getCalendarDate(dialog.date_inici)
         plan_month_end = utils.getCalendarDate(dialog.date_fi)
+
+        # Get year from string
+        calendar_year = QDate.fromString(plan_month_start, 'yyyy/MM/dd').year()
+        if int(calendar_year) < int(self.planned_year):
+            self.controller.show_details(detail_text="La data d'inici no pot ser anterior a Plan year")
+            return
+
         if plan_month_start > plan_month_end:
             self.controller.show_details(detail_text="La data d'inici no pot ser posterior a la data final")
             return
