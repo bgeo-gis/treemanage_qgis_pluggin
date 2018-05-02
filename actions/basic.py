@@ -456,6 +456,7 @@ class Basic(ParentAction):
         dlg_month_selector.setWindowTitle("Planificador mensual")
 
         tableleft = 'planning'
+        id_table_left = 'mu_id'
 
         # Set label with selected text from previus dialog
         dlg_month_selector.lbl_plan_code.setText(self.plan_code)
@@ -468,12 +469,13 @@ class Basic(ParentAction):
         expr += " OR plan_code is NULL)"
         self.fill_table_planned_month(dlg_month_selector.all_rows, dlg_month_selector.txt_search, tableleft, expr)
         dlg_month_selector.txt_search.textChanged.connect(partial(self.fill_table_planned_month, dlg_month_selector.all_rows, dlg_month_selector.txt_search, tableleft, expr, QTableView.NoEditTriggers))
-        dlg_month_selector.btn_select.pressed.connect(partial())
+        dlg_month_selector.btn_select.pressed.connect(partial(self.month_selector_row, dlg_month_selector, id_table_left, tableleft))
         dlg_month_selector.all_rows.hideColumn(0)
 
         expr = " AND plan_code = '" + str(self.plan_code) + "'"
         self.fill_table_planned_month(dlg_month_selector.selected_rows, dlg_month_selector.txt_selected_filter, tableleft, expr)
         dlg_month_selector.txt_selected_filter.textChanged.connect(partial(self.fill_table_planned_month, dlg_month_selector.selected_rows, dlg_month_selector.txt_selected_filter, tableleft, expr, QTableView.NoEditTriggers))
+        dlg_month_selector.btn_unselect.pressed.connect(partial(self.month_unselector_row, dlg_month_selector, id_table_left, tableleft))
         dlg_month_selector.selected_rows.hideColumn(0)
 
         #TODO mejorar set_table_columns para formularios independientes
@@ -482,9 +484,79 @@ class Basic(ParentAction):
 
         # Filter field
 
-
+        self.calculate_total_price(dlg_month_selector, self.planned_year)
 
         dlg_month_selector.exec_()
+
+
+    def month_selector_row(self, dialog, id_table_left, tableleft):
+        left_selected_list = dialog.all_rows.selectionModel().selectedRows()
+        if len(left_selected_list) == 0:
+            message = "Cap registre seleccionat"
+            self.controller.show_warning(message)
+            return
+        # Get all selected ids
+        field_list = []
+        for i in range(0, len(left_selected_list)):
+            row = left_selected_list[i].row()
+            id_ = dialog.all_rows.model().record(row).value(id_table_left)
+            field_list.append(id_)
+
+        # Get dates
+        plan_month_start = utils.getCalendarDate(dialog.date_inici)
+        plan_month_end = utils.getCalendarDate(dialog.date_fi)
+        if plan_month_start > plan_month_end:
+            self.controller.log_info(str("FECHAS INCORRECTAS"))
+            return
+        self.controller.log_info(str(plan_month_start))
+        for i in range(0, len(left_selected_list)):
+            row = left_selected_list[i].row()
+            sql = ("UPDATE " + self.schema_name + "." + tableleft + " "
+                   " SET plan_code ='" + str(self.plan_code) + "', "
+                   " plan_month_start = '"+plan_month_start+"', "
+                   " plan_month_end = '"+plan_month_end+"' "
+                   " WHERE mu_id ='" + str(dialog.all_rows.model().record(row).value('mu_id')) + "'"
+                   " AND plan_year = '"+self.planned_year+"'")
+            self.controller.execute_sql(sql, log_sql=True)
+
+        expr = " AND (plan_code != '" + str(self.plan_code) + "'"
+        expr += " OR plan_code is NULL)"
+        self.fill_table_planned_month(dialog.all_rows, dialog.txt_search, tableleft, expr)
+        expr = " AND plan_code = '" + str(self.plan_code) + "'"
+        self.fill_table_planned_month(dialog.selected_rows, dialog.txt_selected_filter, tableleft, expr)
+        self.calculate_total_price(dialog, self.planned_year)
+
+
+    def month_unselector_row(self, dialog, id_table_left, tableleft):
+        left_selected_list = dialog.selected_rows.selectionModel().selectedRows()
+        if len(left_selected_list) == 0:
+            message = "Cap registre seleccionat"
+            self.controller.show_warning(message)
+            return
+        # Get all selected ids
+        field_list = []
+        for i in range(0, len(left_selected_list)):
+            row = left_selected_list[i].row()
+            id_ = dialog.selected_rows.model().record(row).value(id_table_left)
+            field_list.append(id_)
+
+        for i in range(0, len(left_selected_list)):
+            row = left_selected_list[i].row()
+            sql = ("UPDATE " + self.schema_name + "." + tableleft + " "
+                   " SET plan_code = null, "
+                   " plan_month_start = null, "
+                   " plan_month_end = null "
+                   " WHERE mu_id ='" + str(dialog.selected_rows.model().record(row).value('mu_id')) + "'"
+                   " AND plan_year = '"+self.planned_year+"'")
+            self.controller.execute_sql(sql, log_sql=True)
+
+        expr = " AND (plan_code != '" + str(self.plan_code) + "'"
+        expr += " OR plan_code is NULL)"
+        self.fill_table_planned_month(dialog.all_rows, dialog.txt_search, tableleft, expr)
+        expr = " AND plan_code = '" + str(self.plan_code) + "'"
+        self.fill_table_planned_month(dialog.selected_rows, dialog.txt_selected_filter, tableleft, expr)
+        self.calculate_total_price(dialog, self.planned_year)
+
 
 
     def fill_table_planned_month(self, qtable, txt_filter, tableright, expression=None, set_edit_triggers=QTableView.NoEditTriggers):
