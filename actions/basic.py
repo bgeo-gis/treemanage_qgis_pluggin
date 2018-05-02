@@ -252,8 +252,8 @@ class Basic(ParentAction):
         self.calculate_total_price(dialog)
 
 
-    def calculate_total_price(self, dialog):
-        """ Update QLabel @lbl_totala_price with sum of all price in @select_rows """
+    def calculate_total_price(self, dialog, year):
+        """ Update QLabel @lbl_total_price with sum of all price in @select_rows """
         selected_list = dialog.selected_rows.model()
         if selected_list is None:
             return
@@ -263,7 +263,7 @@ class Basic(ParentAction):
             if str(dialog.selected_rows.model().record(x).value('plan_year')) == str(self.plan_year):
                 if str(dialog.selected_rows.model().record(x).value('price')) != 'NULL':
                     total += float(dialog.selected_rows.model().record(x).value('price'))
-        utils.setText(dialog.lbl_totala_price, str(total))
+        utils.setText(dialog.lbl_total_price, str(total))
 
 
     def insert_into_planning(self, dialog, id_table_left, tableright):
