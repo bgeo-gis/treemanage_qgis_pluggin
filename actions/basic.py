@@ -123,6 +123,7 @@ class Basic(ParentAction):
         self.load_settings(dlg_selector)
 
         dlg_selector.setWindowTitle("Tree selector")
+        dlg_selector.lbl_year.setText(self.plan_year)
         # utils.setWidgetText(dlg_selector.lbl_year, self.plan_year)
         tableleft = 'v_plan_mu'
         tableright = 'planning'
@@ -209,7 +210,6 @@ class Basic(ParentAction):
         # Attach model to table view
         expr = " mu_name ILIKE '%" + dialog.txt_search.text() + "%'"
         expr += " AND mu_id NOT IN ("+ids+")"
-        #expr += " AND year::text ILIKE '%" + str(self.selected_year) + "%'"
         expr += " AND year::text ILIKE '%" + str(self.plan_year) + "%'"
         dialog.all_rows.setModel(model)
         dialog.all_rows.model().setFilter(expr)
@@ -267,18 +267,16 @@ class Basic(ParentAction):
                     total += float(dialog.selected_rows.model().record(x).value('price'))
         utils.setText(dialog.lbl_total_price, str(total))
 
+
     def insert_into_planning(self, tableright):
         sql = ("SELECT * FROM " + self.schema_name+"."+tableright + " "
                " WHERE plan_year::text ='"+str(self.selected_year) + "'")
-        self.controller.log_info(str(sql))
         rows = self.controller.get_rows(sql)
 
         if rows:
             for row in rows:
                 insert_values = ""
                 function_values = ""
-                self.controller.log_info(str(row['mu_id']))
-
                 if row['mu_id'] is not None:
                     insert_values += "'" + str(row['mu_id']) + "', "
                     function_values += "'" + str(row['mu_id']) + "', "
