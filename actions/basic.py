@@ -459,7 +459,8 @@ class Basic(ParentAction):
         id_table_left = 'mu_id'
 
         # Set label with selected text from previus dialog
-        dlg_month_selector.lbl_plan_code.setText(self.plan_code)
+        dlg_month_selector.lbl_plan_code.setText("Plan code: " + self.plan_code)
+        dlg_month_selector.lbl_year.setText("Plan year: " + str(self.planned_year))
 
         # Set default dates to actual day (today) and actual day +1 (tomorrow)
         utils.setCalendarDate(dlg_month_selector.date_inici, None, True)
@@ -506,9 +507,9 @@ class Basic(ParentAction):
         plan_month_start = utils.getCalendarDate(dialog.date_inici)
         plan_month_end = utils.getCalendarDate(dialog.date_fi)
         if plan_month_start > plan_month_end:
-            self.controller.log_info(str("FECHAS INCORRECTAS"))
+            self.controller.show_details(detail_text="La data d'inici no pot ser posterior a la data final")
             return
-        self.controller.log_info(str(plan_month_start))
+
         for i in range(0, len(left_selected_list)):
             row = left_selected_list[i].row()
             sql = ("UPDATE " + self.schema_name + "." + tableleft + " "
