@@ -78,7 +78,7 @@ class Basic(ParentAction):
         """
         sql = ("SELECT DISTINCT(plan_year)::text, plan_year::text FROM "+self.schema_name+"."+table_name + ""
                " WHERE plan_year::text != ''")
-        rows = self.controller.get_rows(sql, log_sql=True)
+        rows = self.controller.get_rows(sql)
         if rows is None:
             return
 
@@ -258,7 +258,7 @@ class Basic(ParentAction):
         if selected_list is None:
             return
         total = 0
-
+        # Sum all price
         for x in range(0, selected_list.rowCount()):
             if str(dialog.selected_rows.model().record(x).value('plan_year')) == str(year):
                 if str(dialog.selected_rows.model().record(x).value('price')) != 'NULL':
@@ -272,12 +272,14 @@ class Basic(ParentAction):
         if len(left_selected_list) == 0:
             return
 
+        # Get all selected ids
         field_list = []
         for i in range(0, len(left_selected_list)):
             row = left_selected_list[i].row()
             id_ = dialog.selected_rows.model().record(row).value(id_table_left)
             field_list.append(id_)
 
+        # Create a querry
         for i in range(0, len(left_selected_list)):
             row = left_selected_list[i].row()
             insert_values = ""
@@ -466,6 +468,7 @@ class Basic(ParentAction):
         utils.setCalendarDate(dlg_month_selector.date_inici, None, True)
         utils.setCalendarDate(dlg_month_selector.date_fi, QDate.currentDate().addDays(1))
 
+        # Left QTableView
         expr = " AND (plan_code != '" + str(self.plan_code) + "'"
         expr += " OR plan_code is NULL)"
         self.fill_table_planned_month(dlg_month_selector.all_rows, dlg_month_selector.txt_search, tableleft, expr)
@@ -473,6 +476,7 @@ class Basic(ParentAction):
         dlg_month_selector.btn_select.pressed.connect(partial(self.month_selector_row, dlg_month_selector, id_table_left, tableleft))
         dlg_month_selector.all_rows.hideColumn(0)
 
+        # Right QTableView
         expr = " AND plan_code = '" + str(self.plan_code) + "'"
         self.fill_table_planned_month(dlg_month_selector.selected_rows, dlg_month_selector.txt_selected_filter, tableleft, expr)
         dlg_month_selector.txt_selected_filter.textChanged.connect(partial(self.fill_table_planned_month, dlg_month_selector.selected_rows, dlg_month_selector.txt_selected_filter, tableleft, expr, QTableView.NoEditTriggers))
@@ -496,6 +500,7 @@ class Basic(ParentAction):
             message = "Cap registre seleccionat"
             self.controller.show_warning(message)
             return
+
         # Get all selected ids
         field_list = []
         for i in range(0, len(left_selected_list)):
@@ -509,7 +514,7 @@ class Basic(ParentAction):
         if plan_month_start > plan_month_end:
             self.controller.show_details(detail_text="La data d'inici no pot ser posterior a la data final")
             return
-
+        # Update values
         for i in range(0, len(left_selected_list)):
             row = left_selected_list[i].row()
             sql = ("UPDATE " + self.schema_name + "." + tableleft + " "
@@ -518,8 +523,9 @@ class Basic(ParentAction):
                    " plan_month_end = '"+plan_month_end+"' "
                    " WHERE mu_id ='" + str(dialog.all_rows.model().record(row).value('mu_id')) + "'"
                    " AND plan_year = '"+self.planned_year+"'")
-            self.controller.execute_sql(sql, log_sql=True)
+            self.controller.execute_sql(sql)
 
+        # Refresh QTableViews and recalculate price
         expr = " AND (plan_code != '" + str(self.plan_code) + "'"
         expr += " OR plan_code is NULL)"
         self.fill_table_planned_month(dialog.all_rows, dialog.txt_search, tableleft, expr)
@@ -549,8 +555,9 @@ class Basic(ParentAction):
                    " plan_month_end = null "
                    " WHERE mu_id ='" + str(dialog.selected_rows.model().record(row).value('mu_id')) + "'"
                    " AND plan_year = '"+self.planned_year+"'")
-            self.controller.execute_sql(sql, log_sql=True)
+            self.controller.execute_sql(sql)
 
+        # Refresh QTableViews and recalculate price
         expr = " AND (plan_code != '" + str(self.plan_code) + "'"
         expr += " OR plan_code is NULL)"
         self.fill_table_planned_month(dialog.all_rows, dialog.txt_search, tableleft, expr)
@@ -589,27 +596,6 @@ class Basic(ParentAction):
 
         qtable.setModel(model)
         qtable.model().setFilter(expr)
-
-
-    def _fill_table_planned_month(self, dialog, tableright, set_edit_triggers=QTableView.NoEditTriggers):
-        # Set model
-        model = QSqlTableModel()
-        model.setTable(self.schema_name + "." + tableright)
-        model.setEditStrategy(QSqlTableModel.OnManualSubmit)
-        model.setSort(1, 0)
-        model.select()
-        dialog.selected_rows.setEditTriggers(set_edit_triggers)
-        # Check for errors
-        if model.lastError().isValid():
-            self.controller.show_warning(model.lastError().text())
-        # Create expresion
-        expr = " mu_id::text ILIKE '%" + str(dialog.txt_selected_filter.text()) + "%' "
-        expr += " AND plan_year = '" + str(self.planned_year) + "'"
-        expr += " AND plan_code = '" + str(self.plan_code) + "'"
-
-        dialog.selected_rows.setModel(model)
-        dialog.selected_rows.model().setFilter(expr)
-
 
 
     def select_all_rows(self, qtable, id, clear_selection=True):
@@ -664,54 +650,3 @@ class Basic(ParentAction):
         model.database().rollback()
 
 
-
-
-        # def populate_combos(self, dialog, tableleft, tableright):
-        #     """ Set one column of a QtableView as QComboBox with values from database. """
-        #     sql = ("SELECT * FROM " + self.schema_name + "." + tableright + " "
-        #            " WHERE plan_year = " + self.selected_year + " order by id")
-        #     rows = self.controller.get_rows(sql)
-        #     for x in range(0, len(rows)):
-        #         combo = QComboBox()
-        #         sql = "SELECT DISTINCT(work_id) FROM " + self.schema_name+"."+tableleft + " ORDER BY work_id"
-        #         row = self.controller.get_rows(sql)
-        #
-        #         utils.fillComboBox(combo, row, False)
-        #         row = rows[x]
-        #         priority = row[7]
-        #
-        #         utils.setSelectedItem(combo, str(priority))
-        #         i = dialog.selected_rows.model().index(x, 7)
-        #
-        #         dialog.selected_rows.setIndexWidget(i, combo)
-        #         combo.setStyleSheet("background:#E6E6E6")
-        #         combo.currentIndexChanged.connect(partial(self.update_combobox_values, dialog.selected_rows, combo, x))
-        #
-        #
-        # def update_combobox_values(self, qtable, combo, x):
-        #     """ Insert combobox.currentText into widget (QTableView) """
-        #     index = qtable.model().index(x, 7)
-        #     qtable.model().setData(index, combo.currentText())
-        #
-        #
-        # def refresh_table(self, dialog, tableright, set_edit_triggers=QTableView.NoEditTriggers):
-        #     """ Refresh qTableView 'selected_rows' """
-        #     # Set model
-        #     model = QSqlTableModel()
-        #
-        #     model.setTable(self.schema_name + "." + tableright)
-        #     model.setEditStrategy(QSqlTableModel.OnFieldChange)
-        #     model.setSort(0, 0)
-        #     model.select()
-        #     dialog.selected_rows.setEditTriggers(set_edit_triggers)
-        #     # Check for errors
-        #     if model.lastError().isValid():
-        #         self.controller.show_warning(model.lastError().text())
-        #     # Attach model to table view
-        #
-        #     expr = " mu_id::text ILIKE '%" + dialog.txt_selected_filter.text() + "%'"
-        #
-        #     if self.selected_year is not None:
-        #         expr += " AND plan_year ='" + str(self.selected_year) + "'"
-        #     dialog.selected_rows.setModel(model)
-        #     dialog.selected_rows.model().setFilter(expr)
