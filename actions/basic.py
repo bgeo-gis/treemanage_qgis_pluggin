@@ -190,7 +190,7 @@ class Basic(ParentAction):
         model = QSqlTableModel()
         model.setTable(self.schema_name + "." + table_name)
         model.setEditStrategy(QSqlTableModel.OnFieldChange)
-        model.setSort(1, 0)
+        model.setSort(2, 0)
         model.select()
 
         dialog.all_rows.setEditTriggers(set_edit_triggers)
@@ -228,7 +228,7 @@ class Basic(ParentAction):
         model = QSqlTableModel()
         model.setTable(self.schema_name + "." + tableright)
         model.setEditStrategy(QSqlTableModel.OnManualSubmit)
-        model.setSort(1, 0)
+        model.setSort(2, 0)
         model.select()
         dialog.selected_rows.setEditTriggers(set_edit_triggers)
         # Check for errors
@@ -404,7 +404,6 @@ class Basic(ParentAction):
                 sql = ("INSERT INTO " + self.schema_name + "." + tableright + ""
                        " (mu_id, mu_name, work_id, work_name, plan_year) "
                        " VALUES (" + values + ")")
-                self.controller.log_info(str(sql))
                 self.controller.execute_sql(sql)
                 sql = ("SELECT " + self.schema_name + ".set_plan_price(" + function_values + ")")
                 self.controller.execute_sql(sql)
@@ -482,10 +481,20 @@ class Basic(ParentAction):
         # Set label with selected text from previus dialog
         dlg_month_selector.lbl_plan_code.setText(self.plan_code)
         dlg_month_selector.lbl_year.setText(str(self.planned_year))
+        year_to_set = 0
+        if self.planned_year > int(QDate.currentDate().year()):
+            year_to_set = (int(self.planned_year) - int(QDate.currentDate().year()))
 
         # Set default dates to actual day (today) and actual day +1 (tomorrow)
-        utils.setCalendarDate(dlg_month_selector.date_inici, None, True)
-        utils.setCalendarDate(dlg_month_selector.date_fi, QDate.currentDate().addDays(1))
+        utils.setCalendarDate(dlg_month_selector.date_inici, QDate.currentDate().addYears(year_to_set), True)
+        # Get date as string
+        data_fi = utils.getCalendarDate(dlg_month_selector.date_inici)
+        # Convert string date to QDate
+        data_fi = QDate.fromString(data_fi, 'yyyy/MM/dd')
+        # Set calendar with date_fi as QDate + 1 day
+        utils.setCalendarDate(dlg_month_selector.date_fi, data_fi.addDays(1))
+
+
 
         # Left QTableView
         expr = " AND (plan_code != '" + str(self.plan_code) + "'"
@@ -615,7 +624,7 @@ class Basic(ParentAction):
         model = QSqlTableModel()
         model.setTable(self.schema_name + "." + tableright)
         model.setEditStrategy(QSqlTableModel.OnManualSubmit)
-        model.setSort(1, 0)
+        model.setSort(2, 0)
         model.select()
         qtable.setEditTriggers(set_edit_triggers)
         # Check for errors
