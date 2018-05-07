@@ -127,6 +127,7 @@ class Basic(ParentAction):
         # utils.setWidgetText(dlg_selector.lbl_year, self.plan_year)
         tableleft = 'v_plan_mu'
         tableright = 'planning'
+        table_view = 'v_plan_mu_year'
         id_table_left = 'mu_id'
         id_table_right = 'mu_id'
 
@@ -141,28 +142,28 @@ class Basic(ParentAction):
         dlg_selector.chk_permanent.stateChanged.connect(partial(self.force_chk_current, dlg_selector))
 
         # Button selec
-        dlg_selector.btn_select.clicked.connect(partial(self.rows_selector, dlg_selector, id_table_left, tableright, id_table_right, tableleft))
-        dlg_selector.all_rows.doubleClicked.connect(partial(self.rows_selector, dlg_selector, id_table_left, tableright, id_table_right, tableleft))
+        dlg_selector.btn_select.clicked.connect(partial(self.rows_selector, dlg_selector, id_table_left, tableright, id_table_right, tableleft, table_view))
+        dlg_selector.all_rows.doubleClicked.connect(partial(self.rows_selector, dlg_selector, id_table_left, tableright, id_table_right, tableleft, table_view))
 
         # Button unselect
-        dlg_selector.btn_unselect.clicked.connect(partial(self.rows_unselector, dlg_selector, tableright, id_table_right, tableleft))
-        dlg_selector.selected_rows.doubleClicked.connect(partial(self.rows_unselector, dlg_selector, tableright, id_table_right, tableleft))
+        dlg_selector.btn_unselect.clicked.connect(partial(self.rows_unselector, dlg_selector, tableright, id_table_right, tableleft, table_view))
+        dlg_selector.selected_rows.doubleClicked.connect(partial(self.rows_unselector, dlg_selector, tableright, id_table_right, tableleft,table_view))
 
         # Populate QTableView
-        self.fill_table(dlg_selector, tableright, set_edit_triggers=QTableView.NoEditTriggers, update=True)
+        self.fill_table(dlg_selector, table_view, set_edit_triggers=QTableView.NoEditTriggers, update=True)
         if update:
             self.insert_into_planning(tableright)
 
         # Need fill table before set table columns, and need re-fill table for upgrade fields
-        self.set_table_columns(dlg_selector.selected_rows, tableright, 'basic_month_left')
-        self.fill_table(dlg_selector, tableright, set_edit_triggers=QTableView.NoEditTriggers)
+        #self.set_table_columns(dlg_selector.selected_rows, table_view, 'basic_year_right')
+        self.fill_table(dlg_selector, table_view, set_edit_triggers=QTableView.NoEditTriggers)
 
         self.fill_main_table(dlg_selector, tableleft)
-        self.set_table_columns(dlg_selector.all_rows, tableleft)
+        #self.set_table_columns(dlg_selector.all_rows, tableleft, 'basic_year_left')
 
         # Filter field
         dlg_selector.txt_search.textChanged.connect(partial(self.fill_main_table, dlg_selector, tableleft, set_edit_triggers=QTableView.NoEditTriggers))
-        dlg_selector.txt_selected_filter.textChanged.connect(partial(self.fill_table, dlg_selector, tableright, set_edit_triggers=QTableView.NoEditTriggers))
+        dlg_selector.txt_selected_filter.textChanged.connect(partial(self.fill_table, dlg_selector, table_view, set_edit_triggers=QTableView.NoEditTriggers))
 
         dlg_selector.btn_close.clicked.connect(partial(self.close_dialog, dlg_selector))
         dlg_selector.btn_close.clicked.connect(partial(self.close_dialog, dlg_selector))
@@ -215,7 +216,7 @@ class Basic(ParentAction):
         dialog.all_rows.model().setFilter(expr)
 
 
-    def fill_table(self, dialog, tableright, set_edit_triggers=QTableView.NoEditTriggers, update=False):
+    def fill_table(self, dialog, table_view, set_edit_triggers=QTableView.NoEditTriggers, update=False):
         """ Set a model with selected filter.
         Attach that model to selected table
         @setEditStrategy:
@@ -226,7 +227,7 @@ class Basic(ParentAction):
 
         # Set model
         model = QSqlTableModel()
-        model.setTable(self.schema_name + "." + tableright)
+        model.setTable(self.schema_name + "." + table_view)
         model.setEditStrategy(QSqlTableModel.OnManualSubmit)
         model.setSort(2, 0)
         model.select()
@@ -322,7 +323,7 @@ class Basic(ParentAction):
                     self.controller.execute_sql(sql)
 
 
-    def rows_selector(self, dialog, id_table_left, tableright, id_table_right, tableleft):
+    def rows_selector(self, dialog, id_table_left, tableright, id_table_right, tableleft, table_view):
         """ Copy the selected lines in the qtable_all_rows and in the table """
         left_selected_list = dialog.all_rows.selectionModel().selectedRows()
         if len(left_selected_list) == 0:
@@ -362,10 +363,7 @@ class Basic(ParentAction):
                 function_values += "'" + str(dialog.all_rows.model().record(row).value('mu_id')) + "', "
             else:
                 values += 'null, '
-            if dialog.all_rows.model().record(row).value('mu_name') is not None:
-                values += "'" + str(dialog.all_rows.model().record(row).value('mu_name').replace("'", "''")) + "', "
-            else:
-                values += 'null, '
+
             if dialog.all_rows.model().record(row).value('work_id') is not None:
                 if utils.isChecked(dialog.chk_current):
                     values += "'" + str(current_poda_type) + "', "
@@ -375,13 +373,7 @@ class Basic(ParentAction):
                     function_values += "'" + str(dialog.all_rows.model().record(row).value('work_id')) + "', "
             else:
                 values += 'null, '
-            if dialog.all_rows.model().record(row).value('work_name') is not None:
-                if utils.isChecked(dialog.chk_current):
-                    values += "'" + str(current_poda_name) + "', "
-                else:
-                    values += "'" + str(dialog.all_rows.model().record(row).value('work_name').replace("'", "''")) + "', "
-            else:
-                values += 'null, '
+
             values += "'"+self.plan_year+"', "
             values = values[:len(values) - 2]
             function_values += "'"+self.plan_year+"', "
@@ -402,18 +394,18 @@ class Basic(ParentAction):
                 # dialog.selected_rows.model().insertRow(dialog.selected_rows.verticalHeader().count())
 
                 sql = ("INSERT INTO " + self.schema_name + "." + tableright + ""
-                       " (mu_id, mu_name, work_id, work_name, plan_year) "
+                       " (mu_id,  work_id,  plan_year) "
                        " VALUES (" + values + ")")
-                self.controller.execute_sql(sql)
+                self.controller.execute_sql(sql, log_sql=True)
                 sql = ("SELECT " + self.schema_name + ".set_plan_price(" + function_values + ")")
                 self.controller.execute_sql(sql)
 
         # Refresh
-        self.fill_table(dialog, tableright, set_edit_triggers=QTableView.NoEditTriggers)
+        self.fill_table(dialog, table_view, set_edit_triggers=QTableView.NoEditTriggers)
         self.fill_main_table(dialog, tableleft)
 
 
-    def rows_unselector(self, dialog, tableright, field_id_right, tableleft):
+    def rows_unselector(self, dialog, tableright, field_id_right, tableleft, table_view):
 
         query = ("DELETE FROM " + self.schema_name + "." + tableright + ""
                  " WHERE  plan_year='" + self.plan_year + "' AND " + field_id_right + " = ")
@@ -431,7 +423,7 @@ class Basic(ParentAction):
             sql = (query + "'" + str(field_list[i]) + "'")
             self.controller.execute_sql(sql)
         # Refresh model with selected filter
-        self.fill_table(dialog, tableright, set_edit_triggers=QTableView.NoEditTriggers)
+        self.fill_table(dialog, table_view, set_edit_triggers=QTableView.NoEditTriggers)
         self.fill_main_table(dialog, tableleft)
 
 
