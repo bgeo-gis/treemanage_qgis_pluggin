@@ -59,8 +59,8 @@ class Basic(ParentAction):
         table_name = 'planning'
         self.populate_cmb_years(table_name, dlg_tree_manage.cbx_years)
         dlg_tree_manage.rejected.connect(partial(self.close_dialog, dlg_tree_manage))
-        dlg_tree_manage.btn_cancel.pressed.connect(partial(self.close_dialog, dlg_tree_manage))
-        dlg_tree_manage.btn_accept.pressed.connect(partial(self.get_year, dlg_tree_manage))
+        dlg_tree_manage.btn_cancel.clicked.connect(partial(self.close_dialog, dlg_tree_manage))
+        dlg_tree_manage.btn_accept.clicked.connect(partial(self.get_year, dlg_tree_manage))
       
         #TODO borrar estas tres lineas
         now = datetime.datetime.now()
@@ -141,11 +141,11 @@ class Basic(ParentAction):
         dlg_selector.chk_permanent.stateChanged.connect(partial(self.force_chk_current, dlg_selector))
 
         # Button selec
-        dlg_selector.btn_select.pressed.connect(partial(self.rows_selector, dlg_selector, id_table_left, tableright, id_table_right, tableleft))
+        dlg_selector.btn_select.clicked.connect(partial(self.rows_selector, dlg_selector, id_table_left, tableright, id_table_right, tableleft))
         dlg_selector.all_rows.doubleClicked.connect(partial(self.rows_selector, dlg_selector, id_table_left, tableright, id_table_right, tableleft))
 
         # Button unselect
-        dlg_selector.btn_unselect.pressed.connect(partial(self.rows_unselector, dlg_selector, tableright, id_table_right, tableleft))
+        dlg_selector.btn_unselect.clicked.connect(partial(self.rows_unselector, dlg_selector, tableright, id_table_right, tableleft))
         dlg_selector.selected_rows.doubleClicked.connect(partial(self.rows_unselector, dlg_selector, tableright, id_table_right, tableleft))
 
         # Populate QTableView
@@ -164,8 +164,8 @@ class Basic(ParentAction):
         dlg_selector.txt_search.textChanged.connect(partial(self.fill_main_table, dlg_selector, tableleft, set_edit_triggers=QTableView.NoEditTriggers))
         dlg_selector.txt_selected_filter.textChanged.connect(partial(self.fill_table, dlg_selector, tableright, set_edit_triggers=QTableView.NoEditTriggers))
 
-        dlg_selector.btn_close.pressed.connect(partial(self.close_dialog, dlg_selector))
-        dlg_selector.btn_close.pressed.connect(partial(self.close_dialog, dlg_selector))
+        dlg_selector.btn_close.clicked.connect(partial(self.close_dialog, dlg_selector))
+        dlg_selector.btn_close.clicked.connect(partial(self.close_dialog, dlg_selector))
 
         dlg_selector.rejected.connect(partial(self.close_dialog, dlg_selector))
         dlg_selector.rejected.connect(partial(self.close_dialog, dlg_selector))
@@ -448,8 +448,8 @@ class Basic(ParentAction):
         self.populate_cmb_years(table_name, dlg_month_manage.cbx_years, reverse=True)
 
         dlg_month_manage.rejected.connect(partial(self.close_dialog, dlg_month_manage))
-        dlg_month_manage.btn_cancel.pressed.connect(partial(self.close_dialog, dlg_month_manage))
-        dlg_month_manage.btn_accept.pressed.connect(partial(self.get_planned_year, dlg_month_manage))
+        dlg_month_manage.btn_cancel.clicked.connect(partial(self.close_dialog, dlg_month_manage))
+        dlg_month_manage.btn_accept.clicked.connect(partial(self.get_planned_year, dlg_month_manage))
 
         dlg_month_manage.exec_()
 
@@ -495,20 +495,19 @@ class Basic(ParentAction):
         utils.setCalendarDate(dlg_month_selector.date_fi, data_fi.addDays(1))
 
 
-
         # Left QTableView
         expr = " AND (plan_code != '" + str(self.plan_code) + "'"
         expr += " OR plan_code is NULL)"
         self.fill_table_planned_month(dlg_month_selector.all_rows, dlg_month_selector.txt_search, tableleft, expr)
         dlg_month_selector.txt_search.textChanged.connect(partial(self.fill_table_planned_month, dlg_month_selector.all_rows, dlg_month_selector.txt_search, tableleft, expr, QTableView.NoEditTriggers))
-        dlg_month_selector.btn_select.pressed.connect(partial(self.month_selector_row, dlg_month_selector, id_table_left, tableleft))
+        dlg_month_selector.btn_select.clicked.connect(partial(self.month_selector_row, dlg_month_selector, id_table_left, tableleft))
         #dlg_month_selector.all_rows.hideColumn(0)
         self.set_table_columns(dlg_month_selector.all_rows, tableleft, 'basic_month_left')
         # Right QTableView
         expr = " AND plan_code = '" + str(self.plan_code) + "'"
         self.fill_table_planned_month(dlg_month_selector.selected_rows, dlg_month_selector.txt_selected_filter, tableleft, expr)
         dlg_month_selector.txt_selected_filter.textChanged.connect(partial(self.fill_table_planned_month, dlg_month_selector.selected_rows, dlg_month_selector.txt_selected_filter, tableleft, expr, QTableView.NoEditTriggers))
-        dlg_month_selector.btn_unselect.pressed.connect(partial(self.month_unselector_row, dlg_month_selector, id_table_left, tableleft))
+        dlg_month_selector.btn_unselect.clicked.connect(partial(self.month_unselector_row, dlg_month_selector, id_table_left, tableleft))
         #dlg_month_selector.selected_rows.hideColumn(0)
         self.set_table_columns(dlg_month_selector.selected_rows, tableleft, 'basic_month_right')
 
@@ -520,8 +519,8 @@ class Basic(ParentAction):
 
         self.calculate_total_price(dlg_month_selector, self.planned_year)
 
-        dlg_month_selector.btn_close.pressed.connect(partial(self.close_dialog, dlg_month_selector))
-        dlg_month_selector.btn_close.pressed.connect(partial(self.close_dialog, dlg_month_selector))
+        dlg_month_selector.btn_close.clicked.connect(partial(self.close_dialog, dlg_month_selector))
+        dlg_month_selector.btn_close.clicked.connect(partial(self.close_dialog, dlg_month_selector))
 
         dlg_month_selector.rejected.connect(partial(self.close_dialog, dlg_month_selector))
         dlg_month_selector.rejected.connect(partial(self.close_dialog, dlg_month_selector))
