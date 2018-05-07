@@ -155,11 +155,11 @@ class Basic(ParentAction):
             self.insert_into_planning(tableright)
 
         # Need fill table before set table columns, and need re-fill table for upgrade fields
-        #self.set_table_columns(dlg_selector.selected_rows, table_view, 'basic_year_right')
+        self.set_table_columns(dlg_selector.selected_rows, table_view, 'basic_year_right')
         self.fill_table(dlg_selector, table_view, set_edit_triggers=QTableView.NoEditTriggers)
 
         self.fill_main_table(dlg_selector, tableleft)
-        #self.set_table_columns(dlg_selector.all_rows, tableleft, 'basic_year_left')
+        self.set_table_columns(dlg_selector.all_rows, tableleft, 'basic_year_left')
 
         # Filter field
         dlg_selector.txt_search.textChanged.connect(partial(self.fill_main_table, dlg_selector, tableleft, set_edit_triggers=QTableView.NoEditTriggers))
@@ -467,9 +467,6 @@ class Basic(ParentAction):
         dlg_month_selector.selected_rows.setSelectionBehavior(QAbstractItemView.SelectRows)
         dlg_month_selector.setWindowTitle("Planificador mensual")
 
-        tableleft = 'planning'
-        id_table_left = 'mu_id'
-
         # Set label with selected text from previus dialog
         dlg_month_selector.lbl_plan_code.setText(self.plan_code)
         dlg_month_selector.lbl_year.setText(str(self.planned_year))
@@ -487,27 +484,24 @@ class Basic(ParentAction):
         utils.setCalendarDate(dlg_month_selector.date_fi, data_fi.addDays(1))
 
 
+        view_name = 'v_plan_mu_year'
+        tableleft = 'planning'
+        id_table_left = 'mu_id'
+
         # Left QTableView
         expr = " AND (plan_code != '" + str(self.plan_code) + "'"
         expr += " OR plan_code is NULL)"
-        self.fill_table_planned_month(dlg_month_selector.all_rows, dlg_month_selector.txt_search, tableleft, expr)
-        dlg_month_selector.txt_search.textChanged.connect(partial(self.fill_table_planned_month, dlg_month_selector.all_rows, dlg_month_selector.txt_search, tableleft, expr, QTableView.NoEditTriggers))
-        dlg_month_selector.btn_select.clicked.connect(partial(self.month_selector_row, dlg_month_selector, id_table_left, tableleft))
-        #dlg_month_selector.all_rows.hideColumn(0)
+        self.fill_table_planned_month(dlg_month_selector.all_rows, dlg_month_selector.txt_search, view_name, expr)
+        dlg_month_selector.txt_search.textChanged.connect(partial(self.fill_table_planned_month, dlg_month_selector.all_rows, dlg_month_selector.txt_search, view_name, expr, QTableView.NoEditTriggers))
+        dlg_month_selector.btn_select.clicked.connect(partial(self.month_selector_row, dlg_month_selector, id_table_left, tableleft, view_name))
         self.set_table_columns(dlg_month_selector.all_rows, tableleft, 'basic_month_left')
+
         # Right QTableView
         expr = " AND plan_code = '" + str(self.plan_code) + "'"
-        self.fill_table_planned_month(dlg_month_selector.selected_rows, dlg_month_selector.txt_selected_filter, tableleft, expr)
-        dlg_month_selector.txt_selected_filter.textChanged.connect(partial(self.fill_table_planned_month, dlg_month_selector.selected_rows, dlg_month_selector.txt_selected_filter, tableleft, expr, QTableView.NoEditTriggers))
-        dlg_month_selector.btn_unselect.clicked.connect(partial(self.month_unselector_row, dlg_month_selector, id_table_left, tableleft))
-        #dlg_month_selector.selected_rows.hideColumn(0)
+        self.fill_table_planned_month(dlg_month_selector.selected_rows, dlg_month_selector.txt_selected_filter, view_name, expr)
+        dlg_month_selector.txt_selected_filter.textChanged.connect(partial(self.fill_table_planned_month, dlg_month_selector.selected_rows, dlg_month_selector.txt_selected_filter, view_name, expr, QTableView.NoEditTriggers))
+        dlg_month_selector.btn_unselect.clicked.connect(partial(self.month_unselector_row, dlg_month_selector, id_table_left, tableleft, view_name))
         self.set_table_columns(dlg_month_selector.selected_rows, tableleft, 'basic_month_right')
-
-        #TODO mejorar set_table_columns para formularios independientes
-        # Need fill table before set table columns, and need re-fill table for upgrade fields
-        # self.set_table_columns(dlg_month_selector.all_rows, tableleft)
-
-        # Filter field
 
         self.calculate_total_price(dlg_month_selector, self.planned_year)
 
@@ -519,7 +513,7 @@ class Basic(ParentAction):
         dlg_month_selector.exec_()
 
 
-    def month_selector_row(self, dialog, id_table_left, tableleft):
+    def month_selector_row(self, dialog, id_table_left, tableleft, view_name):
         left_selected_list = dialog.all_rows.selectionModel().selectedRows()
         if len(left_selected_list) == 0:
             message = "Cap registre seleccionat"
@@ -562,13 +556,13 @@ class Basic(ParentAction):
         # Refresh QTableViews and recalculate price
         expr = " AND (plan_code != '" + str(self.plan_code) + "'"
         expr += " OR plan_code is NULL)"
-        self.fill_table_planned_month(dialog.all_rows, dialog.txt_search, tableleft, expr)
+        self.fill_table_planned_month(dialog.all_rows, dialog.txt_search, view_name, expr)
         expr = " AND plan_code = '" + str(self.plan_code) + "'"
-        self.fill_table_planned_month(dialog.selected_rows, dialog.txt_selected_filter, tableleft, expr)
+        self.fill_table_planned_month(dialog.selected_rows, dialog.txt_selected_filter, view_name, expr)
         self.calculate_total_price(dialog, self.planned_year)
 
 
-    def month_unselector_row(self, dialog, id_table_left, tableleft):
+    def month_unselector_row(self, dialog, id_table_left, tableleft, view_name):
         left_selected_list = dialog.selected_rows.selectionModel().selectedRows()
         if len(left_selected_list) == 0:
             message = "Cap registre seleccionat"
@@ -594,9 +588,9 @@ class Basic(ParentAction):
         # Refresh QTableViews and recalculate price
         expr = " AND (plan_code != '" + str(self.plan_code) + "'"
         expr += " OR plan_code is NULL)"
-        self.fill_table_planned_month(dialog.all_rows, dialog.txt_search, tableleft, expr)
+        self.fill_table_planned_month(dialog.all_rows, dialog.txt_search, view_name, expr)
         expr = " AND plan_code = '" + str(self.plan_code) + "'"
-        self.fill_table_planned_month(dialog.selected_rows, dialog.txt_selected_filter, tableleft, expr)
+        self.fill_table_planned_month(dialog.selected_rows, dialog.txt_selected_filter, view_name, expr)
         self.calculate_total_price(dialog, self.planned_year)
 
 
