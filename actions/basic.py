@@ -133,6 +133,7 @@ class Basic(ParentAction):
 
         dlg_selector.all_rows.setSelectionBehavior(QAbstractItemView.SelectRows)
         dlg_selector.selected_rows.setSelectionBehavior(QAbstractItemView.SelectRows)
+        #dlg_selector.all_rows.horizontalHeader().setStyleSheet("QHeaderView { font-size: 10pt; }")
 
         sql = ("SELECT DISTINCT(work_id), work_name FROM "+self.schema_name + "." + tableleft)
         rows = self.controller.get_rows(sql)
@@ -283,17 +284,9 @@ class Basic(ParentAction):
                     function_values += "'" + str(row['mu_id']) + "', "
                 else:
                     insert_values += 'null, '
-                if row['mu_name'] is not None:
-                    insert_values += "'" + str(row['mu_name'].replace("'", "''")) + "', "
-                else:
-                    insert_values += 'null, '
                 if row['work_id'] is not None:
                     insert_values += "'" + str(row['work_id']) + "', "
                     function_values += "'" + str(row['work_id']) + "', "
-                else:
-                    insert_values += 'null, '
-                if row['work_name'] is not None:
-                    insert_values += "'" + str(row['work_name'].replace("'", "''")) + "', "
                 else:
                     insert_values += 'null, '
                 if str(row['price']) != 'NULL':
@@ -316,7 +309,7 @@ class Basic(ParentAction):
                     #     # dialog.selected_rows.model().insertRow(dialog.selected_rows.verticalHeader().count())
                     #
                     sql = ("INSERT INTO " + self.schema_name + "." + tableright + ""
-                           " (mu_id, mu_name, work_id, work_name, price, plan_year) "
+                           " (mu_id,  work_id,  price, plan_year) "
                            " VALUES (" + insert_values + ")")
                     self.controller.execute_sql(sql)
                     sql = ("SELECT " + self.schema_name + ".set_plan_price(" + function_values + ")")

@@ -182,9 +182,8 @@ class ParentAction(object):
                 columns_to_delete.append(row['column_index'] - 1)
             else:
                 width = row['width']
-                if width is None:
-                    width = 100
-                widget.setColumnWidth(row['column_index'] - 1, width)
+                if width is not None:
+                    widget.setColumnWidth(row['column_index'] - 1, width)
                 widget.model().setHeaderData(row['column_index'] - 1, Qt.Horizontal, row['alias'])
 
         # Set order
