@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>296</width>
-    <height>169</height>
+    <width>306</width>
+    <height>174</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -19,80 +19,91 @@
   <property name="windowTitle">
    <string>Tree manage</string>
   </property>
-  <widget class="QLineEdit" name="txt_year">
-   <property name="geometry">
-    <rect>
-     <x>110</x>
-     <y>15</y>
-     <width>166</width>
-     <height>20</height>
-    </rect>
-   </property>
-  </widget>
-  <widget class="QLabel" name="plan_any">
-   <property name="geometry">
-    <rect>
-     <x>15</x>
-     <y>20</y>
-     <width>86</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Any planificat:</string>
-   </property>
-  </widget>
-  <widget class="QCheckBox" name="chk_year">
+  <widget class="QWidget" name="horizontalLayoutWidget">
    <property name="geometry">
     <rect>
      <x>5</x>
-     <y>65</y>
-     <width>136</width>
-     <height>17</height>
+     <y>10</y>
+     <width>286</width>
+     <height>36</height>
     </rect>
    </property>
-   <property name="layoutDirection">
-    <enum>Qt::RightToLeft</enum>
-   </property>
-   <property name="text">
-    <string>Recuperar planificacio:</string>
-   </property>
+   <layout class="QHBoxLayout" name="horizontalLayout">
+    <item>
+     <widget class="QLabel" name="plan_any">
+      <property name="text">
+       <string>Any planificat:</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLineEdit" name="txt_year"/>
+    </item>
+   </layout>
   </widget>
-  <widget class="QComboBox" name="cbx_years">
+  <widget class="QWidget" name="horizontalLayoutWidget_2">
    <property name="geometry">
     <rect>
-     <x>155</x>
-     <y>65</y>
-     <width>116</width>
-     <height>22</height>
+     <x>5</x>
+     <y>55</y>
+     <width>286</width>
+     <height>41</height>
     </rect>
    </property>
+   <layout class="QHBoxLayout" name="horizontalLayout_2">
+    <item>
+     <widget class="QLabel" name="label">
+      <property name="text">
+       <string>Recuperar planificacio:</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QCheckBox" name="chk_year">
+      <property name="maximumSize">
+       <size>
+        <width>16</width>
+        <height>16777215</height>
+       </size>
+      </property>
+      <property name="layoutDirection">
+       <enum>Qt::RightToLeft</enum>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QComboBox" name="cbx_years"/>
+    </item>
+   </layout>
   </widget>
-  <widget class="QPushButton" name="btn_accept">
+  <widget class="QWidget" name="horizontalLayoutWidget_3">
    <property name="geometry">
     <rect>
-     <x>110</x>
-     <y>130</y>
-     <width>75</width>
-     <height>23</height>
+     <x>130</x>
+     <y>115</y>
+     <width>160</width>
+     <height>46</height>
     </rect>
    </property>
-   <property name="text">
-    <string>Accept</string>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="btn_cancel">
-   <property name="geometry">
-    <rect>
-     <x>195</x>
-     <y>130</y>
-     <width>75</width>
-     <height>23</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Cancel</string>
-   </property>
+   <layout class="QHBoxLayout" name="horizontalLayout_3">
+    <item>
+     <widget class="QPushButton" name="btn_accept">
+      <property name="text">
+       <string>Accept</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QPushButton" name="btn_cancel">
+      <property name="text">
+       <string>Cancel</string>
+      </property>
+     </widget>
+    </item>
+   </layout>
   </widget>
  </widget>
  <resources/>
