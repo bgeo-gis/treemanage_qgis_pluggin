@@ -487,14 +487,14 @@ class Basic(ParentAction):
         self.fill_table_planned_month(dlg_month_selector.all_rows, dlg_month_selector.txt_search, view_name, expr)
         dlg_month_selector.txt_search.textChanged.connect(partial(self.fill_table_planned_month, dlg_month_selector.all_rows, dlg_month_selector.txt_search, view_name, expr, QTableView.NoEditTriggers))
         dlg_month_selector.btn_select.clicked.connect(partial(self.month_selector_row, dlg_month_selector, id_table_left, tableleft, view_name))
-        self.set_table_columns(dlg_month_selector.all_rows, tableleft, 'basic_month_left')
+        self.set_table_columns(dlg_month_selector.all_rows, view_name, 'basic_month_left')
 
         # Right QTableView
         expr = " AND plan_code = '" + str(self.plan_code) + "'"
         self.fill_table_planned_month(dlg_month_selector.selected_rows, dlg_month_selector.txt_selected_filter, view_name, expr)
         dlg_month_selector.txt_selected_filter.textChanged.connect(partial(self.fill_table_planned_month, dlg_month_selector.selected_rows, dlg_month_selector.txt_selected_filter, view_name, expr, QTableView.NoEditTriggers))
         dlg_month_selector.btn_unselect.clicked.connect(partial(self.month_unselector_row, dlg_month_selector, id_table_left, tableleft, view_name))
-        self.set_table_columns(dlg_month_selector.selected_rows, tableleft, 'basic_month_right')
+        self.set_table_columns(dlg_month_selector.selected_rows, view_name, 'basic_month_right')
 
         self.calculate_total_price(dlg_month_selector, self.planned_year)
 
