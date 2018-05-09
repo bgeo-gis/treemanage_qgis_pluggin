@@ -76,6 +76,7 @@ class Basic(ParentAction):
         rows = self.controller.get_rows(sql)
         self.controller.log_info(str(rows))
         """
+        self.controller.dao.rollback()
         sql = ("SELECT DISTINCT(plan_year)::text, plan_year::text FROM "+self.schema_name+"."+table_name + ""
                " WHERE plan_year::text != ''")
         rows = self.controller.get_rows(sql)
@@ -448,6 +449,11 @@ class Basic(ParentAction):
 
         self.plan_code = str(utils.getWidgetText(dialog.txt_plan_code))
         self.planned_year = utils.get_item_data(dialog.cbx_years, 0)
+        
+        if self.planned_year == -1:
+            message = "No hi ha cap any planificat"
+            self.controller.show_warning(message)
+            return
         self.close_dialog(dialog)
         self.month_selector()
 
