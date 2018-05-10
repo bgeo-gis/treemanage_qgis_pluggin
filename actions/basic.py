@@ -76,7 +76,7 @@ class Basic(ParentAction):
         rows = self.controller.get_rows(sql)
         self.controller.log_info(str(rows))
         """
-        self.controller.dao.rollback()
+
         sql = ("SELECT DISTINCT(plan_year)::text, plan_year::text FROM "+self.schema_name+"."+table_name + ""
                " WHERE plan_year::text != ''")
         rows = self.controller.get_rows(sql)

@@ -200,7 +200,7 @@ class ParentAction(object):
         """
         if not widget:
             return
-        self.controller.dao.rollback()
+
         # Set SQL
         sql = ("SELECT DISTINCT(" + field_id + ")"
                " FROM " + self.schema_name + "." + tablename)
