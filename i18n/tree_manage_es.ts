@@ -10,8 +10,16 @@
     <message>
         <source>menu_name</source>
         <translation>Tree manage</translation>
-    </message>   
-
+    </message>
+    <!-- BUTTONS -->
+    <message>
+        <source>01_text</source>
+        <translation>Planificador anual</translation>
+    </message>
+    <message>
+        <source>02_text</source>
+        <translation>Planificador mensual</translation>
+    </message>
 </context>
 
 </TS>
