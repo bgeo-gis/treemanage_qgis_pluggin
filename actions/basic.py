@@ -22,7 +22,7 @@ from ..ui.month_selector import MonthSelector
 from ..ui.tree_selector import TreeSelector
 from ..ui.tree_manage import TreeManage
 
-import utils
+import gw_utilities
 
 from functools import partial
 
@@ -49,7 +49,7 @@ class Basic(ParentAction):
         """ Button 01: Tree selector """
 
         dlg_tree_manage = TreeManage()
-        utils.setDialog(dlg_tree_manage)
+        gw_utilities.setDialog(dlg_tree_manage)
         dlg_tree_manage.setFixedSize(300, 170)
 
         self.load_settings(dlg_tree_manage)
@@ -64,9 +64,9 @@ class Basic(ParentAction):
       
         #TODO borrar estas tres lineas
         now = datetime.datetime.now()
-        utils.setWidgetText(dlg_tree_manage.txt_year, str(now.year + 1))
-        utils.setChecked(dlg_tree_manage.chk_year, True)
-        utils.set_combo_itemData(dlg_tree_manage.cbx_years, str(now.year + 1), 1)
+        gw_utilities.setWidgetText(dlg_tree_manage.txt_year, str(now.year + 1))
+        gw_utilities.setChecked(dlg_tree_manage.chk_year, True)
+        gw_utilities.set_combo_itemData(dlg_tree_manage.cbx_years, str(now.year + 1), 1)
 
         dlg_tree_manage.exec_()
 
@@ -83,7 +83,7 @@ class Basic(ParentAction):
         if rows is None:
             return
 
-        utils.set_item_data(combo, rows, 1, reverse)
+        gw_utilities.set_item_data(combo, rows, 1, reverse)
 
 
     def get_year(self, dialog):
@@ -91,7 +91,7 @@ class Basic(ParentAction):
         self.selected_year = None
 
         if dialog.txt_year.text() != '':
-            self.plan_year = utils.getWidgetText(dialog.txt_year)
+            self.plan_year = gw_utilities.getWidgetText(dialog.txt_year)
             sql = ("SELECT year from "+self.schema_name+".v_plan_mu "
                    " WHERE year='"+self.plan_year+"'")
             row = self.controller.get_row(sql)
@@ -99,8 +99,8 @@ class Basic(ParentAction):
                 message = "No hi ha preus per aquest any"
                 self.controller.show_warning(message)
                 return None
-            if utils.isChecked(dialog.chk_year) and utils.get_item_data(dialog.cbx_years, 0) != -1:
-                self.selected_year = utils.get_item_data(dialog.cbx_years, 0)
+            if gw_utilities.isChecked(dialog.chk_year) and gw_utilities.get_item_data(dialog.cbx_years, 0) != -1:
+                self.selected_year = gw_utilities.get_item_data(dialog.cbx_years, 0)
                 sql = ("SELECT DISTINCT(plan_year) FROM " + self.schema_name + ".planning"
                        " WHERE plan_year ='" + str(self.selected_year) + "'")
                 row = self.controller.get_row(sql)
@@ -120,7 +120,7 @@ class Basic(ParentAction):
     def tree_selector(self, update=False):
 
         dlg_selector = TreeSelector()
-        utils.setDialog(dlg_selector)
+        gw_utilities.setDialog(dlg_selector)
         self.load_settings(dlg_selector)
 
         dlg_selector.setWindowTitle("Tree selector")
@@ -138,7 +138,7 @@ class Basic(ParentAction):
 
         sql = ("SELECT DISTINCT(work_id), work_name FROM "+self.schema_name + "." + tableleft)
         rows = self.controller.get_rows(sql)
-        utils.set_item_data(dlg_selector.cmb_poda_type, rows, 1)
+        gw_utilities.set_item_data(dlg_selector.cmb_poda_type, rows, 1)
 
         # CheckBox
         dlg_selector.chk_permanent.stateChanged.connect(partial(self.force_chk_current, dlg_selector))
@@ -177,8 +177,8 @@ class Basic(ParentAction):
 
 
     def force_chk_current(self, dialog):
-        if utils.isChecked(dialog.chk_permanent):
-            utils.setChecked(dialog.chk_current, True)
+        if gw_utilities.isChecked(dialog.chk_permanent):
+            gw_utilities.setChecked(dialog.chk_current, True)
 
 
     def fill_main_table(self, dialog, table_name,  set_edit_triggers=QTableView.NoEditTriggers):
@@ -268,7 +268,7 @@ class Basic(ParentAction):
             if str(dialog.selected_rows.model().record(x).value('plan_year')) == str(year):
                 if str(dialog.selected_rows.model().record(x).value('price')) != 'NULL':
                     total += float(dialog.selected_rows.model().record(x).value('price'))
-        utils.setText(dialog.lbl_total_price, str(total))
+        gw_utilities.setText(dialog.lbl_total_price, str(total))
 
 
     def insert_into_planning(self, tableright):
@@ -333,14 +333,14 @@ class Basic(ParentAction):
 
         # Select all rows and get all id
         self.select_all_rows(dialog.selected_rows, id_table_right)
-        if utils.isChecked(dialog.chk_current):
-            current_poda_type = utils.get_item_data(dialog.cmb_poda_type, 0)
-            current_poda_name = utils.get_item_data(dialog.cmb_poda_type, 1)
+        if gw_utilities.isChecked(dialog.chk_current):
+            current_poda_type = gw_utilities.get_item_data(dialog.cmb_poda_type, 0)
+            current_poda_name = gw_utilities.get_item_data(dialog.cmb_poda_type, 1)
             if current_poda_type is None:
                 message = "No heu seleccionat cap poda"
                 self.controller.show_warning(message)
                 return
-        if utils.isChecked(dialog.chk_permanent):
+        if gw_utilities.isChecked(dialog.chk_permanent):
             for i in range(0, len(left_selected_list)):
                 row = left_selected_list[i].row()
                 sql = ("UPDATE " + self.schema_name + ".cat_mu "
@@ -359,7 +359,7 @@ class Basic(ParentAction):
                 values += 'null, '
 
             if dialog.all_rows.model().record(row).value('work_id') is not None:
-                if utils.isChecked(dialog.chk_current):
+                if gw_utilities.isChecked(dialog.chk_current):
                     values += "'" + str(current_poda_type) + "', "
                     function_values += "'" + str(current_poda_type) + "', "
                 else:
@@ -424,11 +424,11 @@ class Basic(ParentAction):
     def basic_month_manage(self):
         """ Button 02: Planned year manage """
         dlg_month_manage = MonthManage()
-        utils.setDialog(dlg_month_manage)
+        gw_utilities.setDialog(dlg_month_manage)
         self.load_settings(dlg_month_manage)
         dlg_month_manage.setWindowTitle("Planificador mensual")
         # TODO borrar esta linea
-        utils.setWidgetText(dlg_month_manage.txt_plan_code, "")
+        gw_utilities.setWidgetText(dlg_month_manage.txt_plan_code, "")
         table_name = 'planning'
         self.set_completer_object(table_name, dlg_month_manage.txt_plan_code, 'plan_code')
         self.populate_cmb_years(table_name, dlg_month_manage.cbx_years, reverse=True)
@@ -442,13 +442,13 @@ class Basic(ParentAction):
 
     def get_planned_year(self, dialog):
 
-        if str(utils.getWidgetText(dialog.txt_plan_code)) == 'null':
+        if str(gw_utilities.getWidgetText(dialog.txt_plan_code)) == 'null':
             message = "El camp text a no pot estar vuit"
             self.controller.show_warning(message)
             return
 
-        self.plan_code = str(utils.getWidgetText(dialog.txt_plan_code))
-        self.planned_year = utils.get_item_data(dialog.cbx_years, 0)
+        self.plan_code = str(gw_utilities.getWidgetText(dialog.txt_plan_code))
+        self.planned_year = gw_utilities.get_item_data(dialog.cbx_years, 0)
         
         if self.planned_year == -1:
             message = "No hi ha cap any planificat"
@@ -460,7 +460,7 @@ class Basic(ParentAction):
 
     def month_selector(self):
         dlg_month_selector = MonthSelector()
-        utils.setDialog(dlg_month_selector)
+        gw_utilities.setDialog(dlg_month_selector)
         self.load_settings(dlg_month_selector)
         dlg_month_selector.all_rows.setSelectionBehavior(QAbstractItemView.SelectRows)
         dlg_month_selector.selected_rows.setSelectionBehavior(QAbstractItemView.SelectRows)
@@ -474,13 +474,13 @@ class Basic(ParentAction):
             year_to_set = (int(self.planned_year) - int(QDate.currentDate().year()))
 
         # Set default dates to actual day (today) and actual day +1 (tomorrow)
-        utils.setCalendarDate(dlg_month_selector.date_inici, QDate.currentDate().addYears(year_to_set), True)
+        gw_utilities.setCalendarDate(dlg_month_selector.date_inici, QDate.currentDate().addYears(year_to_set), True)
         # Get date as string
-        data_fi = utils.getCalendarDate(dlg_month_selector.date_inici)
+        data_fi = gw_utilities.getCalendarDate(dlg_month_selector.date_inici)
         # Convert string date to QDate
         data_fi = QDate.fromString(data_fi, 'yyyy/MM/dd')
         # Set calendar with date_fi as QDate + 1 day
-        utils.setCalendarDate(dlg_month_selector.date_fi, data_fi.addDays(1))
+        gw_utilities.setCalendarDate(dlg_month_selector.date_fi, data_fi.addDays(1))
 
 
         view_name = 'v_plan_mu_year'
@@ -527,8 +527,8 @@ class Basic(ParentAction):
             field_list.append(id_)
 
         # Get dates
-        plan_month_start = utils.getCalendarDate(dialog.date_inici)
-        plan_month_end = utils.getCalendarDate(dialog.date_fi)
+        plan_month_start = gw_utilities.getCalendarDate(dialog.date_inici)
+        plan_month_end = gw_utilities.getCalendarDate(dialog.date_fi)
 
         # Get year from string
         calendar_year = QDate.fromString(plan_month_start, 'yyyy/MM/dd').year()

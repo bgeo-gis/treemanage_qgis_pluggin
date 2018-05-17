@@ -16,7 +16,7 @@ import sys
 import webbrowser
 import ConfigParser
 from functools import partial
-import utils
+import gw_utilities
 
 class ParentAction(object):
     def __init__(self, iface, settings, controller, plugin_dir):
@@ -159,7 +159,7 @@ class ParentAction(object):
     def set_table_columns(self, widget, table_name, project_type=None):
         """ Configuration of tables. Set visibility and width of columns """
 
-        widget = utils.getWidget(widget)
+        widget = gw_utilities.getWidget(widget)
         if not widget:
             return
 
@@ -203,7 +203,8 @@ class ParentAction(object):
 
         # Set SQL
         sql = ("SELECT DISTINCT(" + field_id + ")"
-               " FROM " + self.schema_name + "." + tablename)
+               " FROM " + self.schema_name + "." + tablename + ""
+               " ORDER BY " + field_id + "")
         row = self.controller.get_rows(sql)
         for i in range(0, len(row)):
             aux = row[i]
