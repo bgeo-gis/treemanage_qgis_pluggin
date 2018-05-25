@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>tree_manage</class>
- <widget class="QDialog" name="tree_manage">
+ <class>dlg_new_prices</class>
+ <widget class="QDialog" name="dlg_new_prices">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -17,7 +17,7 @@
    </sizepolicy>
   </property>
   <property name="windowTitle">
-   <string>Tree manage</string>
+   <string>Selector d'any per generar nou cataleg de preus</string>
   </property>
   <widget class="QWidget" name="horizontalLayoutWidget">
    <property name="geometry">
@@ -32,7 +32,7 @@
     <item>
      <widget class="QLabel" name="plan_any">
       <property name="text">
-       <string>Any planificat:</string>
+       <string>Generar preus de l'any:</string>
       </property>
      </widget>
     </item>
@@ -54,7 +54,7 @@
     <item>
      <widget class="QLabel" name="label">
       <property name="text">
-       <string>Recuperar planificacio:</string>
+       <string>Copiar preus de l'any:</string>
       </property>
      </widget>
     </item>
@@ -89,13 +89,6 @@
     </rect>
    </property>
    <layout class="QHBoxLayout" name="horizontalLayout_3">
-    <item>
-     <widget class="QPushButton" name="btn_new_prices">
-      <property name="text">
-       <string>Preus</string>
-      </property>
-     </widget>
-    </item>
     <item>
      <widget class="QPushButton" name="btn_accept">
       <property name="text">

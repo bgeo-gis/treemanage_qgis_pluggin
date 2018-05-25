@@ -16,11 +16,14 @@ from PyQt4.Qt import QDate
 from PyQt4.QtSql import QSqlTableModel
 from PyQt4.QtGui import QAbstractItemView, QTableView, QIntValidator, QComboBox
 
+
+
+from ..ui.new_prices import NewPrices
 from ..ui.month_manage import MonthManage
 from ..ui.month_selector import MonthSelector
-
-from ..ui.tree_selector import TreeSelector
+from ..ui.price_management import PriceManagement
 from ..ui.tree_manage import TreeManage
+from ..ui.tree_selector import TreeSelector
 
 import gw_utilities
 
@@ -57,8 +60,12 @@ class Basic(ParentAction):
         validator = QIntValidator(1, 9999999)
         dlg_tree_manage.txt_year.setValidator(validator)
         table_name = 'planning'
-        self.populate_cmb_years(table_name, dlg_tree_manage.cbx_years)
+        field_id = 'plan_year'
+        field_name = 'plan_year'
+        self.populate_cmb_years(table_name,  field_id, field_name, dlg_tree_manage.cbx_years)
+
         dlg_tree_manage.rejected.connect(partial(self.close_dialog, dlg_tree_manage))
+
         dlg_tree_manage.btn_cancel.clicked.connect(partial(self.close_dialog, dlg_tree_manage))
         dlg_tree_manage.btn_accept.clicked.connect(partial(self.get_year, dlg_tree_manage))
       
@@ -70,16 +77,87 @@ class Basic(ParentAction):
 
         dlg_tree_manage.exec_()
 
-    def populate_cmb_years(self, table_name, combo, reverse=False):
+    def basic_new_prices(self, dialog=None):
+        # Close previous dialog
+        if dialog is not None:
+            self.close_dialog(dialog)
+
+        self.dlg_new_prices = NewPrices()
+        validator = QIntValidator(1, 9999999)
+        self.dlg_new_prices.txt_year.setValidator(validator)
+        table_name = 'cat_price'
+        field_id = 'year'
+        field_name = 'year'
+
+        self.dlg_new_prices.btn_cancel.clicked.connect(partial(self.close_dialog, self.dlg_new_prices))
+        self.dlg_new_prices.btn_accept.clicked.connect(partial(self.manage_new_price_catalog))
+        self.populate_cmb_years(table_name, field_id, field_name,  self.dlg_new_prices.cbx_years)
+        self.set_completer_object(table_name, self.dlg_new_prices.txt_year, 'year')
+        self.dlg_new_prices.exec_()
+
+    def manage_new_price_catalog(self):
+        new_year = self.dlg_new_prices.txt_year.text()
+
+        if new_year is None or new_year == '':
+            msg = "Has de possar l'any corresponent"
+            self.controller.show_warning(msg)
+            return
+        copy_years = self.dlg_new_prices.chk_year.isChecked()
+        if copy_years:
+            old_year = gw_utilities.get_item_data(self.dlg_new_prices.cbx_years)
+            if old_year == -1:
+                msg = "No tens cap any seleccionat, desmarca l'opcio de copiar preus"
+                self.controller.show_warning(msg)
+                return
+        else:
+            old_year = None
+        #TODO WIP como pasar null al segundo parametro  de a la funcion de barbara???
+        sql = ("SELECT " + self.schema_name + ".create_price('"+str(new_year)+"')")
+        self.controller.execute_sql(sql)
+        return
+        # Close perevious dialog
+        self.close_dialog(self.dlg_new_prices)
+
+        dlg_prices_management = PriceManagement()
+        table_view = 'v_edit_price'
+        # Populate QTableView
+        self.fill_table_prices(dlg_prices_management.tbl_price_list, table_view, new_year, set_edit_triggers=QTableView.NoEditTriggers)
+        dlg_prices_management.exec_()
+
+    def fill_table_prices(self, qtable, table_view, new_year, set_edit_triggers=QTableView.NoEditTriggers):
+        """ Set a model with selected filter.
+        Attach that model to selected table
+        @setEditStrategy:
+            0: OnFieldChange
+            1: OnRowChange
+            2: OnManualSubmit
+        """
+
+        # Set model
+        model = QSqlTableModel()
+        model.setTable(self.schema_name + "." + table_view)
+        model.setEditStrategy(QSqlTableModel.OnFieldChange)
+        model.setSort(2, 0)
+        model.select()
+
+        qtable.setEditTriggers(set_edit_triggers)
+        # Check for errors
+        if model.lastError().isValid():
+            self.controller.show_warning(model.lastError().text())
+        # Attach model to table view
+        expr = "year = '"+new_year+"'"
+        qtable.setModel(model)
+        qtable.model().setFilter(expr)
+
+    def populate_cmb_years(self, table_name, field_id, field_name, combo, reverse=False):
         """
         sql = ("SELECT current_database()")
         rows = self.controller.get_rows(sql)
         self.controller.log_info(str(rows))
         """
-
-        sql = ("SELECT DISTINCT(plan_year)::text, plan_year::text FROM "+self.schema_name+"."+table_name + ""
-               " WHERE plan_year::text != ''")
-        rows = self.controller.get_rows(sql)
+        sql = ("SELECT DISTINCT(" + str(field_id) + ")::text, " + str(field_name) + "::text FROM "+self.schema_name+"."+table_name + ""
+               " WHERE " + str(field_name) + "::text != ''")
+        rows = self.controller.get_rows(sql, log_sql=True)
         if rows is None:
             return
 
@@ -430,8 +508,10 @@ class Basic(ParentAction):
         # TODO borrar esta linea
         gw_utilities.setWidgetText(dlg_month_manage.txt_plan_code, "")
         table_name = 'planning'
+        field_id = 'plan_year'
+        field_name = 'plan_year'
         self.set_completer_object(table_name, dlg_month_manage.txt_plan_code, 'plan_code')
-        self.populate_cmb_years(table_name, dlg_month_manage.cbx_years, reverse=True)
+        self.populate_cmb_years(table_name, field_id, field_name, dlg_month_manage.cbx_years, reverse=True)
 
         dlg_month_manage.rejected.connect(partial(self.close_dialog, dlg_month_manage))
         dlg_month_manage.btn_cancel.clicked.connect(partial(self.close_dialog, dlg_month_manage))

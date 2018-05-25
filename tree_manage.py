@@ -92,7 +92,7 @@ class TreeManage(QObject):
             action = self.actions[index_action]                
 
             # Basic toolbar actions
-            if int(index_action) in (00, 01, 02):
+            if int(index_action) in (00, 01, 02, 03):
                 callback_function = getattr(self.basic, function_name)  
                 action.triggered.connect(callback_function)
 
@@ -169,7 +169,7 @@ class TreeManage(QObject):
         """ Manage actions of the different plugin toolbars """ 
         
         toolbar_id = "basic"
-        list_actions = ['01', '02']
+        list_actions = ['03', '01', '02']
         self.manage_toolbar(toolbar_id, list_actions)
 
         # Manage action group of every toolbar
