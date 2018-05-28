@@ -91,104 +91,14 @@ def fillComboBoxList(widget, list_object, allow_nulls=True, clear_combo=True):
         widget.addItem(str(elem))          
 
 
-def fillWidgets(rows, index_widget=0, index_text=1):
-    
-    if rows:
-        for row in rows:
-            setWidgetText(str(row[index_widget]), str(row[index_text]))
+# def fillWidgets(rows, index_widget=0, index_text=1):
+#
+#     if rows:
+#         for row in rows:
+#             setWidgetText(str(row[index_widget]), str(row[index_text]))
             
-#TODO borrar
-def getText(widget, return_string_null=True):
-    
-    if type(widget) is str:
-        widget = _dialog.findChild(QWidget, widget)          
-    if widget:
-        if type(widget) is QLineEdit or type(widget) is QDoubleSpinBox or type(widget) is QSpinBox:
-            text = widget.text()
-        elif type(widget) is QTextEdit:
-            text = widget.toPlainText()
-        if text:
-            elem_text = text
-        elif return_string_null:
-            elem_text = "null"
-        else:
-            elem_text = ""
-    else:
-        if return_string_null:
-            elem_text = "null"
-        else:
-            elem_text = ""
-    return elem_text      
-
-#todo Borrar
-def setText(widget, text):
-    
-    if type(widget) is str:
-        widget = _dialog.findChild(QWidget, widget)      
-    if not widget:
-        return    
-    
-    value = unicode(text)
-    if type(widget) is QLineEdit or type(widget) is QTextEdit or type(widget) is QLabel:
-        if value == 'None':    
-            value = ""        
-        widget.setText(value)       
-    elif type(widget) is QDoubleSpinBox or type(widget) is QSpinBox:
-        if value == 'None':    
-            value = 0        
-        widget.setValue(float(value))
 
 
-def getCalendarDate(widget, date_format = "yyyy/MM/dd", datetime_format = "yyyy/MM/dd hh:mm:ss"):
-    
-    date = None
-    if type(widget) is str:
-        widget = _dialog.findChild(QWidget, widget)
-    if not widget:
-        return
-    if type(widget) is QDateEdit:
-        date = widget.date().toString(date_format)
-    elif type(widget) is QDateTimeEdit:
-        date = widget.dateTime().toString(datetime_format)
-    elif type(widget) is QgsDateTimeEdit and widget.displayFormat() == 'dd/MM/yyyy':
-        date = widget.dateTime().toString(date_format)
-    elif type(widget) is QgsDateTimeEdit and widget.displayFormat() == 'dd/MM/yyyy hh:mm:ss':
-        date = widget.dateTime().toString(datetime_format)
-                
-    return date
-        
-
-def setCalendarDate(widget, date, default_current_date=True):
-    
-    if type(widget) is str:
-        widget = _dialog.findChild(QWidget, widget)
-    if not widget:
-        return           
-    if type(widget) is QDateEdit \
-        or (type(widget) is QgsDateTimeEdit and widget.displayFormat() == 'dd/MM/yyyy'):
-        if date is None:
-            if default_current_date:
-                date = QDate.currentDate()
-            else:
-                date = QDate.fromString('01/01/2000', 'dd/MM/yyyy')
-        widget.setDate(date)
-    elif type(widget) is QDateTimeEdit \
-        or (type(widget) is QgsDateTimeEdit and widget.displayFormat() == 'dd/MM/yyyy hh:mm:ss'):
-        if date is None:
-            date = QDateTime.currentDateTime()
-        widget.setDateTime(date)
-
-
-def setTimeEdit(widget, time):
-    
-    if type(widget) is str:
-        widget = _dialog.findChild(QWidget, widget)
-    if not widget:
-        return
-    if type(widget) is QTimeEdit:
-        if time is None:
-            time = QTime(00, 00, 00)
-        widget.setTime(time)
 
 
 def getWidget(widget):
@@ -206,80 +116,8 @@ def getWidgetType(widget):
         return None   
     return type(widget)
 
-#TODO borrar
-def getWidgetText(widget, add_quote=False, return_string_null=True):
-    
-    if type(widget) is str:
-        widget = _dialog.findChild(QWidget, widget)      
-    if not widget:
-        return None   
-    text = None
-    if type(widget) is QLineEdit or type(widget) is QTextEdit or type(widget) is QDoubleSpinBox:
-        text = getText(widget, return_string_null)    
-    elif type(widget) is QComboBox:
-        text = getSelectedItem(widget, return_string_null)
-    if add_quote and text <> "null":
-        text = "'"+text+"'"  
-    return text
 
-#todo Borrar
-def setWidgetText(widget, text):
-    
-    if type(widget) is str:
-        widget = _dialog.findChild(QWidget, widget)       
-    if not widget:
-        return
-    if type(widget) is QLineEdit or type(widget) is QTextEdit or type(widget) is QTimeEdit :
-        setText(widget, text)
-    elif type(widget) is QDoubleSpinBox:
-        setText(widget, text)           
-    elif type(widget) is QComboBox:
-        setSelectedItem(widget, text)
 
-#todo Borrar
-def isChecked(widget):
-    
-    if type(widget) is str:
-        widget = _dialog.findChild(QCheckBox, widget)        
-    checked = False    
-    if widget:
-        checked = widget.isChecked()       
-    return checked    
-
-#todo Borrar
-def setChecked(widget, checked=True):
-    
-    if type(widget) is str:
-        widget = _dialog.findChild(QWidget, widget)       
-    if not widget:
-        return
-    if type(widget) is QCheckBox:
-        widget.setChecked(bool(checked))
-
-#todo Borrar
-def getSelectedItem(widget, return_string_null=True):
-    
-    if type(widget) is str:
-        widget = _dialog.findChild(QComboBox, widget)        
-    if return_string_null:
-        widget_text = "null"   
-    else:
-        widget_text = "" 
-    if widget:
-        if widget.currentText():
-            widget_text = widget.currentText()       
-    return widget_text    
-
-#todo Borrar
-def setSelectedItem(widget, text):
-
-    if type(widget) is str:
-        widget = _dialog.findChild(QComboBox, widget)    
-    if widget:
-        index = widget.findText(text)
-        if index == -1:
-            index = 0
-        widget.setCurrentIndex(index);        
 
 
 def setCurrentIndex(widget, index):
@@ -441,48 +279,7 @@ def set_model_by_list(string_list, widget, proxy_model):
     completer.setCompletionMode(QCompleter.UnfilteredPopupCompletion)
     widget.setCompleter(completer)
 
-#todo Borrar
-def get_item_data(widget, index=0):
-    """ Get item data of current index of the @widget """
-    
-    code = -1
-    if type(widget) is str:
-        widget = _dialog.findChild(QWidget, widget)          
-    if widget:
-        if type(widget) is QComboBox:
-            current_index = widget.currentIndex()     
-            elem = widget.itemData(current_index)
-            code = elem[index]            
 
-    return code
 
-#todo Borrar
-def set_item_data(combo, rows, index_to_show=0, reverse=False, combo_clear=True):
-    """ Populate @combo with list @rows and show field @index_to_show """
-
-    records = []
-    if rows is None:
-        return
-    for row in rows:
-        elem = [row[0], row[1]]
-        records.append(elem)
-
-    combo.blockSignals(True)
-    if combo_clear:
-        combo.clear()
-
-    records_sorted = sorted(records, key=operator.itemgetter(1), reverse=reverse)
-    for record in records_sorted:
-        combo.addItem(record[index_to_show], record)
-        combo.blockSignals(False)
-#todo Borrar
-def set_combo_itemData(combo, value, item1):
-    """ Set text to combobox populate with more than 1 item for row
-        @item1: element to compare
-    """
-    for i in range(0, combo.count()):
-        elem = combo.itemData(i)
-        if value == elem[item1]:
-            combo.setCurrentIndex(i)
 
 

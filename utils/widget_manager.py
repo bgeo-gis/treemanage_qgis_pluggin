@@ -89,6 +89,7 @@ class WidgetManager(object):
             text = "'" + text + "'"
         return text
 
+
     def getText(self, widget, return_string_null=True):
 
         if type(widget) is str:
@@ -125,6 +126,7 @@ class WidgetManager(object):
         elif type(widget) is QComboBox:
             self.setSelectedItem(widget, text)
 
+
     def setText(self, widget, text):
 
         if type(widget) is str:
@@ -142,6 +144,59 @@ class WidgetManager(object):
                 value = 0
             widget.setValue(float(value))
 
+
+    def getCalendarDate(self, widget, date_format="yyyy/MM/dd", datetime_format="yyyy/MM/dd hh:mm:ss"):
+
+        date = None
+        if type(widget) is str:
+            widget = self.dialog.findChild(QWidget, widget)
+        if not widget:
+            return
+        if type(widget) is QDateEdit:
+            date = widget.date().toString(date_format)
+        elif type(widget) is QDateTimeEdit:
+            date = widget.dateTime().toString(datetime_format)
+        elif type(widget) is QgsDateTimeEdit and widget.displayFormat() == 'dd/MM/yyyy':
+            date = widget.dateTime().toString(date_format)
+        elif type(widget) is QgsDateTimeEdit and widget.displayFormat() == 'dd/MM/yyyy hh:mm:ss':
+            date = widget.dateTime().toString(datetime_format)
+
+        return date
+
+
+    def setCalendarDate(self, widget, date, default_current_date=True):
+
+        if type(widget) is str:
+            widget = self.dialog.findChild(QWidget, widget)
+        if not widget:
+            return
+        if type(widget) is QDateEdit \
+                or (type(widget) is QgsDateTimeEdit and widget.displayFormat() == 'dd/MM/yyyy'):
+            if date is None:
+                if default_current_date:
+                    date = QDate.currentDate()
+                else:
+                    date = QDate.fromString('01/01/2000', 'dd/MM/yyyy')
+            widget.setDate(date)
+        elif type(widget) is QDateTimeEdit \
+                or (type(widget) is QgsDateTimeEdit and widget.displayFormat() == 'dd/MM/yyyy hh:mm:ss'):
+            if date is None:
+                date = QDateTime.currentDateTime()
+            widget.setDateTime(date)
+
+
+    def setTimeEdit(self, widget, time):
+
+        if type(widget) is str:
+            widget = self.dialog.findChild(QWidget, widget)
+        if not widget:
+            return
+        if type(widget) is QTimeEdit:
+            if time is None:
+                time = QTime(00, 00, 00)
+            widget.setTime(time)
+
+
     def setSelectedItem(self, widget, text):
 
         if type(widget) is str:
@@ -151,6 +206,7 @@ class WidgetManager(object):
             if index == -1:
                 index = 0
             widget.setCurrentIndex(index)
+
 
     def isChecked(self, widget):
 
@@ -169,6 +225,7 @@ class WidgetManager(object):
             return
         if type(widget) is QCheckBox:
             widget.setChecked(bool(checked))
+
 
     def getSelectedItem(self, widget, return_string_null=True):
 

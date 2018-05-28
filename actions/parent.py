@@ -90,7 +90,7 @@ class ParentAction(object):
 
         if dialog is None:
             dialog = self.dlg
-
+        self.controller.log_info(str(dialog.objectName()))
         self.controller.plugin_settings_set_value(dialog.objectName() + "_width", dialog.width())
         self.controller.plugin_settings_set_value(dialog.objectName() + "_height", dialog.height())
         self.controller.plugin_settings_set_value(dialog.objectName() + "_x", dialog.pos().x() + 8)
