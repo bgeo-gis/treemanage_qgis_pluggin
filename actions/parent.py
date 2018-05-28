@@ -173,7 +173,7 @@ class ParentAction(object):
         sql += (" ORDER BY column_index")
 
 
-        rows = self.controller.get_rows(sql, log_info=False)
+        rows = self.controller.get_rows(sql, log_info=False, log_sql=True)
         if not rows:
             return
 

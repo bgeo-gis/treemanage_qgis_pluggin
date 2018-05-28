@@ -20,12 +20,12 @@ import sys
 if 'nt' in sys.builtin_module_names: 
     import _winreg 
 
-
+#todo Borrar
 def setDialog(p_dialog):
     global _dialog
     _dialog = p_dialog
 
-
+#todo Borrar
 def dialog():
     return _dialog
 
@@ -97,7 +97,7 @@ def fillWidgets(rows, index_widget=0, index_text=1):
         for row in rows:
             setWidgetText(str(row[index_widget]), str(row[index_text]))
             
-
+#TODO borrar
 def getText(widget, return_string_null=True):
     
     if type(widget) is str:
@@ -120,7 +120,7 @@ def getText(widget, return_string_null=True):
             elem_text = ""
     return elem_text      
 
-
+#todo Borrar
 def setText(widget, text):
     
     if type(widget) is str:
@@ -206,7 +206,7 @@ def getWidgetType(widget):
         return None   
     return type(widget)
 
-
+#TODO borrar
 def getWidgetText(widget, add_quote=False, return_string_null=True):
     
     if type(widget) is str:
@@ -222,7 +222,7 @@ def getWidgetText(widget, add_quote=False, return_string_null=True):
         text = "'"+text+"'"  
     return text
 
-
+#todo Borrar
 def setWidgetText(widget, text):
     
     if type(widget) is str:
@@ -236,7 +236,7 @@ def setWidgetText(widget, text):
     elif type(widget) is QComboBox:
         setSelectedItem(widget, text)
 
-
+#todo Borrar
 def isChecked(widget):
     
     if type(widget) is str:
@@ -246,7 +246,7 @@ def isChecked(widget):
         checked = widget.isChecked()       
     return checked    
 
-
+#todo Borrar
 def setChecked(widget, checked=True):
     
     if type(widget) is str:
@@ -256,7 +256,7 @@ def setChecked(widget, checked=True):
     if type(widget) is QCheckBox:
         widget.setChecked(bool(checked))
 
-
+#todo Borrar
 def getSelectedItem(widget, return_string_null=True):
     
     if type(widget) is str:
@@ -270,7 +270,7 @@ def getSelectedItem(widget, return_string_null=True):
             widget_text = widget.currentText()       
     return widget_text    
 
-
+#todo Borrar
 def setSelectedItem(widget, text):
 
     if type(widget) is str:
@@ -441,7 +441,7 @@ def set_model_by_list(string_list, widget, proxy_model):
     completer.setCompletionMode(QCompleter.UnfilteredPopupCompletion)
     widget.setCompleter(completer)
 
-
+#todo Borrar
 def get_item_data(widget, index=0):
     """ Get item data of current index of the @widget """
     
@@ -456,7 +456,7 @@ def get_item_data(widget, index=0):
 
     return code
 
-
+#todo Borrar
 def set_item_data(combo, rows, index_to_show=0, reverse=False, combo_clear=True):
     """ Populate @combo with list @rows and show field @index_to_show """
 
@@ -475,7 +475,7 @@ def set_item_data(combo, rows, index_to_show=0, reverse=False, combo_clear=True)
     for record in records_sorted:
         combo.addItem(record[index_to_show], record)
         combo.blockSignals(False)
-
+#todo Borrar
 def set_combo_itemData(combo, value, item1):
     """ Set text to combobox populate with more than 1 item for row
         @item1: element to compare

@@ -90,13 +90,6 @@
    </property>
    <layout class="QHBoxLayout" name="horizontalLayout_3">
     <item>
-     <widget class="QPushButton" name="btn_new_prices">
-      <property name="text">
-       <string>Preus</string>
-      </property>
-     </widget>
-    </item>
-    <item>
      <widget class="QPushButton" name="btn_accept">
       <property name="text">
        <string>Accept</string>

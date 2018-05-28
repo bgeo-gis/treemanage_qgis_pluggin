@@ -24,7 +24,7 @@ from ..ui.month_selector import MonthSelector
 from ..ui.price_management import PriceManagement
 from ..ui.tree_manage import TreeManage
 from ..ui.tree_selector import TreeSelector
-
+from ..utils.widget_manager import WidgetManager
 import gw_utilities
 
 from functools import partial
@@ -48,81 +48,74 @@ class Basic(ParentAction):
     def set_project_type(self, project_type):
         self.project_type = project_type
 
-    def main_tree_manage(self):
-        """ Button 01: Tree selector """
-
-        dlg_tree_manage = TreeManage()
-        gw_utilities.setDialog(dlg_tree_manage)
-        dlg_tree_manage.setFixedSize(300, 170)
-
-        self.load_settings(dlg_tree_manage)
-
-        validator = QIntValidator(1, 9999999)
-        dlg_tree_manage.txt_year.setValidator(validator)
-        table_name = 'planning'
-        field_id = 'plan_year'
-        field_name = 'plan_year'
-        self.populate_cmb_years(table_name,  field_id, field_name, dlg_tree_manage.cbx_years)
-
-        dlg_tree_manage.rejected.connect(partial(self.close_dialog, dlg_tree_manage))
-
-        dlg_tree_manage.btn_cancel.clicked.connect(partial(self.close_dialog, dlg_tree_manage))
-        dlg_tree_manage.btn_accept.clicked.connect(partial(self.get_year, dlg_tree_manage))
-      
-        #TODO borrar estas tres lineas
-        now = datetime.datetime.now()
-        gw_utilities.setWidgetText(dlg_tree_manage.txt_year, str(now.year + 1))
-        gw_utilities.setChecked(dlg_tree_manage.chk_year, True)
-        gw_utilities.set_combo_itemData(dlg_tree_manage.cbx_years, str(now.year + 1), 1)
-
-        dlg_tree_manage.exec_()
-
     def basic_new_prices(self, dialog=None):
+        """ Button 03: Price generator """
         # Close previous dialog
         if dialog is not None:
             self.close_dialog(dialog)
+        self.dlg_new_prices = WidgetManager(NewPrices())
 
-        self.dlg_new_prices = NewPrices()
         validator = QIntValidator(1, 9999999)
-        self.dlg_new_prices.txt_year.setValidator(validator)
+        self.dlg_new_prices.dialog.txt_year.setValidator(validator)
         table_name = 'cat_price'
         field_id = 'year'
         field_name = 'year'
 
-        self.dlg_new_prices.btn_cancel.clicked.connect(partial(self.close_dialog, self.dlg_new_prices))
-        self.dlg_new_prices.btn_accept.clicked.connect(partial(self.manage_new_price_catalog))
-        self.populate_cmb_years(table_name, field_id, field_name,  self.dlg_new_prices.cbx_years)
-        self.set_completer_object(table_name, self.dlg_new_prices.txt_year, 'year')
-        self.dlg_new_prices.exec_()
+        self.dlg_new_prices.dialog.rejected.connect(partial(self.close_dialog, self.dlg_new_prices.dialog))
+        self.dlg_new_prices.dialog.btn_cancel.clicked.connect(partial(self.close_dialog, self.dlg_new_prices.dialog))
+        self.dlg_new_prices.dialog.btn_accept.clicked.connect(partial(self.manage_new_price_catalog))
+        self.populate_cmb_years(self.dlg_new_prices, table_name, field_id, field_name,  self.dlg_new_prices.dialog.cbx_years)
+        self.set_completer_object(table_name, self.dlg_new_prices.dialog.txt_year, 'year')
+        self.dlg_new_prices.dialog.exec_()
+
 
     def manage_new_price_catalog(self):
-        new_year = self.dlg_new_prices.txt_year.text()
+
+        table_name = "cat_price"
+        new_year = self.dlg_new_prices.dialog.txt_year.text()
 
         if new_year is None or new_year == '':
             msg = "Has de possar l'any corresponent"
             self.controller.show_warning(msg)
             return
-        copy_years = self.dlg_new_prices.chk_year.isChecked()
+
+        copy_years = self.dlg_new_prices.dialog.chk_year.isChecked()
         if copy_years:
-            old_year = gw_utilities.get_item_data(self.dlg_new_prices.cbx_years)
+            old_year = gw_utilities.get_item_data(self.dlg_new_prices.dialog.cbx_years)
             if old_year == -1:
                 msg = "No tens cap any seleccionat, desmarca l'opcio de copiar preus"
                 self.controller.show_warning(msg)
                 return
         else:
-            old_year = None
-        #TODO WIP como pasar null al segundo parametro  de a la funcion de barbara???
-        sql = ("SELECT " + self.schema_name + ".create_price('"+str(new_year)+"')")
-        self.controller.execute_sql(sql)
-        return
-        # Close perevious dialog
-        self.close_dialog(self.dlg_new_prices)
+            old_year = 0
 
-        dlg_prices_management = PriceManagement()
-        table_view = 'v_edit_price'
+        sql = ("SELECT DISTINCT(year) FROM " + self.schema_name + "." + str(table_name) + " "
+               " WHERE year = '" + str(new_year) + "'")
+        row = self.controller.get_row(sql)
+        if not row or row is None:
+            sql = ("SELECT " + self.schema_name + ".create_price('" + str(new_year) + "','" + str(old_year) + "')")
+            self.controller.execute_sql(sql)
+        else:
+            message = ("Estas a punt de sobreescriure els preus de l'any " + str(new_year) + " ")
+
+            answer = self.controller.ask_question(message, "Warning")
+            if answer:
+                sql = ("SELECT " + self.schema_name + ".create_price('" + str(new_year) + "','" + str(old_year) + "')")
+                self.controller.execute_sql(sql)
+
+        # Close perevious dialog
+        self.close_dialog(self.dlg_new_prices.dialog)
+
+        # Set dialog and signals
+        dlg_prices_management = WidgetManager(PriceManagement())
+        dlg_prices_management.dialog.btn_close.clicked.connect(partial(self.close_dialog, dlg_prices_management.dialog))
+        dlg_prices_management.dialog.rejected.connect(partial(self.close_dialog, dlg_prices_management.dialog))
         # Populate QTableView
-        self.fill_table_prices(dlg_prices_management.tbl_price_list, table_view, new_year, set_edit_triggers=QTableView.NoEditTriggers)
-        dlg_prices_management.exec_()
+        table_view = 'v_edit_price'
+        self.fill_table_prices(dlg_prices_management.dialog.tbl_price_list, table_view, new_year, set_edit_triggers=QTableView.DoubleClicked)
+        self.set_table_columns(dlg_prices_management.dialog.tbl_price_list, table_view, 'basic_cat_price')
+        dlg_prices_management.dialog.exec_()
+
 
     def fill_table_prices(self, qtable, table_view, new_year, set_edit_triggers=QTableView.NoEditTriggers):
         """ Set a model with selected filter.
@@ -149,7 +142,41 @@ class Basic(ParentAction):
         qtable.setModel(model)
         qtable.model().setFilter(expr)
 
-    def populate_cmb_years(self, table_name, field_id, field_name, combo, reverse=False):
+
+
+
+    def main_tree_manage(self):
+        """ Button 01: Tree selector """
+
+        dlg_tree_manage = WidgetManager(TreeManage())
+        dlg_tree_manage.dialog.setFixedSize(300, 170)
+
+        self.load_settings(dlg_tree_manage.dialog)
+
+        validator = QIntValidator(1, 9999999)
+        dlg_tree_manage.dialog.txt_year.setValidator(validator)
+        table_name = 'planning'
+        field_id = 'plan_year'
+        field_name = 'plan_year'
+        self.populate_cmb_years(dlg_tree_manage, table_name,  field_id, field_name, dlg_tree_manage.dialog.cbx_years)
+
+
+      
+        #TODO borrar estas tres lineas
+        # now = datetime.datetime.now()
+        # dlg_tree_manage.setWidgetText(dlg_tree_manage.dialog.txt_year, str(now.year + 1))
+        # dlg_tree_manage.setChecked(dlg_tree_manage.dialog.chk_year, True)
+        # dlg_tree_manage.set_combo_itemData(dlg_tree_manage.dialog.cbx_years, str(now.year + 1), 1)
+
+
+        dlg_tree_manage.dialog.rejected.connect(partial(self.close_dialog, dlg_tree_manage.dialog))
+        dlg_tree_manage.dialog.btn_cancel.clicked.connect(partial(self.close_dialog, dlg_tree_manage.dialog))
+        dlg_tree_manage.dialog.btn_accept.clicked.connect(partial(self.get_year, dlg_tree_manage))
+
+        dlg_tree_manage.dialog.exec_()
+
+
+    def populate_cmb_years(self, widget_manager, table_name, field_id, field_name, combo, reverse=False):
         """
         sql = ("SELECT current_database()")
         rows = self.controller.get_rows(sql)
@@ -161,15 +188,15 @@ class Basic(ParentAction):
         if rows is None:
             return
 
-        gw_utilities.set_item_data(combo, rows, 1, reverse)
+        widget_manager.set_item_data(combo, rows, 1, reverse)
 
 
-    def get_year(self, dialog):
+    def get_year(self, wm):
         update = False
         self.selected_year = None
 
-        if dialog.txt_year.text() != '':
-            self.plan_year = gw_utilities.getWidgetText(dialog.txt_year)
+        if wm.dialog.txt_year.text() != '':
+            self.plan_year = wm.getWidgetText(wm.dialog.txt_year)
             sql = ("SELECT year from "+self.schema_name+".v_plan_mu "
                    " WHERE year='"+self.plan_year+"'")
             row = self.controller.get_row(sql)
@@ -177,8 +204,9 @@ class Basic(ParentAction):
                 message = "No hi ha preus per aquest any"
                 self.controller.show_warning(message)
                 return None
-            if gw_utilities.isChecked(dialog.chk_year) and gw_utilities.get_item_data(dialog.cbx_years, 0) != -1:
-                self.selected_year = gw_utilities.get_item_data(dialog.cbx_years, 0)
+
+            if wm.isChecked(wm.dialog.chk_year) and wm.get_item_data(wm.dialog.cbx_years, 0) != -1:
+                self.selected_year = wm.get_item_data(wm.dialog.cbx_years, 0)
                 sql = ("SELECT DISTINCT(plan_year) FROM " + self.schema_name + ".planning"
                        " WHERE plan_year ='" + str(self.selected_year) + "'")
                 row = self.controller.get_row(sql)
@@ -186,7 +214,7 @@ class Basic(ParentAction):
                     update = True
             else:
                 self.selected_year = self.plan_year
-            self.close_dialog(dialog)
+            self.close_dialog(wm.dialog)
             self.tree_selector(update)
 
         else:
@@ -203,7 +231,7 @@ class Basic(ParentAction):
 
         dlg_selector.setWindowTitle("Tree selector")
         dlg_selector.lbl_year.setText(self.plan_year)
-        # utils.setWidgetText(dlg_selector.lbl_year, self.plan_year)
+
         tableleft = 'v_plan_mu'
         tableright = 'planning'
         table_view = 'v_plan_mu_year'
