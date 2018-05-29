@@ -17,7 +17,7 @@ from PyQt4.QtSql import QSqlTableModel
 from PyQt4.QtGui import QAbstractItemView, QTableView, QIntValidator, QComboBox
 
 
-
+from ..actions.manage_visit import ManageVisit
 from ..ui.new_prices import NewPrices
 from ..ui.month_manage import MonthManage
 from ..ui.month_selector import MonthSelector
@@ -38,7 +38,7 @@ class Basic(ParentAction):
         """ Class to control toolbar 'basic' """
         self.minor_version = "3.0"
         ParentAction.__init__(self, iface, settings, controller, plugin_dir)
-
+        self.manage_visit = ManageVisit(iface, settings, controller, plugin_dir)
         self.selected_year = None
         self.plan_year = None
 
@@ -614,10 +614,8 @@ class Basic(ParentAction):
         self.calculate_total_price(month_selector, self.planned_year)
 
         month_selector.dialog.btn_close.clicked.connect(partial(self.close_dialog, month_selector.dialog))
-        month_selector.dialog.btn_close.clicked.connect(partial(self.close_dialog, month_selector.dialog))
+        month_selector.dialog.rejected.connect(partial(self.close_dialog, month_selector.dialog))
 
-        month_selector.dialog.rejected.connect(partial(self.close_dialog, month_selector.dialog))
-        month_selector.dialog.rejected.connect(partial(self.close_dialog, month_selector.dialog))
         month_selector.dialog.exec_()
 
 
@@ -786,3 +784,6 @@ class Basic(ParentAction):
         model.database().rollback()
 
 
+    def add_visit(self):
+        """ Button 04: Add visit """
+        self.manage_visit.manage_visit()

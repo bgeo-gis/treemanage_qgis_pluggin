@@ -20,6 +20,14 @@
         <source>02_text</source>
         <translation>Planificador mensual</translation>
     </message>
+    <message>
+        <source>03_text</source>
+        <translation>Prices generator</translation>
+    </message>
+        <message>
+        <source>04_text</source>
+        <translation>Add visit</translation>
+    </message>
 </context>
 
 </TS>

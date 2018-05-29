@@ -30,7 +30,8 @@ class DaoController():
         self.translator = None           
         self.plugin_dir = None           
         self.tree_manage = None
-        self.logged = False       
+        self.logged = False
+        self.postgresql_version = None
         
     def set_tree_manage(self, tree_manage):
         self.tree_manage = tree_manage
@@ -367,8 +368,8 @@ class DaoController():
             sql += sql_fields[:-2] + ") VALUES ("   
               
             # Manage value 'current_user'   
-            if unique_value != 'current_user':
-                unique_value = "'" + unique_value + "'" 
+            # if unique_value != 'current_user':
+            #     unique_value = "'" + unique_value + "'"
             sql += unique_value + ", " + sql_values[:-2] + ");"         
         
         # Perform an UPDATE
@@ -393,9 +394,12 @@ class DaoController():
             
     def execute_upsert(self, tablename, unique_field, unique_value, fields, values, commit=True):
         """ Execute UPSERT sentence """
-         
+        self.log_info(str(unique_value))
         # Check PostgreSQL version
-        if int(self.postgresql_version) < 90500:   
+        if not self.postgresql_version:
+            self.get_postgresql_version()
+
+        if int(self.postgresql_version) < 90500:
             self.execute_insert_or_update(tablename, unique_field, unique_value, fields, values, commit=commit)
             return True
          
@@ -410,7 +414,7 @@ class DaoController():
           
         # Manage value 'current_user'   
         if unique_value != 'current_user':
-            unique_value = "'" + unique_value + "'" 
+            unique_value = "'" + unique_value + "'"
             
         # Iterate over values            
         sql_values = ""

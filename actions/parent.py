@@ -6,10 +6,10 @@ or (at your option) any later version.
 """
 
 # -*- coding: utf-8 -*-
-from qgis.core import QgsExpression
+from qgis.core import QgsExpression, QgsFeatureRequest
 from PyQt4.QtCore import Qt, QSettings
-from PyQt4.QtGui import QStringListModel, QCompleter
-
+from PyQt4.QtGui import QStringListModel, QCompleter, QIcon, QApplication
+from PyQt4.QtSql import QSqlTableModel
 
 import os
 import sys
@@ -17,6 +17,7 @@ import webbrowser
 import ConfigParser
 from functools import partial
 import gw_utilities
+
 
 class ParentAction(object):
     def __init__(self, iface, settings, controller, plugin_dir):
@@ -34,7 +35,7 @@ class ParentAction(object):
         self.project_type = None
         self.file_gsw = None
         self.gsw_settings = None
-
+        self.lazy_widget = None
 
     def set_controller(self, controller):
         """ Set controller class """
@@ -43,7 +44,7 @@ class ParentAction(object):
         self.schema_name = self.controller.schema_name
 
     def get_plugin_version(self):
-        ''' Get plugin version from metadata.txt file '''
+        """ Get plugin version from metadata.txt file """
 
         # Check if metadata file exists
         metadata_file = os.path.join(self.plugin_dir, 'metadata.txt')
@@ -60,11 +61,6 @@ class ParentAction(object):
             self.controller.show_warning(message)
 
         return plugin_version
-
-
-
-
-
 
 
     def load_settings(self, dialog=None):
@@ -90,7 +86,7 @@ class ParentAction(object):
 
         if dialog is None:
             dialog = self.dlg
-        self.controller.log_info(str(dialog.objectName()))
+
         self.controller.plugin_settings_set_value(dialog.objectName() + "_width", dialog.width())
         self.controller.plugin_settings_set_value(dialog.objectName() + "_height", dialog.height())
         self.controller.plugin_settings_set_value(dialog.objectName() + "_x", dialog.pos().x() + 8)
@@ -133,13 +129,20 @@ class ParentAction(object):
             pass
 
 
-
     def hide_colums(self, widget, comuns_to_hide):
         for i in range(0, len(comuns_to_hide)):
             widget.hideColumn(comuns_to_hide[i])
 
+    def set_icon(self, widget, icon):
+        """ Set @icon to selected @widget """
 
-
+        # Get icons folder
+        icons_folder = os.path.join(self.plugin_dir, 'icons')
+        icon_path = os.path.join(icons_folder, str(icon) + ".png")
+        if os.path.exists(icon_path):
+            widget.setIcon(QIcon(icon_path))
+        else:
+            self.controller.log_info("File not found", parameter=icon_path)
 
     def check_expression(self, expr_filter, log_info=False):
         """ Check if expression filter @expr_filter is valid """
@@ -150,10 +153,8 @@ class ParentAction(object):
         if expr.hasParserError():
             message = "Expression Error"
             self.controller.log_warning(message, parameter=expr_filter)
-            return (False, expr)
-        return (True, expr)
-
-
+            return False, expr
+        return True, expr
 
 
     def set_table_columns(self, widget, table_name, project_type=None):
@@ -194,6 +195,7 @@ class ParentAction(object):
         for column in columns_to_delete:
             widget.hideColumn(column)
 
+
     def set_completer_object(self, tablename, widget, field_id):
         """ Set autocomplete of widget @table_object + "_id"
             getting id's from selected @table_object
@@ -217,6 +219,33 @@ class ParentAction(object):
         model = QStringListModel()
         model.setStringList(row)
         self.completer.setModel(model)
+
+
+    def refresh_map_canvas(self, restore_cursor=False):
+        """ Refresh all layers present in map canvas """
+
+        self.canvas.refreshAllLayers()
+        for layer_refresh in self.canvas.layers():
+            layer_refresh.triggerRepaint()
+
+        if restore_cursor:
+            self.set_cursor_restore()
+
+
+    def set_cursor_restore(self):
+        """ Restore to previous cursors """
+        QApplication.restoreOverrideCursor()
+
+
+
+
+
+
+
+
+
+
+
 
 
 

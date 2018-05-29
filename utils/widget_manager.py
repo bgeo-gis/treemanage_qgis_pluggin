@@ -239,3 +239,29 @@ class WidgetManager(object):
             if widget.currentText():
                 widget_text = widget.currentText()
         return widget_text
+
+    def fillComboBox(self, widget, rows, allow_nulls=True, clear_combo=True):
+
+        if rows is None:
+            return
+        if type(widget) is str:
+            widget = self.dialog.findChild(QComboBox, widget)
+        if clear_combo:
+            widget.clear()
+        if allow_nulls:
+            widget.addItem('')
+        for row in rows:
+            if len(row) > 1:
+                elem = row[0][0]
+                userData = row[1]
+            else:
+                elem = row[0]
+                userData = None
+            if elem:
+                try:
+                    if isinstance(elem, int) or isinstance(elem, float):
+                        widget.addItem(str(elem), userData)
+                    else:
+                        widget.addItem(elem, userData)
+                except:
+                    widget.addItem(str(elem), userData)
