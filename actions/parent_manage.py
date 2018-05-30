@@ -298,7 +298,7 @@ class ParentManage(ParentAction, object):
 
         # Iterate over all layers of the group
         for layer in self.layers[self.geom_type]:
-            if layer.selectedFeatureCount() > 0:
+            if layer.selectedFeatureCount() > 0 and self.iface.legendInterface().isLayerVisible(layer):
                 # Get selected features of the layer
                 features = layer.selectedFeatures()
                 for feature in features:

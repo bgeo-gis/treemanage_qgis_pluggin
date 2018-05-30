@@ -139,9 +139,15 @@ class ManageVisit(ParentManage, QObject):
         self.feature_type.currentIndexChanged.connect(partial(self.event_feature_type_selected))
         self.parameter_type_id.currentIndexChanged.connect(partial(self.set_parameter_id_combo))
         self.fill_combos()
-
+        sql = ("SELECT value FROM " + self.schema_name + ".config_param_user "
+               " WHERE parameter = 'visitcat_id' AND cur_user = current_user AND context='arbrat'")
+        row = self.controller.get_row(sql)
+        if row:
+            self.wm_add_visit.set_combo_itemData(self.visitcat_id, str(row['value']), 1)
+        self.set_combos(self.wm_add_visit, self.wm_add_visit.dialog.parameter_type_id, 'parameter_type_id')
+        self.set_combos(self.wm_add_visit, self.wm_add_visit.dialog.parameter_id, 'parameter_id')
         # Set autocompleters of the form
-        self.set_completers(self.add_visit_mw.dialog.visit_id, 'om_visit')
+        self.set_completers(self.wm_add_visit.dialog.visit_id, 'om_visit')
 
         # Show id of visit. If not set, infer a new value
         if not visit_id:
@@ -152,7 +158,15 @@ class ManageVisit(ParentManage, QObject):
         if self.locked_geom_type:
             self.set_locked_relation()
         # Open the dialog
-        self.open_dialog(self.add_visit_mw.dialog, dlg_name="add_visit")
+        self.open_dialog(self.wm_add_visit.dialog, dlg_name="add_visit")
+
+
+    def set_combos(self, wm, qcombo, parameter):
+        sql = ("SELECT value FROM " + self.schema_name + ".config_param_user "
+               " WHERE parameter = '"+str(parameter)+"' AND cur_user= current_user AND context='arbrat'")
+        row = self.controller.get_row(sql)
+        if row:
+            wm.setWidgetText(qcombo, str(row['value']))
 
 
     def manage_accepted(self):
@@ -378,7 +392,8 @@ class ManageVisit(ParentManage, QObject):
             pass
         # tab Event
         if index == self.tab_index('EventTab'):
-            self.entered_event_tab()
+            pass
+            # self.entered_event_tab()
 
 
     def entered_event_tab(self):
