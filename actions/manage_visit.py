@@ -55,8 +55,8 @@ class ManageVisit(ParentManage, QObject):
 
         # Create the dialog and signals and related ORM Visit class
         self.current_visit = OmVisit(self.controller)
-        self.add_visit_mw = WidgetManager(AddVisit())
-        self.load_settings(self.add_visit_mw.dialog)
+        self.wm_add_visit = WidgetManager(AddVisit())
+        self.load_settings(self.wm_add_visit.dialog)
 
         # Get expl_id from previous dialog
         self.expl_id = expl_id
@@ -120,18 +120,18 @@ class ManageVisit(ParentManage, QObject):
         self.tabs.setCurrentIndex(self.current_tab_index)
 
         # Set signals
-        self.add_visit_mw.dialog.rejected.connect(partial(self.close_dialog, self.add_visit_mw.dialog))
-        self.add_visit_mw.dialog.rejected.connect(self.manage_rejected)
-        self.add_visit_mw.dialog.accepted.connect(self.manage_accepted)
-        self.add_visit_mw.dialog.btn_event_insert.clicked.connect(self.event_insert)
-        self.add_visit_mw.dialog.btn_event_delete.clicked.connect(self.event_delete)
-        self.add_visit_mw.dialog.btn_event_update.clicked.connect(self.event_update)
-        self.add_visit_mw.dialog.btn_feature_insert.clicked.connect(partial(self.insert_feature, self.feature_id, self.tbl_relation))
-        self.add_visit_mw.dialog.btn_feature_delete.clicked.connect(partial(self.delete_records, self.add_visit_mw, self.tbl_relation))
-        self.add_visit_mw.dialog.btn_feature_snapping.clicked.connect(partial(self.selection_init, self.tbl_relation))
+        self.wm_add_visit.dialog.rejected.connect(partial(self.close_dialog, self.wm_add_visit.dialog))
+        self.wm_add_visit.dialog.rejected.connect(self.manage_rejected)
+        self.wm_add_visit.dialog.accepted.connect(self.manage_accepted)
+        self.wm_add_visit.dialog.btn_event_insert.clicked.connect(self.event_insert)
+        self.wm_add_visit.dialog.btn_event_delete.clicked.connect(self.event_delete)
+        self.wm_add_visit.dialog.btn_event_update.clicked.connect(self.event_update)
+        self.wm_add_visit.dialog.btn_feature_insert.clicked.connect(partial(self.insert_feature, self.feature_id, self.tbl_relation))
+        self.wm_add_visit.dialog.btn_feature_delete.clicked.connect(partial(self.delete_records, self.wm_add_visit, self.tbl_relation))
+        self.wm_add_visit.dialog.btn_feature_snapping.clicked.connect(partial(self.selection_init, self.tbl_relation))
         self.tabs.currentChanged.connect(partial(self.manage_tab_changed))
         self.visit_id.textChanged.connect(self.manage_visit_id_change)
-        self.add_visit_mw.dialog.btn_add_geom.clicked.connect(self.add_point)
+        self.wm_add_visit.dialog.btn_add_geom.clicked.connect(self.add_point)
 
         # self.event_feature_type_selected()
 
@@ -227,7 +227,7 @@ class ManageVisit(ParentManage, QObject):
         exist = self.current_visit.fetch()
         if exist:
             # B) Fill the GUI values of the current visit
-            self.fill_widget_with_fields(self.add_visit_mw.dialog, self.current_visit, self.current_visit.field_names())
+            self.fill_widget_with_fields(self.wm_add_visit.dialog, self.current_visit, self.current_visit.field_names())
 
         # C) load all related events in the relative table
         self.filter = "visit_id = '" + str(text) + "'"
@@ -288,12 +288,12 @@ class ManageVisit(ParentManage, QObject):
 
         # A) fill Visit basing on GUI values
         self.current_visit.id = int(self.visit_id.text())
-        self.current_visit.startdate = self.add_visit_mw.dialog.startdate.date().toString(Qt.ISODate)
-        self.current_visit.enddate = self.add_visit_mw.dialog.enddate.date().toString(Qt.ISODate)
+        self.current_visit.startdate = self.wm_add_visit.dialog.startdate.date().toString(Qt.ISODate)
+        self.current_visit.enddate = self.wm_add_visit.dialog.enddate.date().toString(Qt.ISODate)
         self.current_visit.user_name = self.user_name.text()
         self.current_visit.ext_code = self.ext_code.text()
-        self.current_visit.visitcat_id = self.add_visit_mw.get_item_data(self.add_visit_mw.dialog.visitcat_id, 0)
-        self.current_visit.descript = self.add_visit_mw.dialog.descript.text()
+        self.current_visit.visitcat_id = self.wm_add_visit.get_item_data(self.wm_add_visit.dialog.visitcat_id, 0)
+        self.current_visit.descript = self.wm_add_visit.dialog.descript.text()
         if self.expl_id:
             self.current_visit.expl_id = self.expl_id
         # update or insert but without closing the transaction: autocommit=False
@@ -396,7 +396,7 @@ class ManageVisit(ParentManage, QObject):
         rows = self.controller.get_rows(sql, commit=self.autocommit)
 
         if rows:
-            self.add_visit_mw.set_item_data(self.add_visit_mw.dialog.parameter_id, rows, 1)
+            self.wm_add_visit.set_item_data(self.wm_add_visit.dialog.parameter_id, rows, 1)
 
 
     def config_relation_table(self, qtable):
@@ -427,7 +427,7 @@ class ManageVisit(ParentManage, QObject):
         # 3) if so, select them => would appear in the table associated to the model
         self.geom_type = self.feature_type.currentText().lower()
         viewname = "v_edit_" + self.geom_type
-        self.set_completer_feature_id(self.add_visit_mw.dialog.feature_id, self.geom_type, viewname)
+        self.set_completer_feature_id(self.wm_add_visit.dialog.feature_id, self.geom_type, viewname)
 
         # set table model and completer
         # set a fake where expression to avoid to set model to None
@@ -484,7 +484,7 @@ class ManageVisit(ParentManage, QObject):
         self.visitcat_ids = self.controller.get_rows(sql, commit=self.autocommit)
 
         if self.visitcat_ids:
-            self.add_visit_mw.set_item_data(self.add_visit_mw.dialog.visitcat_id, self.visitcat_ids, 1)
+            self.wm_add_visit.set_item_data(self.wm_add_visit.dialog.visitcat_id, self.visitcat_ids, 1)
             # now get default value to be show in visitcat_id
             sql = ("SELECT value FROM " + self.schema_name + ".config_param_user"
                    " WHERE parameter = 'visitcat_vdefault' AND cur_user = current_user")
@@ -492,11 +492,11 @@ class ManageVisit(ParentManage, QObject):
             if row:
                 # if int then look for default row ans set it
                 try:
-                    self.add_visit_mw.set_combo_itemData(self.add_visit_mw.dialog.visitcat_id, row[0], 0)
-                    for i in range(0, self.add_visit_mw.dialog.visitcat_id.count()):
-                        elem = self.add_visit_mw.dialog.visitcat_id.itemData(i)
+                    self.wm_add_visit.set_combo_itemData(self.wm_add_visit.dialog.visitcat_id, row[0], 0)
+                    for i in range(0, self.wm_add_visit.dialog.visitcat_id.count()):
+                        elem = self.wm_add_visit.dialog.visitcat_id.itemData(i)
                         if str(row[0]) == str(elem[0]):
-                            self.add_visit_mw.setWidgetText(self.add_visit_mw.dialog.visitcat_id, (elem[1]))
+                            self.wm_add_visit.setWidgetText(self.wm_add_visit.dialog.visitcat_id, (elem[1]))
                 except TypeError:
                     pass
                 except ValueError:
@@ -510,30 +510,30 @@ class ManageVisit(ParentManage, QObject):
         #        " ORDER BY id")
         # rows = self.controller.get_rows(sql, commit=self.autocommit)
         rows = [['node']]
-        self.add_visit_mw.fillComboBox("feature_type", rows, allow_nulls=False)
+        self.wm_add_visit.fillComboBox("feature_type", rows, allow_nulls=False)
 
         # Event tab
         # Fill ComboBox parameter_type_id
         sql = ("SELECT id FROM " + self.schema_name + ".om_visit_parameter_type"
                " ORDER BY id")
         parameter_type_ids = self.controller.get_rows(sql, commit=self.autocommit)
-        self.add_visit_mw.fillComboBox("parameter_type_id", parameter_type_ids, allow_nulls=False)
+        self.wm_add_visit.fillComboBox("parameter_type_id", parameter_type_ids, allow_nulls=False)
 
         # now get default value to be show in parameter_type_id
-        sql = ("SELECT value FROM " + self.schema_name + ".config_param_user"
-               " WHERE parameter = 'om_param_type_vdefault' AND cur_user = current_user")
-        row = self.controller.get_row(sql, commit=self.autocommit)
-        if row:
-            # if int then look for default row ans set it
-            try:
-                parameter_type_id = int(row[0])
-                combo_value = parameter_type_ids[parameter_type_id]
-                combo_index = self.parameter_type_id.findText(combo_value)
-                self.parameter_type_id.setCurrentIndex(combo_index)
-            except TypeError:
-                pass
-            except ValueError:
-                pass
+        # sql = ("SELECT value FROM " + self.schema_name + ".config_param_user"
+        #        " WHERE parameter = 'om_param_type_vdefault' AND cur_user = current_user")
+        # row = self.controller.get_row(sql, commit=self.autocommit)
+        # if row:
+        #     # if int then look for default row ans set it
+        #     try:
+        #         parameter_type_id = int(row[0])
+        #         combo_value = parameter_type_ids[parameter_type_id]
+        #         combo_index = self.parameter_type_id.findText(combo_value)
+        #         self.parameter_type_id.setCurrentIndex(combo_index)
+        #     except TypeError:
+        #         pass
+        #     except ValueError:
+        #         pass
 
 
     def set_completers(self, widget, table_name):
@@ -577,7 +577,7 @@ class ManageVisit(ParentManage, QObject):
     def event_insert(self):
         """Add and event basing on form associated to the selected parameter_id."""
         # check a parameter_id is selected (can be that no value is available)
-        parameter_id = self.add_visit_mw.get_item_data(self.add_visit_mw.dialog.parameter_id, 0)
+        parameter_id = self.wm_add_visit.get_item_data(self.wm_add_visit.dialog.parameter_id, 0)
         if not parameter_id:
             message = "You need to select a valid parameter id"
             self.controller.show_info_box(message)
