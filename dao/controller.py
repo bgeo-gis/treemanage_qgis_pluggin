@@ -394,7 +394,6 @@ class DaoController():
             
     def execute_upsert(self, tablename, unique_field, unique_value, fields, values, commit=True):
         """ Execute UPSERT sentence """
-        self.log_info(str(unique_value))
         # Check PostgreSQL version
         if not self.postgresql_version:
             self.get_postgresql_version()
@@ -769,7 +768,7 @@ class DaoController():
         list_items = []        
         sql = ("SELECT tablename FROM " + self.schema_name + ".sys_feature_cat"
                " WHERE type = '" + geom_type.upper() + "'")
-        rows = self.get_rows(sql)
+        rows = self.get_rows(sql, log_sql=True)
         if rows:
             for row in rows:
                 layer = self.get_layer_by_tablename(row[0])

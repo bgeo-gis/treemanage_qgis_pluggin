@@ -101,11 +101,11 @@ def fillComboBoxList(widget, list_object, allow_nulls=True, clear_combo=True):
 
 
 
-def getWidget(widget):
-    
-    if type(widget) is str:
-        widget = _dialog.findChild(QWidget, widget)    
-    return widget    
+# def getWidget(widget):
+#
+#     if type(widget) is str:
+#         widget = _dialog.findChild(QWidget, widget)
+#     return widget
 
 
 def getWidgetType(widget):

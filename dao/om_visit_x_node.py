@@ -19,7 +19,7 @@ class OmVisitXNode(Table):
     id = GenericDescriptor(-1)
     visit_id = GenericDescriptor(None)
     node_id = GenericDescriptor(None)
-    is_last = GenericDescriptor(None)
+    # is_last = GenericDescriptor(None)
 
     def __init__(self, controller):
         """ Class constructor """        

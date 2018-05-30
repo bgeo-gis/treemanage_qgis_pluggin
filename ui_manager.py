@@ -17,3 +17,9 @@ class AddVisit(QtGui.QDialog, FORM_CLASS):
     def __init__(self):
         QtGui.QDialog.__init__(self)
         self.setupUi(self)
+
+FORM_CLASS = get_ui_class('event_standard.ui')
+class EventStandard(QtGui.QDialog, FORM_CLASS):
+    def __init__(self):
+        QtGui.QDialog.__init__(self)
+        self.setupUi(self)

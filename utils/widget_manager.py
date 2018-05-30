@@ -45,6 +45,12 @@ class WidgetManager(object):
 
         return code
 
+    def getWidget(self, widget):
+
+        if type(widget) is str:
+            widget = self.dialog.findChild(QWidget, widget)
+        return widget
+
     def set_combo_itemData(self, combo, value, item1):
         """ Set text to combobox populate with more than 1 item for row
             @item1: element to compare

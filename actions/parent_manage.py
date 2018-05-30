@@ -50,6 +50,8 @@ class ParentManage(ParentAction, object):
         self.layers['node'] = []
 
 
+
+
     def remove_selection(self, remove_groups=True):
         """ Remove all previous selections """
         layer = self.controller.get_layer_by_tablename("v_edit_node")
@@ -64,37 +66,25 @@ class ParentManage(ParentAction, object):
         self.canvas.refresh()
 
 
-    # def tab_feature_changed(self, table_object):
-    #     """ Set geom_type and layer depending selected tab
-    #         @table_object = ['doc' | 'element' | 'cat_work']
-    #     """
-    #     self.get_values_from_form()
-    #     if self.dlg.tab_feature.currentIndex() == 3:
-    #         self.dlg.btn_snapping.setEnabled(False)
-    #     else:
-    #         self.dlg.btn_snapping.setEnabled(True)
-    #
-    #     tab_position = self.dlg.tab_feature.currentIndex()
-    #     if tab_position == 0:
-    #         self.geom_type = "arc"
-    #     elif tab_position == 1:
-    #         self.geom_type = "node"
-    #     elif tab_position == 2:
-    #         self.geom_type = "connec"
-    #     elif tab_position == 3:
-    #         self.geom_type = "element"
-    #     elif tab_position == 4:
-    #         self.geom_type = "gully"
-    #
-    #     self.hide_generic_layers()
-    #     widget_name = "tbl_" + table_object + "_x_" + str(self.geom_type)
-    #     viewname = "v_edit_" + str(self.geom_type)
-    #     self.widget = utils_giswater.getWidget(widget_name)
-    #
-    #     # Adding auto-completion to a QLineEdit
-    #     self.set_completer_feature_id(self.geom_type, viewname)
-    #
-    #     self.iface.actionPan().trigger()
+
+
+    def add_point(self):
+        """ Create the appropriate map tool and connect to the corresponding signal """
+
+        self.emit_point = QgsMapToolEmitPoint(self.canvas)
+        self.previous_map_tool = self.canvas.mapTool()
+        self.canvas.setMapTool(self.emit_point)
+        self.emit_point.canvasClicked.connect(partial(self.get_xy))
+
+
+    def get_xy(self, point):
+        """ Get coordinates of selected point """
+
+        self.x = point.x()
+        self.y = point.y()
+        message = "Geometry has been added!"
+        self.controller.show_info(message)
+        self.emit_point.canvasClicked.disconnect()
 
 
     def set_completer_feature_id(self, widget, geom_type, viewname):
@@ -118,6 +108,10 @@ class ParentManage(ParentAction, object):
 
             model.setStringList(row)
             self.completer.setModel(model)
+
+
+
+
 
 
     def set_table_model(self, qtable, geom_type, expr_filter):
@@ -181,7 +175,6 @@ class ParentManage(ParentAction, object):
         self.lazy_widget = widget
         self.lazy_init_function = init_function
 
-
     def select_features_by_ids(self, geom_type, expr):
         """ Select features of layers of group @geom_type applying @expr """
 
@@ -197,23 +190,102 @@ class ParentManage(ParentAction, object):
                 else:
                     layer.removeSelection()
 
+    def delete_records(self, wm, table_object):
+        """ Delete selected elements of the table """
+
+        self.disconnect_signal_selection_changed()
+
+        if type(table_object) is str:
+            widget_name = "tbl_" + table_object + "_x_" + self.geom_type
+            widget = wm.getWidget(widget_name)
+            if not widget:
+                message = "Widget not found"
+                self.controller.show_warning(message, parameter=widget_name)
+                return
+        elif type(table_object) is QTableView:
+            widget = table_object
+        else:
+            message = "Table_object is not a table name or QTableView"
+            self.controller.log_info(message)
+            return
+
+        # Get selected rows
+        selected_list = widget.selectionModel().selectedRows()
+        if len(selected_list) == 0:
+            message = "Any record selected"
+            self.controller.show_info_box(message)
+            return
 
 
-    def connect_signal_selection_changed(self, table_object):
-        """ Connect signal selectionChanged """
+        self.ids = self.list_ids[self.geom_type]
+        field_id = self.geom_type + "_id"
 
-        try:
-            self.canvas.selectionChanged.connect(partial(self.selection_changed, table_object, self.geom_type))
-        except Exception:
-            pass
+        del_id = []
+        inf_text = ""
 
-    def disconnect_signal_selection_changed(self):
-        """ Disconnect signal selectionChanged """
+        for i in range(0, len(selected_list)):
+            row = selected_list[i].row()
+            id_feature = widget.model().record(row).value(field_id)
+            inf_text += str(id_feature) + ", "
 
-        try:
-            self.canvas.selectionChanged.disconnect()
-        except Exception:
-            pass
+            del_id.append(id_feature)
+        inf_text = inf_text[:-2]
+
+        message = "Are you sure you want to delete these records?"
+        title = "Delete records"
+        answer = self.controller.ask_question(message, title, inf_text)
+        if answer:
+            for el in del_id:
+                self.ids.remove(el)
+        else:
+            return
+
+        expr_filter = None
+        expr = None
+        if len(self.ids) > 0:
+
+            # Set expression filter with features in the list
+            expr_filter = "\"" + field_id + "\" IN ("
+            for i in range(len(self.ids)):
+                expr_filter += "'" + str(self.ids[i]) + "', "
+            expr_filter = expr_filter[:-2] + ")"
+
+            # Check expression
+            (is_valid, expr) = self.check_expression(expr_filter)  # @UnusedVariable
+            if not is_valid:
+                return
+
+        # Update model of the widget with selected expr_filter
+        self.reload_table(table_object, self.geom_type, expr_filter)
+        self.apply_lazy_init(table_object)
+
+        # Select features with previous filter
+        # Build a list of feature id's and select them
+        self.select_features_by_ids(self.geom_type, expr)
+
+        # Update list
+        self.list_ids[self.geom_type] = self.ids
+
+        self.connect_signal_selection_changed(table_object)
+
+
+
+
+
+
+
+
+    def selection_init(self, table_object):
+        """ Set canvas map tool to an instance of class 'MultipleSelection' """
+
+        multiple_selection = MultipleSelection(self.iface, self.controller, self.layers[self.geom_type],
+                                             parent_manage=self, table_object=table_object)
+        self.previous_map_tool = self.canvas.mapTool()
+        self.canvas.setMapTool(multiple_selection)
+        self.disconnect_signal_selection_changed()
+        self.connect_signal_selection_changed(table_object)
+        cursor = self.get_cursor_multiple_selection()
+        self.canvas.setCursor(cursor)
 
 
     def selection_changed(self, qtable, geom_type):
@@ -257,9 +329,118 @@ class ParentManage(ParentAction, object):
         self.reload_table(qtable, self.geom_type, expr_filter)
         self.apply_lazy_init(qtable)
         # Remove selection in generic 'v_edit' layers
-        self.remove_selection(False)
+        #self.remove_selection(False)
 
         self.connect_signal_selection_changed(qtable)
+
+
+    def insert_feature(self, widget, table_object):
+        """ Select feature with entered id. Set a model with selected filter.
+            Attach that model to selected table
+        """
+
+        self.disconnect_signal_selection_changed()
+
+        # Clear list of ids
+        self.ids = []
+        field_id = self.geom_type + "_id"
+
+        feature_id = widget.text()
+        if feature_id == 'null':
+            message = "You need to enter a feature id"
+            self.controller.show_info_box(message)
+            return
+
+        # Iterate over all layers of the group
+        for layer in self.layers[self.geom_type]:
+            if layer.selectedFeatureCount() > 0:
+                # Get selected features of the layer
+                features = layer.selectedFeatures()
+                for feature in features:
+                    # Append 'feature_id' into the list
+                    selected_id = feature.attribute(field_id)
+                    self.ids.append(selected_id)
+            if feature_id not in self.ids:
+                # If feature id doesn't exist in list -> add
+                self.ids.append(str(feature_id))
+
+        # Set expression filter with features in the list
+        expr_filter = "\"" + field_id + "\" IN ("
+        for i in range(len(self.ids)):
+            expr_filter += "'" + str(self.ids[i]) + "', "
+        expr_filter = expr_filter[:-2] + ")"
+
+        # Check expression
+        (is_valid, expr) = self.check_expression(expr_filter)
+        if not is_valid:
+            return
+
+        # Select features with previous filter
+        # Build a list of feature id's and select them
+        for layer in self.layers[self.geom_type]:
+            it = layer.getFeatures(QgsFeatureRequest(expr))
+            id_list = [i.id() for i in it]
+            if len(id_list) > 0:
+                layer.selectByIds(id_list)
+
+        # Reload contents of table 'tbl_???_x_@geom_type'
+        self.reload_table(table_object, self.geom_type, expr_filter)
+        self.apply_lazy_init(table_object)
+
+        # Update list
+        self.list_ids[self.geom_type] = self.ids
+
+        self.connect_signal_selection_changed(table_object)
+
+
+    def connect_signal_selection_changed(self, table_object):
+        """ Connect signal selectionChanged """
+
+        try:
+            self.canvas.selectionChanged.connect(partial(self.selection_changed, table_object, self.geom_type))
+        except Exception:
+            pass
+
+    def disconnect_signal_selection_changed(self):
+        """ Disconnect signal selectionChanged """
+
+        try:
+            self.canvas.selectionChanged.disconnect()
+        except Exception:
+            pass
+
+    def fill_widget_with_fields(self, dialog, data_object, field_names):
+        """Fill the Widget with value get from data_object limited to
+        the list of field_names."""
+
+        for field_name in field_names:
+            value = getattr(data_object, field_name)
+            if not hasattr(dialog, field_name):
+                continue
+
+            widget = getattr(dialog, field_name)
+            if type(widget) in [QDateEdit, QDateTimeEdit]:
+                widget.setDateTime(value if value else QDate.currentDate())
+            if type(widget) in [QLineEdit, QTextEdit]:
+                if value:
+                    widget.setText(value)
+                else:
+                    widget.clear()
+            if type(widget) in [QComboBox]:
+                if not value:
+                    widget.setCurrentIndex(0)
+                    continue
+                # look the value in item text
+                index = widget.findText(str(value))
+                if index >= 0:
+                    widget.setCurrentIndex(index)
+                    continue
+                # look the value in itemData
+                index = widget.findData(value)
+                if index >= 0:
+                    widget.setCurrentIndex(index)
+                    continue
+
 
 
     def reload_table(self, qtable, geom_type, expr_filter):

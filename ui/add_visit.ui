@@ -23,7 +23,7 @@
       <item>
        <widget class="QTabWidget" name="tab_widget">
         <property name="currentIndex">
-         <number>3</number>
+         <number>1</number>
         </property>
         <widget class="QWidget" name="VisitTab">
          <attribute name="title">
@@ -711,71 +711,6 @@
           <item>
            <widget class="QTableView" name="tbl_event">
             <property name="sortingEnabled">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-        <widget class="QWidget" name="DocumentTab">
-         <attribute name="title">
-          <string>Document</string>
-         </attribute>
-         <layout class="QVBoxLayout" name="verticalLayout_6">
-          <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_14">
-            <item>
-             <widget class="QLineEdit" name="doc_id"/>
-            </item>
-            <item>
-             <widget class="QPushButton" name="btn_doc_insert">
-              <property name="text">
-               <string/>
-              </property>
-              <property name="icon">
-               <iconset>
-                <normaloff>../icons/111.png</normaloff>../icons/111.png</iconset>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="btn_doc_delete">
-              <property name="text">
-               <string/>
-              </property>
-              <property name="icon">
-               <iconset>
-                <normaloff>../icons/112.png</normaloff>../icons/112.png</iconset>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="btn_doc_new">
-              <property name="text">
-               <string/>
-              </property>
-              <property name="icon">
-               <iconset>
-                <normaloff>../icons/34.png</normaloff>../icons/34.png</iconset>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="btn_open_doc">
-              <property name="text">
-               <string/>
-              </property>
-              <property name="icon">
-               <iconset>
-                <normaloff>../icons/170.png</normaloff>../icons/170.png</iconset>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <widget class="QTableView" name="tbl_document">
-            <property name="enabled">
              <bool>true</bool>
             </property>
            </widget>
