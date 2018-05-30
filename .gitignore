@@ -9,6 +9,7 @@
 test
 data/
 config/login.auth
+requisitos.txt
 
 #################
 ## Eclipse
