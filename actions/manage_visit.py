@@ -76,40 +76,40 @@ class ManageVisit(ParentManage, QObject):
 
 
         # Set icons
-        self.set_icon(self.add_visit_mw.dialog.btn_feature_insert, "111")
-        self.set_icon(self.add_visit_mw.dialog.btn_feature_delete, "112")
-        self.set_icon(self.add_visit_mw.dialog.btn_feature_snapping, "137")
-        self.set_icon(self.add_visit_mw.dialog.btn_add_geom, "133")
+        self.set_icon(self.wm_add_visit.dialog.btn_feature_insert, "111")
+        self.set_icon(self.wm_add_visit.dialog.btn_feature_delete, "112")
+        self.set_icon(self.wm_add_visit.dialog.btn_feature_snapping, "137")
+        self.set_icon(self.wm_add_visit.dialog.btn_add_geom, "133")
 
         # tab events
-        self.tabs = self.add_visit_mw.dialog.findChild(QTabWidget, 'tab_widget')
-        self.button_box = self.add_visit_mw.dialog.findChild(QDialogButtonBox, 'button_box')
+        self.tabs = self.wm_add_visit.dialog.findChild(QTabWidget, 'tab_widget')
+        self.button_box = self.wm_add_visit.dialog.findChild(QDialogButtonBox, 'button_box')
         self.button_box.button(QDialogButtonBox.Ok).setEnabled(False)
 
         # Tab 'Data'/'Visit'
-        self.visit_id = self.add_visit_mw.dialog.findChild(QLineEdit, "visit_id")
-        self.user_name = self.add_visit_mw.dialog.findChild(QLineEdit, "user_name")
-        self.ext_code = self.add_visit_mw.dialog.findChild(QLineEdit, "ext_code")
-        self.visitcat_id = self.add_visit_mw.dialog.findChild(QComboBox, "visitcat_id")
+        self.visit_id = self.wm_add_visit.dialog.findChild(QLineEdit, "visit_id")
+        self.user_name = self.wm_add_visit.dialog.findChild(QLineEdit, "user_name")
+        self.ext_code = self.wm_add_visit.dialog.findChild(QLineEdit, "ext_code")
+        self.visitcat_id = self.wm_add_visit.dialog.findChild(QComboBox, "visitcat_id")
 
         # Tab 'Relations'
-        self.feature_type = self.add_visit_mw.dialog.findChild(QComboBox, "feature_type")
-        self.feature_id = self.add_visit_mw.dialog.findChild(QLineEdit, "feature_id")
-        self.tbl_relation = self.add_visit_mw.dialog.findChild(QTableView, "tbl_relation")
+        self.feature_type = self.wm_add_visit.dialog.findChild(QComboBox, "feature_type")
+        self.feature_id = self.wm_add_visit.dialog.findChild(QLineEdit, "feature_id")
+        self.tbl_relation = self.wm_add_visit.dialog.findChild(QTableView, "tbl_relation")
         self.tbl_relation.setSelectionBehavior(QAbstractItemView.SelectRows)
         # TODO controlar este combo
         self.feature_type.setVisible(False)
 
         # tab 'Event'
-        self.tbl_event = self.add_visit_mw.dialog.findChild(QTableView, "tbl_event")
-        self.parameter_type_id = self.add_visit_mw.dialog.findChild(QComboBox, "parameter_type_id")
-        self.parameter_id = self.add_visit_mw.dialog.findChild(QComboBox, "parameter_id")
+        self.tbl_event = self.wm_add_visit.dialog.findChild(QTableView, "tbl_event")
+        self.parameter_type_id = self.wm_add_visit.dialog.findChild(QComboBox, "parameter_type_id")
+        self.parameter_id = self.wm_add_visit.dialog.findChild(QComboBox, "parameter_id")
         self.tbl_event.setSelectionBehavior(QAbstractItemView.SelectRows)
 
         # Set current date and time
         current_date = QDate.currentDate()
-        self.add_visit_mw.dialog.startdate.setDate(current_date)
-        self.add_visit_mw.dialog.enddate.setDate(current_date)
+        self.wm_add_visit.dialog.startdate.setDate(current_date)
+        self.wm_add_visit.dialog.enddate.setDate(current_date)
 
         # set User name get from controller login
         if self.controller.user and self.user_name:

@@ -73,36 +73,37 @@ class MultipleSelection(QgsMapTool):
         for i in range(len(self.layers)):
             
             layer = self.layers[i]
-            if (i == len(self.layers) - 1):     
-                if self.parent_manage:
-                    self.parent_manage.connect_signal_selection_changed(self.table_object)                          
-            
-            # Selection by rectangle
-            if rectangle:
-                if selected_rectangle is None:
-                    selected_rectangle = self.canvas.mapSettings().mapToLayerCoordinates(layer, rectangle)
-                # If Ctrl+Shift clicked: remove features from selection
-                if key == (Qt.ControlModifier | Qt.ShiftModifier):                
-                    layer.selectByRect(selected_rectangle, layer.RemoveFromSelection)
-                # If Ctrl clicked: add features to selection
-                elif key == Qt.ControlModifier:
-                    layer.selectByRect(selected_rectangle, layer.AddToSelection)
-                # If Ctrl not clicked: add features to selection
+            if self.iface.legendInterface().isLayerVisible(layer):
+                if (i == len(self.layers) - 1):
+                    if self.parent_manage:
+                        self.parent_manage.connect_signal_selection_changed(self.table_object)
+
+                # Selection by rectangle
+                if rectangle:
+                    if selected_rectangle is None:
+                        selected_rectangle = self.canvas.mapSettings().mapToLayerCoordinates(layer, rectangle)
+                    # If Ctrl+Shift clicked: remove features from selection
+                    if key == (Qt.ControlModifier | Qt.ShiftModifier):
+                        layer.selectByRect(selected_rectangle, layer.RemoveFromSelection)
+                    # If Ctrl clicked: add features to selection
+                    elif key == Qt.ControlModifier:
+                        layer.selectByRect(selected_rectangle, layer.AddToSelection)
+                    # If Ctrl not clicked: add features to selection
+                    else:
+                        layer.selectByRect(selected_rectangle, layer.AddToSelection)
+
+                # Selection one by one
                 else:
-                    layer.selectByRect(selected_rectangle, layer.AddToSelection)
-                                        
-            # Selection one by one
-            else:
-                x = e.pos().x()
-                y = e.pos().y()
-                eventPoint = QPoint(x, y)
-                (retval, result) = self.snapper.snapToBackgroundLayers(eventPoint)  #@UnusedVariable
-                if result:
-                    # Check feature
-                    for snap_point in result:
-                        # Get the point. Leave selection
-                        snapp_feat = next(snap_point.layer.getFeatures(QgsFeatureRequest().setFilterFid(snap_point.snappedAtGeometry)))   #@UnusedVariable
-                        snap_point.layer.select([snap_point.snappedAtGeometry])
+                    x = e.pos().x()
+                    y = e.pos().y()
+                    eventPoint = QPoint(x, y)
+                    (retval, result) = self.snapper.snapToBackgroundLayers(eventPoint)  #@UnusedVariable
+                    if result:
+                        # Check feature
+                        for snap_point in result:
+                            # Get the point. Leave selection
+                            snapp_feat = next(snap_point.layer.getFeatures(QgsFeatureRequest().setFilterFid(snap_point.snappedAtGeometry)))   #@UnusedVariable
+                            snap_point.layer.select([snap_point.snappedAtGeometry])
 
         self.rubber_band.hide()
 
