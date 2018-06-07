@@ -10,7 +10,7 @@ import os
 import sys
 import datetime
 
-
+import gw_utilities
 from parent import ParentAction
 from PyQt4.Qt import QDate
 from PyQt4.QtSql import QSqlTableModel
@@ -24,7 +24,7 @@ from ..ui.month_selector import MonthSelector
 from ..ui.price_management import PriceManagement
 from ..ui.tree_manage import TreeManage
 from ..ui.tree_selector import TreeSelector
-from ..utils.widget_manager import WidgetManager
+
 
 
 from functools import partial
@@ -53,36 +53,40 @@ class Basic(ParentAction):
         # Close previous dialog
         if dialog is not None:
             self.close_dialog(dialog)
-        self.dlg_new_prices = WidgetManager(NewPrices())
-        self.load_settings(self.dlg_new_prices.dialog)
+        self.dlg_new_prices = NewPrices()
+        self.load_settings(self.dlg_new_prices)
 
-        validator = QIntValidator(1, 9999999)
-        self.dlg_new_prices.dialog.txt_year.setValidator(validator)
-        table_name = 'cat_price'
-        field_id = 'year'
-        field_name = 'year'
+        # validator = QIntValidator(1, 9999999)
+        # self.dlg_new_prices.txt_year.setValidator(validator)
+        table_name = 'cat_campaign'
+        field_id = 'id'
+        field_name = 'name'
 
-        self.dlg_new_prices.dialog.rejected.connect(partial(self.close_dialog, self.dlg_new_prices.dialog))
-        self.dlg_new_prices.dialog.btn_cancel.clicked.connect(partial(self.close_dialog, self.dlg_new_prices.dialog))
-        self.dlg_new_prices.dialog.btn_accept.clicked.connect(partial(self.manage_new_price_catalog))
-        self.populate_cmb_years(self.dlg_new_prices, table_name, field_id, field_name,  self.dlg_new_prices.dialog.cbx_years)
-        self.set_completer_object(table_name, self.dlg_new_prices.dialog.txt_year, 'year')
-        self.dlg_new_prices.dialog.exec_()
+        self.dlg_new_prices.rejected.connect(partial(self.close_dialog, self.dlg_new_prices))
+        self.dlg_new_prices.btn_cancel.clicked.connect(partial(self.close_dialog, self.dlg_new_prices))
+        self.dlg_new_prices.btn_accept.clicked.connect(partial(self.manage_new_price_catalog))
+        self.populate_cmb_years(table_name, field_id, field_name,  self.dlg_new_prices.cbx_years)
+        self.set_completer_object(table_name, self.dlg_new_prices.txt_year, field_name)
+        self.dlg_new_prices.exec_()
 
 
     def manage_new_price_catalog(self):
 
         table_name = "cat_price"
-        new_year = self.dlg_new_prices.dialog.txt_year.text()
+        new_camp = self.dlg_new_prices.txt_year.text()
 
-        if new_year is None or new_year == '':
+        if new_camp is None or new_camp == '':
             msg = "Has de possar l'any corresponent"
             self.controller.show_warning(msg)
             return
+        sql = ("SELECT id FROM " + self.schema_name + ".cat_campaign "
+               " WHERE name ='"+str(new_camp)+"'")
+        row = self.controller.get_row(sql)
 
-        copy_years = self.dlg_new_prices.dialog.chk_year.isChecked()
+
+        copy_years = self.dlg_new_prices.chk_year.isChecked()
         if copy_years:
-            old_year = self.dlg_new_prices.get_item_data(self.dlg_new_prices.dialog.cbx_years)
+            old_year = self.dlg_new_prices.get_item_data(self.dlg_new_prices.cbx_years)
             if old_year == -1:
                 msg = "No tens cap any seleccionat, desmarca l'opcio de copiar preus"
                 self.controller.show_warning(msg)
@@ -91,34 +95,34 @@ class Basic(ParentAction):
             old_year = 0
 
         sql = ("SELECT DISTINCT(year) FROM " + self.schema_name + "." + str(table_name) + " "
-               " WHERE year = '" + str(new_year) + "'")
+               " WHERE year = '" + str(new_camp) + "'")
         row = self.controller.get_row(sql)
         if not row or row is None:
-            sql = ("SELECT " + self.schema_name + ".create_price('" + str(new_year) + "','" + str(old_year) + "')")
+            sql = ("SELECT " + self.schema_name + ".create_price('" + str(new_camp) + "','" + str(old_year) + "')")
             self.controller.execute_sql(sql)
         else:
-            message = ("Estas a punt de sobreescriure els preus de l'any " + str(new_year) + " ")
+            message = ("Estas a punt de sobreescriure els preus de l'any " + str(new_camp) + " ")
             answer = self.controller.ask_question(message, "Warning")
             if not answer:
                 return
             else:
-                sql = ("SELECT " + self.schema_name + ".create_price('" + str(new_year) + "','" + str(old_year) + "')")
+                sql = ("SELECT " + self.schema_name + ".create_price('" + str(new_camp) + "','" + str(old_year) + "')")
                 self.controller.execute_sql(sql)
 
 
         # Close perevious dialog
-        self.close_dialog(self.dlg_new_prices.dialog)
+        self.close_dialog(self.dlg_new_prices)
 
         # Set dialog and signals
-        dlg_prices_management = WidgetManager(PriceManagement())
-        self.load_settings(dlg_prices_management.dialog)
-        dlg_prices_management.dialog.btn_close.clicked.connect(partial(self.close_dialog, dlg_prices_management.dialog))
-        dlg_prices_management.dialog.rejected.connect(partial(self.close_dialog, dlg_prices_management.dialog))
+        dlg_prices_management = PriceManagement()
+        self.load_settings(dlg_prices_management)
+        dlg_prices_management.btn_close.clicked.connect(partial(self.close_dialog, dlg_prices_management))
+        dlg_prices_management.rejected.connect(partial(self.close_dialog, dlg_prices_management))
         # Populate QTableView
         table_view = 'v_edit_price'
-        self.fill_table_prices(dlg_prices_management.dialog.tbl_price_list, table_view, new_year, set_edit_triggers=QTableView.DoubleClicked)
-        self.set_table_columns(dlg_prices_management.dialog.tbl_price_list, table_view, 'basic_cat_price')
-        dlg_prices_management.dialog.exec_()
+        self.fill_table_prices(dlg_prices_management.tbl_price_list, table_view, new_camp, set_edit_triggers=QTableView.DoubleClicked)
+        self.set_table_columns(dlg_prices_management.tbl_price_list, table_view, 'basic_cat_price')
+        dlg_prices_management.exec_()
 
 
     def fill_table_prices(self, qtable, table_view, new_year, set_edit_triggers=QTableView.NoEditTriggers):
@@ -152,34 +156,34 @@ class Basic(ParentAction):
     def main_tree_manage(self):
         """ Button 01: Tree selector """
 
-        dlg_tree_manage = WidgetManager(TreeManage())
-        #dlg_tree_manage.dialog.setFixedSize(300, 170)
-        self.load_settings(dlg_tree_manage.dialog)
+        dlg_tree_manage = TreeManage()
+        #dlg_tree_manage.setFixedSize(300, 170)
+        self.load_settings(dlg_tree_manage)
 
         validator = QIntValidator(1, 9999999)
-        dlg_tree_manage.dialog.txt_year.setValidator(validator)
+        dlg_tree_manage.txt_year.setValidator(validator)
         table_name = 'planning'
         field_id = 'plan_year'
         field_name = 'plan_year'
-        self.populate_cmb_years(dlg_tree_manage, table_name,  field_id, field_name, dlg_tree_manage.dialog.cbx_years)
+        self.populate_cmb_years(table_name,  field_id, field_name, dlg_tree_manage.cbx_years)
 
 
       
         #TODO borrar estas tres lineas
         # now = datetime.datetime.now()
-        # dlg_tree_manage.setWidgetText(dlg_tree_manage.dialog.txt_year, str(now.year + 1))
-        # dlg_tree_manage.setChecked(dlg_tree_manage.dialog.chk_year, True)
-        # dlg_tree_manage.set_combo_itemData(dlg_tree_manage.dialog.cbx_years, str(now.year + 1), 1)
+        # dlg_tree_manage.setWidgetText(dlg_tree_manage.txt_year, str(now.year + 1))
+        # dlg_tree_manage.setChecked(dlg_tree_manage.chk_year, True)
+        # dlg_tree_manage.set_combo_itemData(dlg_tree_manage.cbx_years, str(now.year + 1), 1)
 
 
-        dlg_tree_manage.dialog.rejected.connect(partial(self.close_dialog, dlg_tree_manage.dialog))
-        dlg_tree_manage.dialog.btn_cancel.clicked.connect(partial(self.close_dialog, dlg_tree_manage.dialog))
-        dlg_tree_manage.dialog.btn_accept.clicked.connect(partial(self.get_year, dlg_tree_manage))
+        dlg_tree_manage.rejected.connect(partial(self.close_dialog, dlg_tree_manage))
+        dlg_tree_manage.btn_cancel.clicked.connect(partial(self.close_dialog, dlg_tree_manage))
+        dlg_tree_manage.btn_accept.clicked.connect(partial(self.get_year, dlg_tree_manage))
 
-        dlg_tree_manage.dialog.exec_()
+        dlg_tree_manage.exec_()
 
 
-    def populate_cmb_years(self, widget_manager, table_name, field_id, field_name, combo, reverse=False):
+    def populate_cmb_years(self, table_name, field_id, field_name, combo, reverse=False):
         """
         sql = ("SELECT current_database()")
         rows = self.controller.get_rows(sql)
@@ -191,15 +195,15 @@ class Basic(ParentAction):
         if rows is None:
             return
 
-        widget_manager.set_item_data(combo, rows, 1, reverse)
+        gw_utilities.set_item_data(combo, rows, 1, reverse)
 
 
-    def get_year(self, wm):
+    def get_year(self, dialog):
         update = False
         self.selected_year = None
 
-        if wm.dialog.txt_year.text() != '':
-            self.plan_year = wm.getWidgetText(wm.dialog.txt_year)
+        if dialog.txt_year.text() != '':
+            self.plan_year = gw_utilities.getWidgetText(dialog.txt_year)
             sql = ("SELECT year from "+self.schema_name+".v_plan_mu "
                    " WHERE year='"+self.plan_year+"'")
             row = self.controller.get_row(sql)
@@ -208,8 +212,8 @@ class Basic(ParentAction):
                 self.controller.show_warning(message)
                 return None
 
-            if wm.isChecked(wm.dialog.chk_year) and wm.get_item_data(wm.dialog.cbx_years, 0) != -1:
-                self.selected_year = wm.get_item_data(wm.dialog.cbx_years, 0)
+            if gw_utilities.isChecked(dialog.chk_year) and gw_utilities.get_item_data(dialog.cbx_years, 0) != -1:
+                self.selected_year = gw_utilities.get_item_data(dialog.cbx_years, 0)
                 sql = ("SELECT DISTINCT(plan_year) FROM " + self.schema_name + ".planning"
                        " WHERE plan_year ='" + str(self.selected_year) + "'")
                 row = self.controller.get_row(sql)
@@ -217,7 +221,7 @@ class Basic(ParentAction):
                     update = True
             else:
                 self.selected_year = self.plan_year
-            self.close_dialog(wm.dialog)
+            self.close_dialog(dialog)
             self.tree_selector(update)
 
         else:
@@ -228,11 +232,11 @@ class Basic(ParentAction):
 
     def tree_selector(self, update=False):
 
-        dlg_selector = WidgetManager(TreeSelector())
-        self.load_settings(dlg_selector.dialog)
+        dlg_selector = TreeSelector()
+        self.load_settings(dlg_selector)
 
-        dlg_selector.dialog.setWindowTitle("Tree selector")
-        dlg_selector.dialog.lbl_year.setText(self.plan_year)
+        dlg_selector.setWindowTitle("Tree selector")
+        dlg_selector.lbl_year.setText(self.plan_year)
 
         tableleft = 'v_plan_mu'
         tableright = 'planning'
@@ -240,24 +244,24 @@ class Basic(ParentAction):
         id_table_left = 'mu_id'
         id_table_right = 'mu_id'
 
-        dlg_selector.dialog.all_rows.setSelectionBehavior(QAbstractItemView.SelectRows)
-        dlg_selector.dialog.selected_rows.setSelectionBehavior(QAbstractItemView.SelectRows)
+        dlg_selector.all_rows.setSelectionBehavior(QAbstractItemView.SelectRows)
+        dlg_selector.selected_rows.setSelectionBehavior(QAbstractItemView.SelectRows)
         #dlg_selector.all_rows.horizontalHeader().setStyleSheet("QHeaderView { font-size: 10pt; }")
 
         sql = ("SELECT DISTINCT(work_id), work_name FROM "+self.schema_name + "." + tableleft)
         rows = self.controller.get_rows(sql)
-        dlg_selector.set_item_data(dlg_selector.dialog.cmb_poda_type, rows, 1)
+        gw_utilities.set_item_data(dlg_selector.cmb_poda_type, rows, 1)
 
         # CheckBox
-        dlg_selector.dialog.chk_permanent.stateChanged.connect(partial(self.force_chk_current, dlg_selector.dialog))
+        dlg_selector.chk_permanent.stateChanged.connect(partial(self.force_chk_current, dlg_selector))
 
         # Button selec
-        dlg_selector.dialog.btn_select.clicked.connect(partial(self.rows_selector, dlg_selector, id_table_left, tableright, id_table_right, tableleft, table_view))
-        dlg_selector.dialog.all_rows.doubleClicked.connect(partial(self.rows_selector, dlg_selector, id_table_left, tableright, id_table_right, tableleft, table_view))
+        dlg_selector.btn_select.clicked.connect(partial(self.rows_selector, dlg_selector, id_table_left, tableright, id_table_right, tableleft, table_view))
+        dlg_selector.all_rows.doubleClicked.connect(partial(self.rows_selector, dlg_selector, id_table_left, tableright, id_table_right, tableleft, table_view))
 
         # Button unselect
-        dlg_selector.dialog.btn_unselect.clicked.connect(partial(self.rows_unselector, dlg_selector, tableright, id_table_right, tableleft, table_view))
-        dlg_selector.dialog.selected_rows.doubleClicked.connect(partial(self.rows_unselector, dlg_selector, tableright, id_table_right, tableleft, table_view))
+        dlg_selector.btn_unselect.clicked.connect(partial(self.rows_unselector, dlg_selector, tableright, id_table_right, tableleft, table_view))
+        dlg_selector.selected_rows.doubleClicked.connect(partial(self.rows_unselector, dlg_selector, tableright, id_table_right, tableleft, table_view))
 
         # Populate QTableView
         self.fill_table(dlg_selector, table_view, set_edit_triggers=QTableView.NoEditTriggers, update=True)
@@ -265,21 +269,21 @@ class Basic(ParentAction):
             self.insert_into_planning(tableright)
 
         # Need fill table before set table columns, and need re-fill table for upgrade fields
-        self.set_table_columns(dlg_selector.dialog.selected_rows, table_view, 'basic_year_right')
+        self.set_table_columns(dlg_selector.selected_rows, table_view, 'basic_year_right')
         self.fill_table(dlg_selector, table_view, set_edit_triggers=QTableView.NoEditTriggers)
 
         self.fill_main_table(dlg_selector, tableleft)
-        self.set_table_columns(dlg_selector.dialog.all_rows, tableleft, 'basic_year_left')
+        self.set_table_columns(dlg_selector.all_rows, tableleft, 'basic_year_left')
 
         # Filter field
-        dlg_selector.dialog.txt_search.textChanged.connect(partial(self.fill_main_table, dlg_selector, tableleft, set_edit_triggers=QTableView.NoEditTriggers))
-        dlg_selector.dialog.txt_selected_filter.textChanged.connect(partial(self.fill_table, dlg_selector, table_view, set_edit_triggers=QTableView.NoEditTriggers))
+        dlg_selector.txt_search.textChanged.connect(partial(self.fill_main_table, dlg_selector, tableleft, set_edit_triggers=QTableView.NoEditTriggers))
+        dlg_selector.txt_selected_filter.textChanged.connect(partial(self.fill_table, dlg_selector, table_view, set_edit_triggers=QTableView.NoEditTriggers))
 
-        dlg_selector.dialog.btn_close.clicked.connect(partial(self.close_dialog, dlg_selector.dialog))
-        dlg_selector.dialog.btn_close.clicked.connect(partial(self.close_dialog, dlg_selector.dialog))
-        dlg_selector.dialog.rejected.connect(partial(self.close_dialog, dlg_selector))
+        dlg_selector.btn_close.clicked.connect(partial(self.close_dialog, dlg_selector))
+        dlg_selector.btn_close.clicked.connect(partial(self.close_dialog, dlg_selector))
+        dlg_selector.rejected.connect(partial(self.close_dialog, dlg_selector))
 
-        dlg_selector.dialog.exec_()
+        dlg_selector.exec_()
 
 
     def force_chk_current(self, dialog):
@@ -287,7 +291,7 @@ class Basic(ParentAction):
             dialog.chk_current.setChecked(True)
 
 
-    def fill_main_table(self, wm, table_name, set_edit_triggers=QTableView.NoEditTriggers):
+    def fill_main_table(self, dialog, table_name, set_edit_triggers=QTableView.NoEditTriggers):
         """ Set a model with selected filter.
         Attach that model to selected table
         @setEditStrategy:
@@ -302,13 +306,13 @@ class Basic(ParentAction):
         model.setSort(2, 0)
         model.select()
 
-        wm.dialog.all_rows.setEditTriggers(set_edit_triggers)
+        dialog.all_rows.setEditTriggers(set_edit_triggers)
         # Check for errors
         if model.lastError().isValid():
             self.controller.show_warning(model.lastError().text())
 
         # Get all ids from Qtable selected_rows
-        id_all_selected_rows = self.select_all_rows(wm.dialog.selected_rows, 'mu_id')
+        id_all_selected_rows = self.select_all_rows(dialog.selected_rows, 'mu_id')
 
         # Convert id_all_selected_rows to string
         ids = "0, "
@@ -317,14 +321,14 @@ class Basic(ParentAction):
         ids = ids[:-2] + ""
 
         # Attach model to table view
-        expr = " mu_name ILIKE '%" + wm.dialog.txt_search.text() + "%'"
+        expr = " mu_name ILIKE '%" + dialog.txt_search.text() + "%'"
         expr += " AND mu_id NOT IN ("+ids+")"
         expr += " AND year::text ILIKE '%" + str(self.plan_year) + "%'"
-        wm.dialog.all_rows.setModel(model)
-        wm.dialog.all_rows.model().setFilter(expr)
+        dialog.all_rows.setModel(model)
+        dialog.all_rows.model().setFilter(expr)
 
 
-    def fill_table(self, wm,  table_view, set_edit_triggers=QTableView.NoEditTriggers, update=False):
+    def fill_table(self, dialog,  table_view, set_edit_triggers=QTableView.NoEditTriggers, update=False):
         """ Set a model with selected filter.
         Attach that model to selected table
         @setEditStrategy:
@@ -339,42 +343,42 @@ class Basic(ParentAction):
         model.setEditStrategy(QSqlTableModel.OnManualSubmit)
         model.setSort(2, 0)
         model.select()
-        wm.dialog.selected_rows.setEditTriggers(set_edit_triggers)
+        dialog.selected_rows.setEditTriggers(set_edit_triggers)
         # Check for errors
         if model.lastError().isValid():
             self.controller.show_warning(model.lastError().text())
 
         # Create expresion
-        expr = " mu_name ILIKE '%" + wm.dialog.txt_selected_filter.text() + "%'"
+        expr = " mu_name ILIKE '%" + dialog.txt_selected_filter.text() + "%'"
         if self.selected_year is not None:
             expr += " AND plan_year ='" + str(self.plan_year) + "'"
             if update:
                 expr += " OR plan_year ='" + str(self.selected_year) + "'"
 
         # Attach model to table or view
-        wm.dialog.selected_rows.setModel(model)
-        wm.dialog.selected_rows.model().setFilter(expr)
+        dialog.selected_rows.setModel(model)
+        dialog.selected_rows.model().setFilter(expr)
 
         # Set year to plan to all rows in list
         for x in range(0, model.rowCount()):
-            i = int(wm.dialog.selected_rows.model().fieldIndex('plan_year'))
-            index = wm.dialog.selected_rows.model().index(x, i)
+            i = int(dialog.selected_rows.model().fieldIndex('plan_year'))
+            index = dialog.selected_rows.model().index(x, i)
             model.setData(index, self.plan_year)
-        self.calculate_total_price(wm, self.plan_year)
+        self.calculate_total_price(dialog, self.plan_year)
 
 
-    def calculate_total_price(self, wm, year):
+    def calculate_total_price(self, dialog, year):
         """ Update QLabel @lbl_total_price with sum of all price in @select_rows """
-        selected_list = wm.dialog.selected_rows.model()
+        selected_list = dialog.selected_rows.model()
         if selected_list is None:
             return
         total = 0
         # Sum all price
         for x in range(0, selected_list.rowCount()):
-            if str(wm.dialog.selected_rows.model().record(x).value('plan_year')) == str(year):
-                if str(wm.dialog.selected_rows.model().record(x).value('price')) != 'NULL':
-                    total += float(wm.dialog.selected_rows.model().record(x).value('price'))
-        wm.setText(wm.dialog.lbl_total_price, str(total))
+            if str(dialog.selected_rows.model().record(x).value('plan_year')) == str(year):
+                if str(dialog.selected_rows.model().record(x).value('price')) != 'NULL':
+                    total += float(dialog.selected_rows.model().record(x).value('price'))
+        gw_utilities.setText(dialog.lbl_total_price, str(total))
 
 
     def insert_into_planning(self, tableright):
@@ -423,9 +427,9 @@ class Basic(ParentAction):
                     self.controller.execute_sql(sql)
 
 
-    def rows_selector(self, wm, id_table_left, tableright, id_table_right, tableleft, table_view):
+    def rows_selector(self, dialog, id_table_left, tableright, id_table_right, tableleft, table_view):
         """ Copy the selected lines in the qtable_all_rows and in the table """
-        left_selected_list = wm.dialog.all_rows.selectionModel().selectedRows()
+        left_selected_list = dialog.all_rows.selectionModel().selectedRows()
         if len(left_selected_list) == 0:
             message = "Cap registre seleccionat"
             self.controller.show_warning(message)
@@ -434,43 +438,43 @@ class Basic(ParentAction):
         field_list = []
         for i in range(0, len(left_selected_list)):
             row = left_selected_list[i].row()
-            id_ = wm.dialog.all_rows.model().record(row).value(id_table_left)
+            id_ = dialog.all_rows.model().record(row).value(id_table_left)
             field_list.append(id_)
 
         # Select all rows and get all id
-        self.select_all_rows(wm.dialog.selected_rows, id_table_right)
-        if wm.isChecked(wm.dialog.chk_current):
-            current_poda_type = wm.get_item_data(wm.dialog.cmb_poda_type, 0)
-            current_poda_name = wm.get_item_data(wm.dialog.cmb_poda_type, 1)
+        self.select_all_rows(dialog.selected_rows, id_table_right)
+        if gw_utilities.isChecked(dialog.chk_current):
+            current_poda_type = gw_utilities.get_item_data(dialog.cmb_poda_type, 0)
+            current_poda_name = gw_utilities.get_item_data(dialog.cmb_poda_type, 1)
             if current_poda_type is None:
                 message = "No heu seleccionat cap poda"
                 self.controller.show_warning(message)
                 return
-        if wm.isChecked(wm.dialog.chk_permanent):
+        if gw_utilities.isChecked(dialog.chk_permanent):
             for i in range(0, len(left_selected_list)):
                 row = left_selected_list[i].row()
                 sql = ("UPDATE " + self.schema_name + ".cat_mu "
                        " SET work_id ='"+str(current_poda_type)+"' "
-                       " WHERE id ='"+str(wm.dialog.all_rows.model().record(row).value('mu_id'))+"'")
+                       " WHERE id ='"+str(dialog.all_rows.model().record(row).value('mu_id'))+"'")
                 self.controller.execute_sql(sql)
 
         for i in range(0, len(left_selected_list)):
             row = left_selected_list[i].row()
             values = ""
             function_values = ""
-            if wm.dialog.all_rows.model().record(row).value('mu_id') is not None:
-                values += "'" + str(wm.dialog.all_rows.model().record(row).value('mu_id')) + "', "
-                function_values += "'" + str(wm.dialog.all_rows.model().record(row).value('mu_id')) + "', "
+            if dialog.all_rows.model().record(row).value('mu_id') is not None:
+                values += "'" + str(dialog.all_rows.model().record(row).value('mu_id')) + "', "
+                function_values += "'" + str(dialog.all_rows.model().record(row).value('mu_id')) + "', "
             else:
                 values += 'null, '
 
-            if wm.dialog.all_rows.model().record(row).value('work_id') is not None:
-                if wm.isChecked(wm.dialog.chk_current):
+            if dialog.all_rows.model().record(row).value('work_id') is not None:
+                if gw_utilities.isChecked(dialog.chk_current):
                     values += "'" + str(current_poda_type) + "', "
                     function_values += "'" + str(current_poda_type) + "', "
                 else:
-                    values += "'" + str(wm.dialog.all_rows.model().record(row).value('work_id')) + "', "
-                    function_values += "'" + str(wm.dialog.all_rows.model().record(row).value('work_id')) + "', "
+                    values += "'" + str(dialog.all_rows.model().record(row).value('work_id')) + "', "
+                    function_values += "'" + str(dialog.all_rows.model().record(row).value('work_id')) + "', "
             else:
                 values += 'null, '
 
@@ -501,15 +505,15 @@ class Basic(ParentAction):
                 self.controller.execute_sql(sql)
 
         # Refresh
-        self.fill_table(wm, table_view, set_edit_triggers=QTableView.NoEditTriggers)
-        self.fill_main_table(wm, tableleft)
+        self.fill_table(dialog, table_view, set_edit_triggers=QTableView.NoEditTriggers)
+        self.fill_main_table(dialog, tableleft)
 
 
-    def rows_unselector(self, wm, tableright, field_id_right, tableleft, table_view):
+    def rows_unselector(self, dialog, tableright, field_id_right, tableleft, table_view):
 
         query = ("DELETE FROM " + self.schema_name + "." + tableright + ""
                  " WHERE  plan_year='" + self.plan_year + "' AND " + field_id_right + " = ")
-        selected_list = wm.dialog.selected_rows.selectionModel().selectedRows()
+        selected_list = dialog.selected_rows.selectionModel().selectedRows()
         if len(selected_list) == 0:
             message = "Cap registre seleccionat"
             self.controller.show_warning(message)
@@ -517,79 +521,79 @@ class Basic(ParentAction):
         field_list = []
         for i in range(0, len(selected_list)):
             row = selected_list[i].row()
-            id_ = str(wm.dialog.selected_rows.model().record(row).value(field_id_right))
+            id_ = str(dialog.selected_rows.model().record(row).value(field_id_right))
             field_list.append(id_)
         for i in range(0, len(field_list)):
             sql = (query + "'" + str(field_list[i]) + "'")
             self.controller.execute_sql(sql)
         # Refresh model with selected filter
-        self.fill_table(wm, table_view, set_edit_triggers=QTableView.NoEditTriggers)
-        self.fill_main_table(wm, tableleft)
+        self.fill_table(dialog, table_view, set_edit_triggers=QTableView.NoEditTriggers)
+        self.fill_main_table(dialog, tableleft)
 
 
     def basic_month_manage(self):
         """ Button 02: Planned year manage """
-        month_manage = WidgetManager(MonthManage())
+        month_manage = MonthManage()
 
-        self.load_settings(month_manage.dialog)
-        month_manage.dialog.setWindowTitle("Planificador mensual")
+        self.load_settings(month_manage)
+        month_manage.setWindowTitle("Planificador mensual")
         # TODO borrar esta linea
-        month_manage.setWidgetText(month_manage.dialog.txt_plan_code, "")
+        gw_utilities.setWidgetText(month_manage.txt_plan_code, "")
         table_name = 'planning'
         field_id = 'plan_year'
         field_name = 'plan_year'
-        self.set_completer_object(table_name, month_manage.dialog.txt_plan_code, 'plan_code')
-        self.populate_cmb_years(month_manage, table_name, field_id, field_name, month_manage.dialog.cbx_years, reverse=True)
+        self.set_completer_object(table_name, month_manage.txt_plan_code, 'plan_code')
+        self.populate_cmb_years(month_manage, table_name, field_id, field_name, month_manage.cbx_years, reverse=True)
 
-        month_manage.dialog.rejected.connect(partial(self.close_dialog, month_manage.dialog))
-        month_manage.dialog.btn_cancel.clicked.connect(partial(self.close_dialog, month_manage.dialog))
-        month_manage.dialog.btn_accept.clicked.connect(partial(self.get_planned_year, month_manage))
+        month_manage.rejected.connect(partial(self.close_dialog, month_manage))
+        month_manage.btn_cancel.clicked.connect(partial(self.close_dialog, month_manage))
+        month_manage.btn_accept.clicked.connect(partial(self.get_planned_year, month_manage))
 
-        month_manage.dialog.exec_()
+        month_manage.exec_()
 
 
-    def get_planned_year(self, wm):
+    def get_planned_year(self, dialog):
 
-        if str(wm.getWidgetText(wm.dialog.txt_plan_code)) == 'null':
+        if str(gw_utilities.getWidgetText(dialog.txt_plan_code)) == 'null':
             message = "El camp text a no pot estar vuit"
             self.controller.show_warning(message)
             return
 
-        self.plan_code = str(wm.getWidgetText(wm.dialog.txt_plan_code))
-        self.planned_year = wm.get_item_data(wm.dialog.cbx_years, 0)
+        self.plan_code = str(gw_utilities.getWidgetText(dialog.txt_plan_code))
+        self.planned_year = gw_utilities.get_item_data(dialog.cbx_years, 0)
         
         if self.planned_year == -1:
             message = "No hi ha cap any planificat"
             self.controller.show_warning(message)
             return
-        self.close_dialog(wm.dialog)
+        self.close_dialog(dialog)
         self.month_selector()
 
 
     def month_selector(self):
-        month_selector = WidgetManager(MonthSelector())
+        month_selector = MonthSelector()
 
         
-        self.load_settings(month_selector.dialog)
-        month_selector.dialog.all_rows.setSelectionBehavior(QAbstractItemView.SelectRows)
-        month_selector.dialog.selected_rows.setSelectionBehavior(QAbstractItemView.SelectRows)
-        month_selector.dialog.setWindowTitle("Planificador mensual")
+        self.load_settings(month_selector)
+        month_selector.all_rows.setSelectionBehavior(QAbstractItemView.SelectRows)
+        month_selector.selected_rows.setSelectionBehavior(QAbstractItemView.SelectRows)
+        month_selector.tWindowTitle("Planificador mensual")
 
         # Set label with selected text from previus dialog
-        month_selector.dialog.lbl_plan_code.setText(self.plan_code)
-        month_selector.dialog.lbl_year.setText(str(self.planned_year))
+        month_selector.lbl_plan_code.setText(self.plan_code)
+        month_selector.lbl_year.setText(str(self.planned_year))
         year_to_set = 0
         if self.planned_year > int(QDate.currentDate().year()):
             year_to_set = (int(self.planned_year) - int(QDate.currentDate().year()))
 
         # Set default dates to actual day (today) and actual day +1 (tomorrow)
-        month_selector.setCalendarDate(month_selector.dialog.date_inici, QDate.currentDate().addYears(year_to_set), True)
+        month_selector.setCalendarDate(month_selector.date_inici, QDate.currentDate().addYears(year_to_set), True)
         # Get date as string
-        data_fi = month_selector.getCalendarDate(month_selector.dialog.date_inici)
+        data_fi = month_selector.getCalendarDate(month_selector.date_inici)
         # Convert string date to QDate
         data_fi = QDate.fromString(data_fi, 'yyyy/MM/dd')
         # Set calendar with date_fi as QDate + 1 day
-        month_selector.setCalendarDate(month_selector.dialog.date_fi, data_fi.addDays(1))
+        month_selector.setCalendarDate(month_selector.date_fi, data_fi.addDays(1))
 
 
         view_name = 'v_plan_mu_year'
@@ -599,28 +603,28 @@ class Basic(ParentAction):
         # Left QTableView
         expr = " AND (plan_code != '" + str(self.plan_code) + "'"
         expr += " OR plan_code is NULL)"
-        self.fill_table_planned_month(month_selector.dialog.all_rows, month_selector.dialog.txt_search, view_name, expr)
-        month_selector.dialog.txt_search.textChanged.connect(partial(self.fill_table_planned_month, month_selector.dialog.all_rows, month_selector.dialog.txt_search, view_name, expr, QTableView.NoEditTriggers))
-        month_selector.dialog.btn_select.clicked.connect(partial(self.month_selector_row, month_selector, id_table_left, tableleft, view_name))
-        self.set_table_columns(month_selector.dialog.all_rows, view_name, 'basic_month_left')
+        self.fill_table_planned_month(month_selector.all_rows, month_selector.txt_search, view_name, expr)
+        month_selector.txt_search.textChanged.connect(partial(self.fill_table_planned_month, month_selector.all_rows, month_selector.txt_search, view_name, expr, QTableView.NoEditTriggers))
+        month_selector.btn_select.clicked.connect(partial(self.month_selector_row, month_selector, id_table_left, tableleft, view_name))
+        self.set_table_columns(month_selector.all_rows, view_name, 'basic_month_left')
 
         # Right QTableView
         expr = " AND plan_code = '" + str(self.plan_code) + "'"
-        self.fill_table_planned_month(month_selector.dialog.selected_rows, month_selector.dialog.txt_selected_filter, view_name, expr)
-        month_selector.dialog.txt_selected_filter.textChanged.connect(partial(self.fill_table_planned_month, month_selector.dialog.selected_rows, month_selector.dialog.txt_selected_filter, view_name, expr, QTableView.NoEditTriggers))
-        month_selector.dialog.btn_unselect.clicked.connect(partial(self.month_unselector_row, month_selector, id_table_left, tableleft, view_name))
-        self.set_table_columns(month_selector.dialog.selected_rows, view_name, 'basic_month_right')
+        self.fill_table_planned_month(month_selector.selected_rows, month_selector.txt_selected_filter, view_name, expr)
+        month_selector.txt_selected_filter.textChanged.connect(partial(self.fill_table_planned_month, month_selector.selected_rows, month_selector.txt_selected_filter, view_name, expr, QTableView.NoEditTriggers))
+        month_selector.btn_unselect.clicked.connect(partial(self.month_unselector_row, month_selector, id_table_left, tableleft, view_name))
+        self.set_table_columns(month_selector.selected_rows, view_name, 'basic_month_right')
 
         self.calculate_total_price(month_selector, self.planned_year)
 
-        month_selector.dialog.btn_close.clicked.connect(partial(self.close_dialog, month_selector.dialog))
-        month_selector.dialog.rejected.connect(partial(self.close_dialog, month_selector.dialog))
+        month_selector.btn_close.clicked.connect(partial(self.close_dialog, month_selector))
+        month_selector.rejected.connect(partial(self.close_dialog, month_selector))
 
-        month_selector.dialog.exec_()
+        month_selector.exec_()
 
 
-    def month_selector_row(self, wm, id_table_left, tableleft, view_name):
-        left_selected_list = wm.dialog.all_rows.selectionModel().selectedRows()
+    def month_selector_row(self, dialog, id_table_left, tableleft, view_name):
+        left_selected_list = dialog.all_rows.selectionModel().selectedRows()
         if len(left_selected_list) == 0:
             message = "Cap registre seleccionat"
             self.controller.show_warning(message)
@@ -630,12 +634,12 @@ class Basic(ParentAction):
         field_list = []
         for i in range(0, len(left_selected_list)):
             row = left_selected_list[i].row()
-            id_ = wm.dialog.all_rows.model().record(row).value(id_table_left)
+            id_ = dialog.all_rows.model().record(row).value(id_table_left)
             field_list.append(id_)
 
         # Get dates
-        plan_month_start = wm.getCalendarDate(wm.dialog.date_inici)
-        plan_month_end = wm.getCalendarDate(wm.dialog.date_fi)
+        plan_month_start = gw_utilities.getCalendarDate(dialog.date_inici)
+        plan_month_end = gw_utilities.getCalendarDate(dialog.date_fi)
 
         # Get year from string
         calendar_year = QDate.fromString(plan_month_start, 'yyyy/MM/dd').year()
@@ -654,22 +658,22 @@ class Basic(ParentAction):
                    " SET plan_code ='" + str(self.plan_code) + "', "
                    " plan_month_start = '"+plan_month_start+"', "
                    " plan_month_end = '"+plan_month_end+"' "
-                   " WHERE id='" + str(wm.dialog.all_rows.model().record(row).value('id')) + "'"
-                   " AND mu_id ='" + str(wm.dialog.all_rows.model().record(row).value('mu_id')) + "'"
+                   " WHERE id='" + str(dialog.all_rows.model().record(row).value('id')) + "'"
+                   " AND mu_id ='" + str(dialog.all_rows.model().record(row).value('mu_id')) + "'"
                    " AND plan_year = '"+self.planned_year+"'")
             self.controller.execute_sql(sql)
 
         # Refresh QTableViews and recalculate price
         expr = " AND (plan_code != '" + str(self.plan_code) + "'"
         expr += " OR plan_code is NULL)"
-        self.fill_table_planned_month(wm.dialog.all_rows, wm.dialog.txt_search, view_name, expr)
+        self.fill_table_planned_month(dialog.all_rows, dialog.txt_search, view_name, expr)
         expr = " AND plan_code = '" + str(self.plan_code) + "'"
-        self.fill_table_planned_month(wm.dialog.selected_rows, wm.dialog.txt_selected_filter, view_name, expr)
-        self.calculate_total_price(wm, self.planned_year)
+        self.fill_table_planned_month(dialog.selected_rows, dialog.txt_selected_filter, view_name, expr)
+        self.calculate_total_price(dialog, self.planned_year)
 
 
-    def month_unselector_row(self, wm, id_table_left, tableleft, view_name):
-        left_selected_list = wm.dialog.selected_rows.selectionModel().selectedRows()
+    def month_unselector_row(self, dialog, id_table_left, tableleft, view_name):
+        left_selected_list = dialog.selected_rows.selectionModel().selectedRows()
         if len(left_selected_list) == 0:
             message = "Cap registre seleccionat"
             self.controller.show_warning(message)
@@ -678,7 +682,7 @@ class Basic(ParentAction):
         field_list = []
         for i in range(0, len(left_selected_list)):
             row = left_selected_list[i].row()
-            id_ = wm.dialog.selected_rows.model().record(row).value(id_table_left)
+            id_ = dialog.selected_rows.model().record(row).value(id_table_left)
             field_list.append(id_)
 
         for i in range(0, len(left_selected_list)):
@@ -687,17 +691,17 @@ class Basic(ParentAction):
                    " SET plan_code = null, "
                    " plan_month_start = null, "
                    " plan_month_end = null "
-                   " WHERE mu_id ='" + str(wm.dialog.selected_rows.model().record(row).value('mu_id')) + "'"
+                   " WHERE mu_id ='" + str(dialog.selected_rows.model().record(row).value('mu_id')) + "'"
                    " AND plan_year = '"+self.planned_year+"'")
             self.controller.execute_sql(sql)
 
         # Refresh QTableViews and recalculate price
         expr = " AND (plan_code != '" + str(self.plan_code) + "'"
         expr += " OR plan_code is NULL)"
-        self.fill_table_planned_month(wm.dialog.all_rows, wm.dialog.txt_search, view_name, expr)
+        self.fill_table_planned_month(dialog.all_rows, dialog.txt_search, view_name, expr)
         expr = " AND plan_code = '" + str(self.plan_code) + "'"
-        self.fill_table_planned_month(wm.dialog.selected_rows, wm.dialog.txt_selected_filter, view_name, expr)
-        self.calculate_total_price(wm, self.planned_year)
+        self.fill_table_planned_month(dialog.selected_rows, dialog.txt_selected_filter, view_name, expr)
+        self.calculate_total_price(dialog, self.planned_year)
 
 
 

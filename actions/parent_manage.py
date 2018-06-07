@@ -15,7 +15,7 @@ from PyQt4.QtCore import Qt
 
 from functools import partial
 
-
+import gw_utilities
 from parent import ParentAction
 from ..actions.multiple_selection import MultipleSelection
 
@@ -190,14 +190,14 @@ class ParentManage(ParentAction, object):
                 else:
                     layer.removeSelection()
 
-    def delete_records(self, wm, table_object):
+    def delete_records(self, dialog, table_object):
         """ Delete selected elements of the table """
 
         self.disconnect_signal_selection_changed()
 
         if type(table_object) is str:
             widget_name = "tbl_" + table_object + "_x_" + self.geom_type
-            widget = wm.getWidget(widget_name)
+            widget = gw_utilities.getWidget(widget_name)
             if not widget:
                 message = "Widget not found"
                 self.controller.show_warning(message, parameter=widget_name)

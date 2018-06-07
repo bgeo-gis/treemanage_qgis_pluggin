@@ -10,12 +10,11 @@ from PyQt4.QtGui import QCompleter, QLineEdit, QTableView, QStringListModel, QCo
 from PyQt4.QtGui import QAbstractItemView
 from PyQt4.QtSql import QSqlTableModel
 
-
+import gw_utilities
 from ..dao.om_visit_event import OmVisitEvent
 from ..dao.om_visit import OmVisit
 from ..dao.om_visit_x_node import OmVisitXNode
 from ..dao.om_visit_parameter import OmVisitParameter
-from ..utils.widget_manager import WidgetManager
 from ..ui_manager import AddVisit
 from ..ui_manager import EventStandard
 from functools import partial
@@ -55,8 +54,8 @@ class ManageVisit(ParentManage, QObject):
 
         # Create the dialog and signals and related ORM Visit class
         self.current_visit = OmVisit(self.controller)
-        self.wm_add_visit = WidgetManager(AddVisit())
-        self.load_settings(self.wm_add_visit.dialog)
+        self.dlg_add_visit = AddVisit()
+        self.load_settings(self.dlg_add_visit)
 
         # Get expl_id from previous dialog
         self.expl_id = expl_id
@@ -76,40 +75,40 @@ class ManageVisit(ParentManage, QObject):
 
 
         # Set icons
-        self.set_icon(self.wm_add_visit.dialog.btn_feature_insert, "111")
-        self.set_icon(self.wm_add_visit.dialog.btn_feature_delete, "112")
-        self.set_icon(self.wm_add_visit.dialog.btn_feature_snapping, "137")
-        self.set_icon(self.wm_add_visit.dialog.btn_add_geom, "133")
+        self.set_icon(self.dlg_add_visit.btn_feature_insert, "111")
+        self.set_icon(self.dlg_add_visit.btn_feature_delete, "112")
+        self.set_icon(self.dlg_add_visit.btn_feature_snapping, "137")
+        self.set_icon(self.dlg_add_visit.btn_add_geom, "133")
 
         # tab events
-        self.tabs = self.wm_add_visit.dialog.findChild(QTabWidget, 'tab_widget')
-        self.button_box = self.wm_add_visit.dialog.findChild(QDialogButtonBox, 'button_box')
+        self.tabs = self.dlg_add_visit.findChild(QTabWidget, 'tab_widget')
+        self.button_box = self.dlg_add_visit.findChild(QDialogButtonBox, 'button_box')
         self.button_box.button(QDialogButtonBox.Ok).setEnabled(False)
 
         # Tab 'Data'/'Visit'
-        self.visit_id = self.wm_add_visit.dialog.findChild(QLineEdit, "visit_id")
-        self.user_name = self.wm_add_visit.dialog.findChild(QLineEdit, "user_name")
-        self.ext_code = self.wm_add_visit.dialog.findChild(QLineEdit, "ext_code")
-        self.visitcat_id = self.wm_add_visit.dialog.findChild(QComboBox, "visitcat_id")
+        self.visit_id = self.dlg_add_visit.findChild(QLineEdit, "visit_id")
+        self.user_name = self.dlg_add_visit.findChild(QLineEdit, "user_name")
+        self.ext_code = self.dlg_add_visit.findChild(QLineEdit, "ext_code")
+        self.visitcat_id = self.dlg_add_visit.findChild(QComboBox, "visitcat_id")
 
         # Tab 'Relations'
-        self.feature_type = self.wm_add_visit.dialog.findChild(QComboBox, "feature_type")
-        self.feature_id = self.wm_add_visit.dialog.findChild(QLineEdit, "feature_id")
-        self.tbl_relation = self.wm_add_visit.dialog.findChild(QTableView, "tbl_relation")
+        self.feature_type = self.dlg_add_visit.findChild(QComboBox, "feature_type")
+        self.feature_id = self.dlg_add_visit.findChild(QLineEdit, "feature_id")
+        self.tbl_relation = self.dlg_add_visit.findChild(QTableView, "tbl_relation")
         self.tbl_relation.setSelectionBehavior(QAbstractItemView.SelectRows)
         # TODO controlar este combo
         self.feature_type.setVisible(False)
 
         # tab 'Event'
-        self.tbl_event = self.wm_add_visit.dialog.findChild(QTableView, "tbl_event")
-        self.parameter_type_id = self.wm_add_visit.dialog.findChild(QComboBox, "parameter_type_id")
-        self.parameter_id = self.wm_add_visit.dialog.findChild(QComboBox, "parameter_id")
+        self.tbl_event = self.dlg_add_visit.findChild(QTableView, "tbl_event")
+        self.parameter_type_id = self.dlg_add_visit.findChild(QComboBox, "parameter_type_id")
+        self.parameter_id = self.dlg_add_visit.findChild(QComboBox, "parameter_id")
         self.tbl_event.setSelectionBehavior(QAbstractItemView.SelectRows)
 
         # Set current date and time
         current_date = QDate.currentDate()
-        self.wm_add_visit.dialog.startdate.setDate(current_date)
-        self.wm_add_visit.dialog.enddate.setDate(current_date)
+        self.dlg_add_visit.startdate.setDate(current_date)
+        self.dlg_add_visit.enddate.setDate(current_date)
 
         # set User name get from controller login
         if self.controller.user and self.user_name:
@@ -120,18 +119,18 @@ class ManageVisit(ParentManage, QObject):
         self.tabs.setCurrentIndex(self.current_tab_index)
 
         # Set signals
-        self.wm_add_visit.dialog.rejected.connect(partial(self.close_dialog, self.wm_add_visit.dialog))
-        self.wm_add_visit.dialog.rejected.connect(self.manage_rejected)
-        self.wm_add_visit.dialog.accepted.connect(self.manage_accepted)
-        self.wm_add_visit.dialog.btn_event_insert.clicked.connect(self.event_insert)
-        self.wm_add_visit.dialog.btn_event_delete.clicked.connect(self.event_delete)
-        self.wm_add_visit.dialog.btn_event_update.clicked.connect(self.event_update)
-        self.wm_add_visit.dialog.btn_feature_insert.clicked.connect(partial(self.insert_feature, self.feature_id, self.tbl_relation))
-        self.wm_add_visit.dialog.btn_feature_delete.clicked.connect(partial(self.delete_records, self.wm_add_visit, self.tbl_relation))
-        self.wm_add_visit.dialog.btn_feature_snapping.clicked.connect(partial(self.selection_init, self.tbl_relation))
+        self.dlg_add_visit.rejected.connect(partial(self.close_dialog, self.dlg_add_visit))
+        self.dlg_add_visit.rejected.connect(self.manage_rejected)
+        self.dlg_add_visit.accepted.connect(self.manage_accepted)
+        self.dlg_add_visit.btn_event_insert.clicked.connect(self.event_insert)
+        self.dlg_add_visit.btn_event_delete.clicked.connect(self.event_delete)
+        self.dlg_add_visit.btn_event_update.clicked.connect(self.event_update)
+        self.dlg_add_visit.btn_feature_insert.clicked.connect(partial(self.insert_feature, self.feature_id, self.tbl_relation))
+        self.dlg_add_visit.btn_feature_delete.clicked.connect(partial(self.delete_records, self.dlg_add_visit, self.tbl_relation))
+        self.dlg_add_visit.btn_feature_snapping.clicked.connect(partial(self.selection_init, self.tbl_relation))
         self.tabs.currentChanged.connect(partial(self.manage_tab_changed))
         self.visit_id.textChanged.connect(self.manage_visit_id_change)
-        self.wm_add_visit.dialog.btn_add_geom.clicked.connect(self.add_point)
+        self.dlg_add_visit.btn_add_geom.clicked.connect(self.add_point)
 
         # self.event_feature_type_selected()
 
@@ -143,11 +142,11 @@ class ManageVisit(ParentManage, QObject):
                " WHERE parameter = 'visitcat_id' AND cur_user = current_user AND context='arbrat'")
         row = self.controller.get_row(sql)
         if row:
-            self.wm_add_visit.set_combo_itemData(self.visitcat_id, str(row['value']), 1)
-        self.set_combos(self.wm_add_visit, self.wm_add_visit.dialog.parameter_type_id, 'parameter_type_id')
-        self.set_combos(self.wm_add_visit, self.wm_add_visit.dialog.parameter_id, 'parameter_id')
+            self.dlg_add_visit.set_combo_itemData(self.visitcat_id, str(row['value']), 1)
+        self.set_combos(self.dlg_add_visit.parameter_type_id, 'parameter_type_id')
+        self.set_combos(self.dlg_add_visit.parameter_id, 'parameter_id')
         # Set autocompleters of the form
-        self.set_completers(self.wm_add_visit.dialog.visit_id, 'om_visit')
+        self.set_completers(self.dlg_add_visit.visit_id, 'om_visit')
 
         # Show id of visit. If not set, infer a new value
         if not visit_id:
@@ -158,15 +157,15 @@ class ManageVisit(ParentManage, QObject):
         if self.locked_geom_type:
             self.set_locked_relation()
         # Open the dialog
-        self.open_dialog(self.wm_add_visit.dialog, dlg_name="add_visit")
+        self.open_dialog(self.dlg_add_visit, dlg_name="add_visit")
 
 
-    def set_combos(self, wm, qcombo, parameter):
+    def set_combos(self,  qcombo, parameter):
         sql = ("SELECT value FROM " + self.schema_name + ".config_param_user "
                " WHERE parameter = '"+str(parameter)+"' AND cur_user= current_user AND context='arbrat'")
         row = self.controller.get_row(sql)
         if row:
-            wm.setWidgetText(qcombo, str(row['value']))
+            gw_utilities.setWidgetText(qcombo, str(row['value']))
 
 
     def manage_accepted(self):
@@ -241,7 +240,7 @@ class ManageVisit(ParentManage, QObject):
         exist = self.current_visit.fetch()
         if exist:
             # B) Fill the GUI values of the current visit
-            self.fill_widget_with_fields(self.wm_add_visit.dialog, self.current_visit, self.current_visit.field_names())
+            self.fill_widget_with_fields(self.dlg_add_visit, self.current_visit, self.current_visit.field_names())
 
         # C) load all related events in the relative table
         self.filter = "visit_id = '" + str(text) + "'"
@@ -302,12 +301,12 @@ class ManageVisit(ParentManage, QObject):
 
         # A) fill Visit basing on GUI values
         self.current_visit.id = int(self.visit_id.text())
-        self.current_visit.startdate = self.wm_add_visit.dialog.startdate.date().toString(Qt.ISODate)
-        self.current_visit.enddate = self.wm_add_visit.dialog.enddate.date().toString(Qt.ISODate)
+        self.current_visit.startdate = self.dlg_add_visit.startdate.date().toString(Qt.ISODate)
+        self.current_visit.enddate = self.dlg_add_visit.enddate.date().toString(Qt.ISODate)
         self.current_visit.user_name = self.user_name.text()
         self.current_visit.ext_code = self.ext_code.text()
-        self.current_visit.visitcat_id = self.wm_add_visit.get_item_data(self.wm_add_visit.dialog.visitcat_id, 0)
-        self.current_visit.descript = self.wm_add_visit.dialog.descript.text()
+        self.current_visit.visitcat_id = gw_utilities.get_item_data(self.dlg_add_visit.visitcat_id, 0)
+        self.current_visit.descript = self.dlg_add_visit.descript.text()
         if self.expl_id:
             self.current_visit.expl_id = self.expl_id
         # update or insert but without closing the transaction: autocommit=False
@@ -411,7 +410,7 @@ class ManageVisit(ParentManage, QObject):
         rows = self.controller.get_rows(sql, commit=self.autocommit)
 
         if rows:
-            self.wm_add_visit.set_item_data(self.wm_add_visit.dialog.parameter_id, rows, 1)
+            gw_utilities.set_item_data(self.dlg_add_visit.parameter_id, rows, 1)
 
 
     def config_relation_table(self, qtable):
@@ -442,7 +441,7 @@ class ManageVisit(ParentManage, QObject):
         # 3) if so, select them => would appear in the table associated to the model
         self.geom_type = self.feature_type.currentText().lower()
         viewname = "v_edit_" + self.geom_type
-        self.set_completer_feature_id(self.wm_add_visit.dialog.feature_id, self.geom_type, viewname)
+        self.set_completer_feature_id(self.dlg_add_visit.feature_id, self.geom_type, viewname)
 
         # set table model and completer
         # set a fake where expression to avoid to set model to None
@@ -499,7 +498,7 @@ class ManageVisit(ParentManage, QObject):
         self.visitcat_ids = self.controller.get_rows(sql, commit=self.autocommit)
 
         if self.visitcat_ids:
-            self.wm_add_visit.set_item_data(self.wm_add_visit.dialog.visitcat_id, self.visitcat_ids, 1)
+            gw_utilities.set_item_data(self.dlg_add_visit.visitcat_id, self.visitcat_ids, 1)
             # now get default value to be show in visitcat_id
             sql = ("SELECT value FROM " + self.schema_name + ".config_param_user"
                    " WHERE parameter = 'visitcat_vdefault' AND cur_user = current_user")
@@ -507,11 +506,11 @@ class ManageVisit(ParentManage, QObject):
             if row:
                 # if int then look for default row ans set it
                 try:
-                    self.wm_add_visit.set_combo_itemData(self.wm_add_visit.dialog.visitcat_id, row[0], 0)
-                    for i in range(0, self.wm_add_visit.dialog.visitcat_id.count()):
-                        elem = self.wm_add_visit.dialog.visitcat_id.itemData(i)
+                    gw_utilities.set_combo_itemData(self.dlg_add_visit.visitcat_id, row[0], 0)
+                    for i in range(0, self.dlg_add_visit.visitcat_id.count()):
+                        elem = self.dlg_add_visit.visitcat_id.itemData(i)
                         if str(row[0]) == str(elem[0]):
-                            self.wm_add_visit.setWidgetText(self.wm_add_visit.dialog.visitcat_id, (elem[1]))
+                            gw_utilities.setWidgetText(self.dlg_add_visit.visitcat_id, (elem[1]))
                 except TypeError:
                     pass
                 except ValueError:
@@ -525,14 +524,14 @@ class ManageVisit(ParentManage, QObject):
         #        " ORDER BY id")
         # rows = self.controller.get_rows(sql, commit=self.autocommit)
         rows = [['node']]
-        self.wm_add_visit.fillComboBox("feature_type", rows, allow_nulls=False)
+        self.dlg_add_visit.fillComboBox("feature_type", rows, allow_nulls=False)
 
         # Event tab
         # Fill ComboBox parameter_type_id
         sql = ("SELECT id FROM " + self.schema_name + ".om_visit_parameter_type"
                " ORDER BY id")
         parameter_type_ids = self.controller.get_rows(sql, commit=self.autocommit)
-        self.wm_add_visit.fillComboBox("parameter_type_id", parameter_type_ids, allow_nulls=False)
+        self.dlg_add_visit.fillComboBox("parameter_type_id", parameter_type_ids, allow_nulls=False)
 
         # now get default value to be show in parameter_type_id
         # sql = ("SELECT value FROM " + self.schema_name + ".config_param_user"
@@ -592,7 +591,7 @@ class ManageVisit(ParentManage, QObject):
     def event_insert(self):
         """Add and event basing on form associated to the selected parameter_id."""
         # check a parameter_id is selected (can be that no value is available)
-        parameter_id = self.wm_add_visit.get_item_data(self.wm_add_visit.dialog.parameter_id, 0)
+        parameter_id = gw_utilities.get_item_data(self.dlg_add_visit.parameter_id, 0)
         if not parameter_id:
             message = "You need to select a valid parameter id"
             self.controller.show_info_box(message)
@@ -605,23 +604,23 @@ class ManageVisit(ParentManage, QObject):
 
         if form_type == 'event_standard':
 
-            self.dlg_event = WidgetManager(EventStandard())
-            self.load_settings(self.dlg_event.dialog)
+            self.dlg_event = EventStandard()
+            self.load_settings(self.dlg_event)
         else:
             message = "Unrecognised form type"
             self.controller.show_info_box(message, parameter=form_type)
             return
 
         # because of multiple view disable add picture and view gallery
-        self.dlg_event.dialog.btn_add_picture.setEnabled(False)
-        self.dlg_event.dialog.btn_view_gallery.setEnabled(False)
+        self.dlg_event.btn_add_picture.setEnabled(False)
+        self.dlg_event.btn_view_gallery.setEnabled(False)
 
         # set fixed values
-        self.dlg_event.dialog.parameter_id.setText(parameter_id)
+        self.dlg_event.parameter_id.setText(parameter_id)
 
 
-        self.dlg_event.dialog.setWindowFlags(Qt.WindowStaysOnTopHint)
-        ret = self.dlg_event.dialog.exec_()
+        self.dlg_event.setWindowFlags(Qt.WindowStaysOnTopHint)
+        ret = self.dlg_event.exec_()
 
         # check return
         if not ret:
@@ -635,9 +634,9 @@ class ManageVisit(ParentManage, QObject):
         event.visit_id = int(self.visit_id.text())
 
         for field_name in event.field_names():
-            if not hasattr(self.dlg_event.dialog, field_name):
+            if not hasattr(self.dlg_event, field_name):
                 continue
-            value = getattr(self.dlg_event.dialog, field_name).text()
+            value = getattr(self.dlg_event, field_name).text()
             if value:
                 setattr(event, field_name, value)
 
@@ -692,12 +691,12 @@ class ManageVisit(ParentManage, QObject):
 
         if om_event_parameter.form_type == 'event_standard':
 
-            self.event_standard = WidgetManager(EventStandard())
-            self.load_settings(self.event_standard.dialog)
+            self.dlg_event_standard = EventStandard()
+            self.load_settings(self.dlg_event_standard)
 
         # because of multiple view disable add picture and view gallery
-        self.event_standard.dialog.btn_add_picture.setEnabled(False)
-        self.event_standard.dialog.btn_view_gallery.setEnabled(False)
+        self.dlg_event_standard.btn_add_picture.setEnabled(False)
+        self.dlg_event_standard.btn_view_gallery.setEnabled(False)
 
         # fill widget values if the values are present
         for field_name in event.field_names():
@@ -708,13 +707,13 @@ class ManageVisit(ParentManage, QObject):
                 getattr(self.dlg_event, field_name).setText(str(value))
 
 
-        self.event_standard.dialog.setWindowFlags(Qt.WindowStaysOnTopHint)
-        if self.event_standard.dialog.exec_():
+        self.dlg_event_standard.setWindowFlags(Qt.WindowStaysOnTopHint)
+        if self.dlg_event_standard.exec_():
             # set record values basing on widget
             for field_name in event.field_names():
-                if not hasattr(self.event_standard.dialog, field_name):
+                if not hasattr(self.dlg_event_standard, field_name):
                     continue
-                value = getattr(self.event_standard.dialog, field_name).text()
+                value = getattr(self.dlg_event_standard, field_name).text()
                 if value:
                     setattr(event, field_name, str(value))
 

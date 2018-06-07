@@ -196,7 +196,7 @@ class ParentAction(object):
             widget.hideColumn(column)
 
 
-    def set_completer_object(self, tablename, widget, field_id):
+    def set_completer_object(self, tablename, widget, field_search):
         """ Set autocomplete of widget @table_object + "_id"
             getting id's from selected @table_object
         """
@@ -204,10 +204,11 @@ class ParentAction(object):
             return
 
         # Set SQL
-        sql = ("SELECT DISTINCT(" + field_id + ")"
+        sql = ("SELECT DISTINCT(" + field_search + ")"
                " FROM " + self.schema_name + "." + tablename + ""
-               " ORDER BY " + field_id + "")
+               " ORDER BY " + field_search + "")
         row = self.controller.get_rows(sql)
+
         for i in range(0, len(row)):
             aux = row[i]
             row[i] = str(aux[0])
@@ -215,6 +216,7 @@ class ParentAction(object):
         # Set completer and model: add autocomplete in the widget
         self.completer = QCompleter()
         self.completer.setCaseSensitivity(Qt.CaseInsensitive)
+        self.completer.setCompletionMode(0)
         widget.setCompleter(self.completer)
         model = QStringListModel()
         model.setStringList(row)

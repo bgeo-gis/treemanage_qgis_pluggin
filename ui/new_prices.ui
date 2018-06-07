@@ -17,7 +17,7 @@
    </sizepolicy>
   </property>
   <property name="windowTitle">
-   <string>Selector d'any per generar nou cataleg de preus</string>
+   <string>Selector de campanyes per generar nou cataleg de preus</string>
   </property>
   <widget class="QWidget" name="horizontalLayoutWidget">
    <property name="geometry">
@@ -32,7 +32,7 @@
     <item>
      <widget class="QLabel" name="plan_any">
       <property name="text">
-       <string>Generar preus de l'any:</string>
+       <string>Generar campanya:</string>
       </property>
      </widget>
     </item>
@@ -54,7 +54,7 @@
     <item>
      <widget class="QLabel" name="label">
       <property name="text">
-       <string>Copiar preus de l'any:</string>
+       <string>Copiar preus de la campanya:</string>
       </property>
      </widget>
     </item>
