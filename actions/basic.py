@@ -53,27 +53,34 @@ class Basic(ParentAction):
         # Close previous dialog
         if dialog is not None:
             self.close_dialog(dialog)
-        self.dlg_new_prices = NewPrices()
-        self.load_settings(self.dlg_new_prices)
+        self.dlg_new_campaign = NewPrices()
+        self.load_settings(self.dlg_new_campaign)
 
-        # validator = QIntValidator(1, 9999999)
-        # self.dlg_new_prices.txt_year.setValidator(validator)
+        # Set default dates
+        current_year = QDate.currentDate().year()
+        start_date = QDate.fromString(str(int(current_year))+'/11/01', 'yyyy/MM/dd')
+        self.dlg_new_campaign.start_date.setDate(start_date)
+        end_date = QDate.fromString(str(int(current_year)+1)+'/10/31', 'yyyy/MM/dd')
+        self.dlg_new_campaign.end_date.setDate(end_date)
+
+
         table_name = 'cat_campaign'
         field_id = 'id'
         field_name = 'name'
+        self.dlg_new_campaign.txt_campaign.setText("2021/2022")
+        self.dlg_new_campaign.rejected.connect(partial(self.close_dialog, self.dlg_new_campaign))
+        self.dlg_new_campaign.btn_cancel.clicked.connect(partial(self.close_dialog, self.dlg_new_campaign))
+        self.dlg_new_campaign.btn_accept.clicked.connect(partial(self.manage_new_price_catalog))
+        self.populate_cmb_years(table_name, field_id, field_name,  self.dlg_new_campaign.cbx_years)
+        self.set_completer_object(table_name, self.dlg_new_campaign.txt_campaign, field_name)
 
-        self.dlg_new_prices.rejected.connect(partial(self.close_dialog, self.dlg_new_prices))
-        self.dlg_new_prices.btn_cancel.clicked.connect(partial(self.close_dialog, self.dlg_new_prices))
-        self.dlg_new_prices.btn_accept.clicked.connect(partial(self.manage_new_price_catalog))
-        self.populate_cmb_years(table_name, field_id, field_name,  self.dlg_new_prices.cbx_years)
-        self.set_completer_object(table_name, self.dlg_new_prices.txt_year, field_name)
-        self.dlg_new_prices.exec_()
+        self.dlg_new_campaign.exec_()
 
 
     def manage_new_price_catalog(self):
 
         table_name = "cat_price"
-        new_camp = self.dlg_new_prices.txt_year.text()
+        new_camp = self.dlg_new_campaign.txt_campaign.text()
 
         if new_camp is None or new_camp == '':
             msg = "Has de possar l'any corresponent"
@@ -83,35 +90,50 @@ class Basic(ParentAction):
                " WHERE name ='"+str(new_camp)+"'")
         row = self.controller.get_row(sql)
 
+        # If campaign not exist, create new and get new id_campaign
+        if row is None:
+            start_date = gw_utilities.getCalendarDate(self.dlg_new_campaign.start_date)
+            end_date = gw_utilities.getCalendarDate(self.dlg_new_campaign.end_date)
+            sql = ("INSERT INTO " + self.schema_name + ".cat_campaign(name, start_date, end_date) "
+                   " VALUES('"+str(new_camp)+"', '"+str(start_date)+"', '"+str(end_date)+"')")
+            self.controller.execute_sql(sql, log_sql=True)
 
-        copy_years = self.dlg_new_prices.chk_year.isChecked()
+            sql = ("SELECT currval('"+self.schema_name+".cat_campaign_id_seq')")
+            row = self.controller.get_row(sql)
+            id_new_camp = str(row[0])
+        else:
+            id_new_camp = str(row[0])
+
+        # Check if want copy any campaign or do new price list
+        copy_years = self.dlg_new_campaign.chk_year.isChecked()
         if copy_years:
-            old_year = self.dlg_new_prices.get_item_data(self.dlg_new_prices.cbx_years)
-            if old_year == -1:
+            id_old_camp = gw_utilities.get_item_data(self.dlg_new_campaign.cbx_years)
+            # If checkbox is checked but don't have any campaign selected do return.
+            if id_old_camp == -1:
                 msg = "No tens cap any seleccionat, desmarca l'opcio de copiar preus"
                 self.controller.show_warning(msg)
                 return
         else:
-            old_year = 0
+            id_old_camp = 0
 
-        sql = ("SELECT DISTINCT(year) FROM " + self.schema_name + "." + str(table_name) + " "
-               " WHERE year = '" + str(new_camp) + "'")
-        row = self.controller.get_row(sql)
+        sql = ("SELECT DISTINCT(campaign_id) FROM " + self.schema_name + "." + str(table_name) + " "
+               " WHERE campaign_id = '" + str(id_new_camp) + "'")
+        row = self.controller.get_row(sql, log_sql=True)
+        self.controller.log_info(str(row))
         if not row or row is None:
-            sql = ("SELECT " + self.schema_name + ".create_price('" + str(new_camp) + "','" + str(old_year) + "')")
-            self.controller.execute_sql(sql)
+            sql = ("SELECT " + self.schema_name + ".create_price('" + str(id_new_camp) + "','" + str(id_old_camp) + "')")
+            self.controller.execute_sql(sql, log_sql=True)
         else:
-            message = ("Estas a punt de sobreescriure els preus de l'any " + str(new_camp) + " ")
+            message = ("Estas a punt de sobreescriure els preus de la campanya " + str(new_camp) + " ")
             answer = self.controller.ask_question(message, "Warning")
             if not answer:
                 return
             else:
-                sql = ("SELECT " + self.schema_name + ".create_price('" + str(new_camp) + "','" + str(old_year) + "')")
-                self.controller.execute_sql(sql)
-
+                sql = ("SELECT " + self.schema_name + ".create_price('" + str(id_new_camp) + "','" + str(id_old_camp) + "')")
+                self.controller.execute_sql(sql, log_sql=True)
 
         # Close perevious dialog
-        self.close_dialog(self.dlg_new_prices)
+        self.close_dialog(self.dlg_new_campaign)
 
         # Set dialog and signals
         dlg_prices_management = PriceManagement()
@@ -120,12 +142,12 @@ class Basic(ParentAction):
         dlg_prices_management.rejected.connect(partial(self.close_dialog, dlg_prices_management))
         # Populate QTableView
         table_view = 'v_edit_price'
-        self.fill_table_prices(dlg_prices_management.tbl_price_list, table_view, new_camp, set_edit_triggers=QTableView.DoubleClicked)
+        self.fill_table_prices(dlg_prices_management.tbl_price_list, table_view, id_new_camp, set_edit_triggers=QTableView.DoubleClicked)
         self.set_table_columns(dlg_prices_management.tbl_price_list, table_view, 'basic_cat_price')
         dlg_prices_management.exec_()
 
 
-    def fill_table_prices(self, qtable, table_view, new_year, set_edit_triggers=QTableView.NoEditTriggers):
+    def fill_table_prices(self, qtable, table_view, new_camp, set_edit_triggers=QTableView.NoEditTriggers):
         """ Set a model with selected filter.
         Attach that model to selected table
         @setEditStrategy:
@@ -146,7 +168,7 @@ class Basic(ParentAction):
         if model.lastError().isValid():
             self.controller.show_warning(model.lastError().text())
         # Attach model to table view
-        expr = "year = '"+new_year+"'"
+        expr = "campaign_id = '"+new_camp+"'"
         qtable.setModel(model)
         qtable.model().setFilter(expr)
 
