@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>313</width>
-    <height>199</height>
+    <height>201</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -123,7 +123,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QCheckBox" name="chk_year">
+      <widget class="QCheckBox" name="chk_campaign">
        <property name="maximumSize">
         <size>
          <width>16</width>

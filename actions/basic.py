@@ -39,8 +39,9 @@ class Basic(ParentAction):
         self.minor_version = "3.0"
         ParentAction.__init__(self, iface, settings, controller, plugin_dir)
         self.manage_visit = ManageVisit(iface, settings, controller, plugin_dir)
-        self.selected_year = None
-        self.plan_year = None
+        self.selected_camp = None
+        self.campaign_id = None
+        self.campaign_name = None
 
     def set_tree_manage(self, tree_manage):
         self.tree_manage = tree_manage
@@ -67,7 +68,6 @@ class Basic(ParentAction):
         table_name = 'cat_campaign'
         field_id = 'id'
         field_name = 'name'
-        self.dlg_new_campaign.txt_campaign.setText("2021/2022")
         self.dlg_new_campaign.rejected.connect(partial(self.close_dialog, self.dlg_new_campaign))
         self.dlg_new_campaign.btn_cancel.clicked.connect(partial(self.close_dialog, self.dlg_new_campaign))
         self.dlg_new_campaign.btn_accept.clicked.connect(partial(self.manage_new_price_catalog))
@@ -75,7 +75,6 @@ class Basic(ParentAction):
         self.set_completer_object(table_name, self.dlg_new_campaign.txt_campaign, field_name)
 
         self.dlg_new_campaign.exec_()
-
 
     def manage_new_price_catalog(self):
 
@@ -96,8 +95,7 @@ class Basic(ParentAction):
             end_date = gw_utilities.getCalendarDate(self.dlg_new_campaign.end_date)
             sql = ("INSERT INTO " + self.schema_name + ".cat_campaign(name, start_date, end_date) "
                    " VALUES('"+str(new_camp)+"', '"+str(start_date)+"', '"+str(end_date)+"')")
-            self.controller.execute_sql(sql, log_sql=True)
-
+            self.controller.execute_sql(sql)
             sql = ("SELECT currval('"+self.schema_name+".cat_campaign_id_seq')")
             row = self.controller.get_row(sql)
             id_new_camp = str(row[0])
@@ -105,7 +103,7 @@ class Basic(ParentAction):
             id_new_camp = str(row[0])
 
         # Check if want copy any campaign or do new price list
-        copy_years = self.dlg_new_campaign.chk_year.isChecked()
+        copy_years = self.dlg_new_campaign.chk_campaign.isChecked()
         if copy_years:
             id_old_camp = gw_utilities.get_item_data(self.dlg_new_campaign.cbx_years)
             # If checkbox is checked but don't have any campaign selected do return.
@@ -118,11 +116,11 @@ class Basic(ParentAction):
 
         sql = ("SELECT DISTINCT(campaign_id) FROM " + self.schema_name + "." + str(table_name) + " "
                " WHERE campaign_id = '" + str(id_new_camp) + "'")
-        row = self.controller.get_row(sql, log_sql=True)
-        self.controller.log_info(str(row))
+        row = self.controller.get_row(sql)
+
         if not row or row is None:
             sql = ("SELECT " + self.schema_name + ".create_price('" + str(id_new_camp) + "','" + str(id_old_camp) + "')")
-            self.controller.execute_sql(sql, log_sql=True)
+            self.controller.execute_sql(sql)
         else:
             message = ("Estas a punt de sobreescriure els preus de la campanya " + str(new_camp) + " ")
             answer = self.controller.ask_question(message, "Warning")
@@ -130,7 +128,7 @@ class Basic(ParentAction):
                 return
             else:
                 sql = ("SELECT " + self.schema_name + ".create_price('" + str(id_new_camp) + "','" + str(id_old_camp) + "')")
-                self.controller.execute_sql(sql, log_sql=True)
+                self.controller.execute_sql(sql)
 
         # Close perevious dialog
         self.close_dialog(self.dlg_new_campaign)
@@ -145,7 +143,6 @@ class Basic(ParentAction):
         self.fill_table_prices(dlg_prices_management.tbl_price_list, table_view, id_new_camp, set_edit_triggers=QTableView.DoubleClicked)
         self.set_table_columns(dlg_prices_management.tbl_price_list, table_view, 'basic_cat_price')
         dlg_prices_management.exec_()
-
 
     def fill_table_prices(self, qtable, table_view, new_camp, set_edit_triggers=QTableView.NoEditTriggers):
         """ Set a model with selected filter.
@@ -174,7 +171,6 @@ class Basic(ParentAction):
 
 
 
-
     def main_tree_manage(self):
         """ Button 01: Tree selector """
 
@@ -183,13 +179,13 @@ class Basic(ParentAction):
         self.load_settings(dlg_tree_manage)
 
         validator = QIntValidator(1, 9999999)
-        dlg_tree_manage.txt_year.setValidator(validator)
-        table_name = 'planning'
-        field_id = 'plan_year'
-        field_name = 'plan_year'
-        self.populate_cmb_years(table_name,  field_id, field_name, dlg_tree_manage.cbx_years)
+        dlg_tree_manage.txt_campaign.setValidator(validator)
+        table_name = 'cat_campaign'
+        field_id = 'id'
+        field_name = 'name'
+        self.populate_cmb_years(table_name,  field_id, field_name, dlg_tree_manage.cbx_campaigns)
 
-
+        dlg_tree_manage.txt_campaign.setText("2021/2022")
       
         #TODO borrar estas tres lineas
         # now = datetime.datetime.now()
@@ -201,6 +197,7 @@ class Basic(ParentAction):
         dlg_tree_manage.rejected.connect(partial(self.close_dialog, dlg_tree_manage))
         dlg_tree_manage.btn_cancel.clicked.connect(partial(self.close_dialog, dlg_tree_manage))
         dlg_tree_manage.btn_accept.clicked.connect(partial(self.get_year, dlg_tree_manage))
+        self.set_completer_object(table_name, dlg_tree_manage.txt_campaign, field_name)
 
         dlg_tree_manage.exec_()
 
@@ -222,27 +219,35 @@ class Basic(ParentAction):
 
     def get_year(self, dialog):
         update = False
-        self.selected_year = None
+        self.selected_camp = None
 
-        if dialog.txt_year.text() != '':
-            self.plan_year = gw_utilities.getWidgetText(dialog.txt_year)
-            sql = ("SELECT year from "+self.schema_name+".v_plan_mu "
-                   " WHERE year='"+self.plan_year+"'")
+        if dialog.txt_campaign.text() != '':
+            sql = ("SELECT id FROM " + self.schema_name + ".cat_campaign "
+                   " WHERE name = '"+str(dialog.txt_campaign.text())+"'")
             row = self.controller.get_row(sql)
             if row is None:
                 message = "No hi ha preus per aquest any"
                 self.controller.show_warning(message)
                 return None
+            self.campaign_id = row[0]
+            # sql = ("SELECT campaign_id from "+self.schema_name+".v_plan_mu "
+            #        " WHERE campaign_id ='"+self.campaign_id+"'")
+            # row = self.controller.get_row(sql)
+            # if row is None:
+            #     message = "No hi ha preus per aquest any"
+            #     self.controller.show_warning(message)
+            #     return None
 
-            if gw_utilities.isChecked(dialog.chk_year) and gw_utilities.get_item_data(dialog.cbx_years, 0) != -1:
-                self.selected_year = gw_utilities.get_item_data(dialog.cbx_years, 0)
-                sql = ("SELECT DISTINCT(plan_year) FROM " + self.schema_name + ".planning"
-                       " WHERE plan_year ='" + str(self.selected_year) + "'")
+            if gw_utilities.isChecked(dialog.chk_campaign) and gw_utilities.get_item_data(dialog.cbx_campaigns, 0) != -1:
+                self.selected_camp = gw_utilities.get_item_data(dialog.cbx_campaigns, 0)
+                sql = ("SELECT DISTINCT(campaign_id) FROM " + self.schema_name + ".planning"
+                       " WHERE campaign_id ='" + str(self.selected_camp) + "'")
                 row = self.controller.get_row(sql)
                 if row:
                     update = True
             else:
-                self.selected_year = self.plan_year
+                self.selected_camp = self.campaign_id
+            self.campaign_name = dialog.txt_campaign.text()
             self.close_dialog(dialog)
             self.tree_selector(update)
 
@@ -253,12 +258,11 @@ class Basic(ParentAction):
 
 
     def tree_selector(self, update=False):
-
         dlg_selector = TreeSelector()
         self.load_settings(dlg_selector)
 
         dlg_selector.setWindowTitle("Tree selector")
-        dlg_selector.lbl_year.setText(self.plan_year)
+        dlg_selector.lbl_year.setText(self.campaign_name)
 
         tableleft = 'v_plan_mu'
         tableright = 'planning'
@@ -345,7 +349,7 @@ class Basic(ParentAction):
         # Attach model to table view
         expr = " mu_name ILIKE '%" + dialog.txt_search.text() + "%'"
         expr += " AND mu_id NOT IN ("+ids+")"
-        expr += " AND year::text ILIKE '%" + str(self.plan_year) + "%'"
+        expr += " AND campaign_id::text = '" + str(self.campaign_id) + "'"
         dialog.all_rows.setModel(model)
         dialog.all_rows.model().setFilter(expr)
 
@@ -372,10 +376,10 @@ class Basic(ParentAction):
 
         # Create expresion
         expr = " mu_name ILIKE '%" + dialog.txt_selected_filter.text() + "%'"
-        if self.selected_year is not None:
-            expr += " AND plan_year ='" + str(self.plan_year) + "'"
+        if self.selected_camp is not None:
+            expr += " AND campaign_id ='" + str(self.campaign_id) + "'"
             if update:
-                expr += " OR plan_year ='" + str(self.selected_year) + "'"
+                expr += " OR campaign_id ='" + str(self.selected_camp) + "'"
 
         # Attach model to table or view
         dialog.selected_rows.setModel(model)
@@ -383,10 +387,10 @@ class Basic(ParentAction):
 
         # Set year to plan to all rows in list
         for x in range(0, model.rowCount()):
-            i = int(dialog.selected_rows.model().fieldIndex('plan_year'))
+            i = int(dialog.selected_rows.model().fieldIndex('campaign_id'))
             index = dialog.selected_rows.model().index(x, i)
-            model.setData(index, self.plan_year)
-        self.calculate_total_price(dialog, self.plan_year)
+            model.setData(index, self.campaign_id)
+        self.calculate_total_price(dialog, self.campaign_id)
 
 
     def calculate_total_price(self, dialog, year):
@@ -397,7 +401,7 @@ class Basic(ParentAction):
         total = 0
         # Sum all price
         for x in range(0, selected_list.rowCount()):
-            if str(dialog.selected_rows.model().record(x).value('plan_year')) == str(year):
+            if str(dialog.selected_rows.model().record(x).value('campaign_id')) == str(year):
                 if str(dialog.selected_rows.model().record(x).value('price')) != 'NULL':
                     total += float(dialog.selected_rows.model().record(x).value('price'))
         gw_utilities.setText(dialog.lbl_total_price, str(total))
@@ -405,7 +409,7 @@ class Basic(ParentAction):
 
     def insert_into_planning(self, tableright):
         sql = ("SELECT * FROM " + self.schema_name+"."+tableright + " "
-               " WHERE plan_year::text ='"+str(self.selected_year) + "'")
+               " WHERE campaign_id::text ='"+str(self.selected_camp) + "'")
         rows = self.controller.get_rows(sql)
 
         if rows:
@@ -426,15 +430,15 @@ class Basic(ParentAction):
                     insert_values += "'" + str(row['price']) + "', "
                 else:
                     insert_values += 'null, '
-                insert_values += "'" + self.plan_year + "', "
+                insert_values += "'" + str(self.campaign_id) + "', "
                 insert_values = insert_values[:len(insert_values) - 2]
-                function_values += "" + self.plan_year + ", "
+                function_values += "" + str(self.campaign_id) + ", "
                 function_values = function_values[:len(function_values) - 2]
                 # Check if mul_id and year_ already exists in planning
                 sql = ("SELECT  mu_id  "
                        " FROM " + self.schema_name + "." + tableright + ""
                        " WHERE mu_id = '" + str(row['mu_id']) + "'"
-                       " AND plan_year ='" + str(self.plan_year) + "'")
+                       " AND campaign_id ='" + str(self.campaign_id) + "'")
                 rowx = self.controller.get_row(sql)
 
                 if rowx is None:
@@ -442,7 +446,7 @@ class Basic(ParentAction):
                     #     # dialog.selected_rows.model().insertRow(dialog.selected_rows.verticalHeader().count())
                     #
                     sql = ("INSERT INTO " + self.schema_name + "." + tableright + ""
-                           " (mu_id,  work_id,  price, plan_year) "
+                           " (mu_id,  work_id,  price, campaign_id) "
                            " VALUES (" + insert_values + ")")
                     self.controller.execute_sql(sql)
                     sql = ("SELECT " + self.schema_name + ".set_plan_price(" + function_values + ")")
@@ -500,16 +504,16 @@ class Basic(ParentAction):
             else:
                 values += 'null, '
 
-            values += "'"+self.plan_year+"', "
+            values += "'"+str(self.campaign_id)+"', "
             values = values[:len(values) - 2]
-            function_values += "'"+self.plan_year+"', "
+            function_values += "'"+str(self.campaign_id)+"', "
             function_values = function_values[:len(function_values) - 2]
 
             # Check if mul_id and year_ already exists in planning
             sql = ("SELECT " + id_table_right + ""
                    " FROM " + self.schema_name + "." + tableright + ""
                    " WHERE " + id_table_right + " = '" + str(field_list[i]) + "'"
-                   " AND plan_year ='"+str(self.plan_year)+"'")
+                   " AND campaign_id ='"+str(self.campaign_id)+"'")
             row = self.controller.get_row(sql)
             if row is not None:
                 # if exist - show warning
@@ -520,7 +524,7 @@ class Basic(ParentAction):
                 # dialog.selected_rows.model().insertRow(dialog.selected_rows.verticalHeader().count())
 
                 sql = ("INSERT INTO " + self.schema_name + "." + tableright + ""
-                       " (mu_id,  work_id,  plan_year) "
+                       " (mu_id,  work_id, campaign_id) "
                        " VALUES (" + values + ")")
                 self.controller.execute_sql(sql)
                 sql = ("SELECT " + self.schema_name + ".set_plan_price(" + function_values + ")")
@@ -534,7 +538,7 @@ class Basic(ParentAction):
     def rows_unselector(self, dialog, tableright, field_id_right, tableleft, table_view):
 
         query = ("DELETE FROM " + self.schema_name + "." + tableright + ""
-                 " WHERE  plan_year='" + self.plan_year + "' AND " + field_id_right + " = ")
+                 " WHERE  campaign_id='" + str(self.campaign_id) + "' AND " + field_id_right + " = ")
         selected_list = dialog.selected_rows.selectionModel().selectedRows()
         if len(selected_list) == 0:
             message = "Cap registre seleccionat"
@@ -562,19 +566,21 @@ class Basic(ParentAction):
         # TODO borrar esta linea
         gw_utilities.setWidgetText(month_manage.txt_plan_code, "")
         table_name = 'planning'
-        field_id = 'plan_year'
-        field_name = 'plan_year'
+
         self.set_completer_object(table_name, month_manage.txt_plan_code, 'plan_code')
-        self.populate_cmb_years(month_manage, table_name, field_id, field_name, month_manage.cbx_years, reverse=True)
+        table_name = 'cat_campaign'
+        field_id = 'id'
+        field_name = 'name'
+        self.populate_cmb_years(table_name, field_id, field_name, month_manage.cbx_years, reverse=True)
 
         month_manage.rejected.connect(partial(self.close_dialog, month_manage))
         month_manage.btn_cancel.clicked.connect(partial(self.close_dialog, month_manage))
-        month_manage.btn_accept.clicked.connect(partial(self.get_planned_year, month_manage))
+        month_manage.btn_accept.clicked.connect(partial(self.get_planned_camp, month_manage))
 
         month_manage.exec_()
 
 
-    def get_planned_year(self, dialog):
+    def get_planned_camp(self, dialog):
 
         if str(gw_utilities.getWidgetText(dialog.txt_plan_code)) == 'null':
             message = "El camp text a no pot estar vuit"
@@ -582,9 +588,10 @@ class Basic(ParentAction):
             return
 
         self.plan_code = str(gw_utilities.getWidgetText(dialog.txt_plan_code))
-        self.planned_year = gw_utilities.get_item_data(dialog.cbx_years, 0)
-        
-        if self.planned_year == -1:
+        self.planned_camp_id = gw_utilities.get_item_data(dialog.cbx_years, 0)
+        self.planned_camp_name = gw_utilities.get_item_data(dialog.cbx_years, 1)
+
+        if self.planned_camp_id == -1:
             message = "No hi ha cap any planificat"
             self.controller.show_warning(message)
             return
@@ -594,29 +601,28 @@ class Basic(ParentAction):
 
     def month_selector(self):
         month_selector = MonthSelector()
-
         
         self.load_settings(month_selector)
         month_selector.all_rows.setSelectionBehavior(QAbstractItemView.SelectRows)
         month_selector.selected_rows.setSelectionBehavior(QAbstractItemView.SelectRows)
-        month_selector.tWindowTitle("Planificador mensual")
+        month_selector.setWindowTitle("Planificador mensual")
 
         # Set label with selected text from previus dialog
         month_selector.lbl_plan_code.setText(self.plan_code)
-        month_selector.lbl_year.setText(str(self.planned_year))
-        year_to_set = 0
-        if self.planned_year > int(QDate.currentDate().year()):
-            year_to_set = (int(self.planned_year) - int(QDate.currentDate().year()))
+        month_selector.lbl_year.setText(str(self.planned_camp_name))
 
-        # Set default dates to actual day (today) and actual day +1 (tomorrow)
-        month_selector.setCalendarDate(month_selector.date_inici, QDate.currentDate().addYears(year_to_set), True)
-        # Get date as string
-        data_fi = month_selector.getCalendarDate(month_selector.date_inici)
-        # Convert string date to QDate
-        data_fi = QDate.fromString(data_fi, 'yyyy/MM/dd')
-        # Set calendar with date_fi as QDate + 1 day
-        month_selector.setCalendarDate(month_selector.date_fi, data_fi.addDays(1))
+        sql = ("SELECT start_date, end_date FROM " + self.schema_name + ".cat_campaign "
+               " WHERE id ='" + str(self.planned_camp_id) + "'")
+        row = self.controller.get_row(sql)
+        if row is not None:
+            start_date = QDate.fromString(str(row[0]), 'yyyy-MM-dd')
+            end_date = QDate.fromString(str(row[1]), 'yyyy-MM-dd')
+        else:
+            start_date = QDate.currentDate()
+            end_date = QDate.currentDate().addYears(1)
 
+        gw_utilities.setCalendarDate(month_selector.date_inici, start_date)
+        gw_utilities.setCalendarDate(month_selector.date_fi, end_date)
 
         view_name = 'v_plan_mu_year'
         tableleft = 'planning'
@@ -637,7 +643,7 @@ class Basic(ParentAction):
         month_selector.btn_unselect.clicked.connect(partial(self.month_unselector_row, month_selector, id_table_left, tableleft, view_name))
         self.set_table_columns(month_selector.selected_rows, view_name, 'basic_month_right')
 
-        self.calculate_total_price(month_selector, self.planned_year)
+        self.calculate_total_price(month_selector, self.planned_camp_id)
 
         month_selector.btn_close.clicked.connect(partial(self.close_dialog, month_selector))
         month_selector.rejected.connect(partial(self.close_dialog, month_selector))
@@ -665,7 +671,7 @@ class Basic(ParentAction):
 
         # Get year from string
         calendar_year = QDate.fromString(plan_month_start, 'yyyy/MM/dd').year()
-        if int(calendar_year) < int(self.planned_year):
+        if int(calendar_year) < int(self.planned_camp_id):
             self.controller.show_details(detail_text="La data d'inici no pot ser anterior a 'Any planificacio'")
             return
 
@@ -682,7 +688,7 @@ class Basic(ParentAction):
                    " plan_month_end = '"+plan_month_end+"' "
                    " WHERE id='" + str(dialog.all_rows.model().record(row).value('id')) + "'"
                    " AND mu_id ='" + str(dialog.all_rows.model().record(row).value('mu_id')) + "'"
-                   " AND plan_year = '"+self.planned_year+"'")
+                   " AND campaign_id = '"+self.planned_camp_id+"'")
             self.controller.execute_sql(sql)
 
         # Refresh QTableViews and recalculate price
@@ -691,7 +697,7 @@ class Basic(ParentAction):
         self.fill_table_planned_month(dialog.all_rows, dialog.txt_search, view_name, expr)
         expr = " AND plan_code = '" + str(self.plan_code) + "'"
         self.fill_table_planned_month(dialog.selected_rows, dialog.txt_selected_filter, view_name, expr)
-        self.calculate_total_price(dialog, self.planned_year)
+        self.calculate_total_price(dialog, self.planned_camp_id)
 
 
     def month_unselector_row(self, dialog, id_table_left, tableleft, view_name):
@@ -714,7 +720,7 @@ class Basic(ParentAction):
                    " plan_month_start = null, "
                    " plan_month_end = null "
                    " WHERE mu_id ='" + str(dialog.selected_rows.model().record(row).value('mu_id')) + "'"
-                   " AND plan_year = '"+self.planned_year+"'")
+                   " AND campaign_id = '"+self.planned_camp_id+"'")
             self.controller.execute_sql(sql)
 
         # Refresh QTableViews and recalculate price
@@ -723,7 +729,7 @@ class Basic(ParentAction):
         self.fill_table_planned_month(dialog.all_rows, dialog.txt_search, view_name, expr)
         expr = " AND plan_code = '" + str(self.plan_code) + "'"
         self.fill_table_planned_month(dialog.selected_rows, dialog.txt_selected_filter, view_name, expr)
-        self.calculate_total_price(dialog, self.planned_year)
+        self.calculate_total_price(dialog, self.planned_camp_id)
 
 
 
@@ -750,10 +756,11 @@ class Basic(ParentAction):
 
         # Create expresion
         expr = " mu_name ILIKE '%" + str(txt_filter.text()) + "%' "
-        expr += " AND plan_year = '" + str(self.planned_year) + "' "
+        expr += " AND campaign_id = '" + str(self.planned_camp_id) + "' "
+
         if expression is not None:
             expr += expression
-
+        self.controller.log_info(str(expr))
         qtable.setModel(model)
         qtable.model().setFilter(expr)
 

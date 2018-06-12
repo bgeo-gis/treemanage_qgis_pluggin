@@ -142,7 +142,7 @@ class ManageVisit(ParentManage, QObject):
                " WHERE parameter = 'visitcat_id' AND cur_user = current_user AND context='arbrat'")
         row = self.controller.get_row(sql)
         if row:
-            self.dlg_add_visit.set_combo_itemData(self.visitcat_id, str(row['value']), 1)
+            gw_utilities.set_combo_itemData(self.visitcat_id, str(row['value']), 1)
         self.set_combos(self.dlg_add_visit.parameter_type_id, 'parameter_type_id')
         self.set_combos(self.dlg_add_visit.parameter_id, 'parameter_id')
         # Set autocompleters of the form
@@ -524,14 +524,14 @@ class ManageVisit(ParentManage, QObject):
         #        " ORDER BY id")
         # rows = self.controller.get_rows(sql, commit=self.autocommit)
         rows = [['node']]
-        self.dlg_add_visit.fillComboBox("feature_type", rows, allow_nulls=False)
+        gw_utilities.fillComboBox(self.dlg_add_visit.feature_type, rows, allow_nulls=False)
 
         # Event tab
         # Fill ComboBox parameter_type_id
         sql = ("SELECT id FROM " + self.schema_name + ".om_visit_parameter_type"
                " ORDER BY id")
         parameter_type_ids = self.controller.get_rows(sql, commit=self.autocommit)
-        self.dlg_add_visit.fillComboBox("parameter_type_id", parameter_type_ids, allow_nulls=False)
+        gw_utilities.fillComboBox(self.dlg_add_visit.parameter_type_id, parameter_type_ids, allow_nulls=False)
 
         # now get default value to be show in parameter_type_id
         # sql = ("SELECT value FROM " + self.schema_name + ".config_param_user"
