@@ -5,22 +5,21 @@ General Public License as published by the Free Software Foundation, either vers
 or (at your option) any later version.
 """
 
-from PyQt4.QtCore import Qt, QDate, pyqtSignal, QObject
-from PyQt4.QtGui import QCompleter, QLineEdit, QTableView, QStringListModel, QComboBox, QTabWidget, QDialogButtonBox
-from PyQt4.QtGui import QAbstractItemView
-from PyQt4.QtSql import QSqlTableModel
-
-import gw_utilities
-from ..dao.om_visit_event import OmVisitEvent
-from ..dao.om_visit import OmVisit
-from ..dao.om_visit_x_node import OmVisitXNode
-from ..dao.om_visit_parameter import OmVisitParameter
-from ..ui_manager import AddVisit
-from ..ui_manager import EventStandard
 from functools import partial
 
+from PyQt4.QtCore import Qt, QDate, pyqtSignal, QObject
+from PyQt4.QtGui import QAbstractItemView
+from PyQt4.QtGui import QCompleter, QLineEdit, QTableView, QStringListModel, QComboBox, QTabWidget, QDialogButtonBox
+from PyQt4.QtSql import QSqlTableModel
 
+from _utils import widget_manager
 from ..actions.parent_manage import ParentManage
+from ..dao.om_visit import OmVisit
+from ..dao.om_visit_event import OmVisitEvent
+from ..dao.om_visit_parameter import OmVisitParameter
+from ..dao.om_visit_x_node import OmVisitXNode
+from ..ui_manager import AddVisit
+from ..ui_manager import EventStandard
 
 
 class ManageVisit(ParentManage, QObject):
@@ -65,8 +64,9 @@ class ManageVisit(ParentManage, QObject):
         self.reset_layers()
         # TODO necesito saber que capas van a estar cargadas en la toc
         self.layers['node'] = self.controller.get_group_layers('node')
-        # self.layers['node'] = self.controller.get_layer_by_layername('node')
 
+
+        self.remove_selection(True)
 
 
         # Reset geometry
@@ -142,7 +142,7 @@ class ManageVisit(ParentManage, QObject):
                " WHERE parameter = 'visitcat_id' AND cur_user = current_user AND context='arbrat'")
         row = self.controller.get_row(sql)
         if row:
-            gw_utilities.set_combo_itemData(self.visitcat_id, str(row['value']), 1)
+            widget_manager.set_combo_itemData(self.visitcat_id, str(row['value']), 1)
         self.set_combos(self.dlg_add_visit.parameter_type_id, 'parameter_type_id')
         self.set_combos(self.dlg_add_visit.parameter_id, 'parameter_id')
         # Set autocompleters of the form
@@ -165,7 +165,7 @@ class ManageVisit(ParentManage, QObject):
                " WHERE parameter = '"+str(parameter)+"' AND cur_user= current_user AND context='arbrat'")
         row = self.controller.get_row(sql)
         if row:
-            gw_utilities.setWidgetText(qcombo, str(row['value']))
+            widget_manager.setWidgetText(qcombo, str(row['value']))
 
 
     def manage_accepted(self):
@@ -186,9 +186,6 @@ class ManageVisit(ParentManage, QObject):
 
         # notify that a new visit has been added
         self.visit_added.emit(self.current_visit.id)
-
-        # Remove all previous selections
-        self.remove_selection()
 
         # Update geometry field (if user have selected a point)
         if self.x:
@@ -305,7 +302,7 @@ class ManageVisit(ParentManage, QObject):
         self.current_visit.enddate = self.dlg_add_visit.enddate.date().toString(Qt.ISODate)
         self.current_visit.user_name = self.user_name.text()
         self.current_visit.ext_code = self.ext_code.text()
-        self.current_visit.visitcat_id = gw_utilities.get_item_data(self.dlg_add_visit.visitcat_id, 0)
+        self.current_visit.visitcat_id = widget_manager.get_item_data(self.dlg_add_visit.visitcat_id, 0)
         self.current_visit.descript = self.dlg_add_visit.descript.text()
         if self.expl_id:
             self.current_visit.expl_id = self.expl_id
@@ -410,7 +407,7 @@ class ManageVisit(ParentManage, QObject):
         rows = self.controller.get_rows(sql, commit=self.autocommit)
 
         if rows:
-            gw_utilities.set_item_data(self.dlg_add_visit.parameter_id, rows, 1)
+            widget_manager.set_item_data(self.dlg_add_visit.parameter_id, rows, 1)
 
 
     def config_relation_table(self, qtable):
@@ -498,7 +495,7 @@ class ManageVisit(ParentManage, QObject):
         self.visitcat_ids = self.controller.get_rows(sql, commit=self.autocommit)
 
         if self.visitcat_ids:
-            gw_utilities.set_item_data(self.dlg_add_visit.visitcat_id, self.visitcat_ids, 1)
+            widget_manager.set_item_data(self.dlg_add_visit.visitcat_id, self.visitcat_ids, 1)
             # now get default value to be show in visitcat_id
             sql = ("SELECT value FROM " + self.schema_name + ".config_param_user"
                    " WHERE parameter = 'visitcat_vdefault' AND cur_user = current_user")
@@ -506,11 +503,11 @@ class ManageVisit(ParentManage, QObject):
             if row:
                 # if int then look for default row ans set it
                 try:
-                    gw_utilities.set_combo_itemData(self.dlg_add_visit.visitcat_id, row[0], 0)
+                    widget_manager.set_combo_itemData(self.dlg_add_visit.visitcat_id, row[0], 0)
                     for i in range(0, self.dlg_add_visit.visitcat_id.count()):
                         elem = self.dlg_add_visit.visitcat_id.itemData(i)
                         if str(row[0]) == str(elem[0]):
-                            gw_utilities.setWidgetText(self.dlg_add_visit.visitcat_id, (elem[1]))
+                            widget_manager.setWidgetText(self.dlg_add_visit.visitcat_id, (elem[1]))
                 except TypeError:
                     pass
                 except ValueError:
@@ -524,14 +521,14 @@ class ManageVisit(ParentManage, QObject):
         #        " ORDER BY id")
         # rows = self.controller.get_rows(sql, commit=self.autocommit)
         rows = [['node']]
-        gw_utilities.fillComboBox(self.dlg_add_visit.feature_type, rows, allow_nulls=False)
+        widget_manager.fillComboBox(self.dlg_add_visit.feature_type, rows, allow_nulls=False)
 
         # Event tab
         # Fill ComboBox parameter_type_id
         sql = ("SELECT id FROM " + self.schema_name + ".om_visit_parameter_type"
                " ORDER BY id")
         parameter_type_ids = self.controller.get_rows(sql, commit=self.autocommit)
-        gw_utilities.fillComboBox(self.dlg_add_visit.parameter_type_id, parameter_type_ids, allow_nulls=False)
+        widget_manager.fillComboBox(self.dlg_add_visit.parameter_type_id, parameter_type_ids, allow_nulls=False)
 
         # now get default value to be show in parameter_type_id
         # sql = ("SELECT value FROM " + self.schema_name + ".config_param_user"
@@ -591,7 +588,7 @@ class ManageVisit(ParentManage, QObject):
     def event_insert(self):
         """Add and event basing on form associated to the selected parameter_id."""
         # check a parameter_id is selected (can be that no value is available)
-        parameter_id = gw_utilities.get_item_data(self.dlg_add_visit.parameter_id, 0)
+        parameter_id = widget_manager.get_item_data(self.dlg_add_visit.parameter_id, 0)
         if not parameter_id:
             message = "You need to select a valid parameter id"
             self.controller.show_info_box(message)

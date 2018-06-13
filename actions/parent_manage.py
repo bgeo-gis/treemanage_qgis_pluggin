@@ -6,16 +6,16 @@ or (at your option) any later version.
 """
 
 # -*- coding: utf-8 -*-
-from qgis.core import QgsFeatureRequest
-from qgis.gui import QgsMapToolEmitPoint
-from PyQt4.Qt import QDate
-from PyQt4.QtGui import QCompleter, QStringListModel, QAbstractItemView, QTableView, QDateEdit, QLineEdit, QTextEdit, QDateTimeEdit, QComboBox
-from PyQt4.QtSql import QSqlTableModel
-from PyQt4.QtCore import Qt
-
 from functools import partial
 
-import gw_utilities
+from PyQt4.Qt import QDate
+from PyQt4.QtCore import Qt
+from PyQt4.QtGui import QCompleter, QStringListModel, QTableView, QDateEdit, QLineEdit, QTextEdit, QDateTimeEdit, QComboBox
+from PyQt4.QtSql import QSqlTableModel
+from qgis.core import QgsFeatureRequest
+from qgis.gui import QgsMapToolEmitPoint
+
+from _utils import widget_manager
 from parent import ParentAction
 from ..actions.multiple_selection import MultipleSelection
 
@@ -54,9 +54,6 @@ class ParentManage(ParentAction, object):
 
     def remove_selection(self, remove_groups=True):
         """ Remove all previous selections """
-        layer = self.controller.get_layer_by_tablename("v_edit_node")
-        if layer:
-            layer.removeSelection()
         try:
             if remove_groups:
                 for layer in self.layers['node']:
@@ -197,7 +194,7 @@ class ParentManage(ParentAction, object):
 
         if type(table_object) is str:
             widget_name = "tbl_" + table_object + "_x_" + self.geom_type
-            widget = gw_utilities.getWidget(widget_name)
+            widget = widget_manager.getWidget(widget_name)
             if not widget:
                 message = "Widget not found"
                 self.controller.show_warning(message, parameter=widget_name)

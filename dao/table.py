@@ -115,7 +115,7 @@ class Table(object):
             self.table_name(), self.pk(), str(current_pk), fields, values, commit=commit)
         if status:
             message = "Values has been updated"
-            self.controller().show_info(message)
+            self.controller().show_info(message, duration=1)
             return status
 
         # get new added id in case of an insert

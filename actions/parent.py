@@ -6,17 +6,14 @@ or (at your option) any later version.
 """
 
 # -*- coding: utf-8 -*-
-from qgis.core import QgsExpression, QgsFeatureRequest
-from PyQt4.QtCore import Qt, QSettings
-from PyQt4.QtGui import QStringListModel, QCompleter, QIcon, QApplication, QCursor, QPixmap
-from PyQt4.QtSql import QSqlTableModel
-
-import os
-import sys
-import webbrowser
 import ConfigParser
-from functools import partial
-import gw_utilities
+import os
+
+from PyQt4.QtCore import Qt
+from PyQt4.QtGui import QStringListModel, QCompleter, QIcon, QApplication, QCursor, QPixmap
+from qgis.core import QgsExpression
+
+from _utils import widget_manager
 
 
 class ParentAction(object):
@@ -160,7 +157,7 @@ class ParentAction(object):
     def set_table_columns(self, widget, table_name, project_type=None):
         """ Configuration of tables. Set visibility and width of columns """
 
-        widget = gw_utilities.getWidget(widget)
+        widget = widget_manager.getWidget(widget)
         if not widget:
             return
 

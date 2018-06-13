@@ -8,26 +8,21 @@ or (at your option) any later version.
 # -*- coding: utf-8 -*-
 import os
 import sys
-import datetime
+from functools import partial
 
-import gw_utilities
-from parent import ParentAction
 from PyQt4.Qt import QDate
+from PyQt4.QtGui import QAbstractItemView, QTableView, QIntValidator
 from PyQt4.QtSql import QSqlTableModel
-from PyQt4.QtGui import QAbstractItemView, QTableView, QIntValidator, QComboBox
 
-
+from _utils import widget_manager
+from parent import ParentAction
 from ..actions.manage_visit import ManageVisit
-from ..ui.new_prices import NewPrices
 from ..ui.month_manage import MonthManage
 from ..ui.month_selector import MonthSelector
+from ..ui.new_prices import NewPrices
 from ..ui.price_management import PriceManagement
 from ..ui.tree_manage import TreeManage
 from ..ui.tree_selector import TreeSelector
-
-
-
-from functools import partial
 
 plugin_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(plugin_path)
@@ -91,8 +86,8 @@ class Basic(ParentAction):
 
         # If campaign not exist, create new and get new id_campaign
         if row is None:
-            start_date = gw_utilities.getCalendarDate(self.dlg_new_campaign.start_date)
-            end_date = gw_utilities.getCalendarDate(self.dlg_new_campaign.end_date)
+            start_date = widget_manager.getCalendarDate(self.dlg_new_campaign.start_date)
+            end_date = widget_manager.getCalendarDate(self.dlg_new_campaign.end_date)
             sql = ("INSERT INTO " + self.schema_name + ".cat_campaign(name, start_date, end_date) "
                    " VALUES('"+str(new_camp)+"', '"+str(start_date)+"', '"+str(end_date)+"')")
             self.controller.execute_sql(sql)
@@ -105,7 +100,7 @@ class Basic(ParentAction):
         # Check if want copy any campaign or do new price list
         copy_years = self.dlg_new_campaign.chk_campaign.isChecked()
         if copy_years:
-            id_old_camp = gw_utilities.get_item_data(self.dlg_new_campaign.cbx_years)
+            id_old_camp = widget_manager.get_item_data(self.dlg_new_campaign.cbx_years)
             # If checkbox is checked but don't have any campaign selected do return.
             if id_old_camp == -1:
                 msg = "No tens cap any seleccionat, desmarca l'opcio de copiar preus"
@@ -185,9 +180,10 @@ class Basic(ParentAction):
         field_name = 'name'
         self.populate_cmb_years(table_name,  field_id, field_name, dlg_tree_manage.cbx_campaigns)
 
-        dlg_tree_manage.txt_campaign.setText("2021/2022")
+
       
-        #TODO borrar estas tres lineas
+        #TODO borrar estas 5 lineas
+        dlg_tree_manage.txt_campaign.setText("2021/2022")
         # now = datetime.datetime.now()
         # dlg_tree_manage.setWidgetText(dlg_tree_manage.txt_year, str(now.year + 1))
         # dlg_tree_manage.setChecked(dlg_tree_manage.chk_year, True)
@@ -214,7 +210,7 @@ class Basic(ParentAction):
         if rows is None:
             return
 
-        gw_utilities.set_item_data(combo, rows, 1, reverse)
+        widget_manager.set_item_data(combo, rows, 1, reverse)
 
 
     def get_year(self, dialog):
@@ -230,16 +226,9 @@ class Basic(ParentAction):
                 self.controller.show_warning(message)
                 return None
             self.campaign_id = row[0]
-            # sql = ("SELECT campaign_id from "+self.schema_name+".v_plan_mu "
-            #        " WHERE campaign_id ='"+self.campaign_id+"'")
-            # row = self.controller.get_row(sql)
-            # if row is None:
-            #     message = "No hi ha preus per aquest any"
-            #     self.controller.show_warning(message)
-            #     return None
 
-            if gw_utilities.isChecked(dialog.chk_campaign) and gw_utilities.get_item_data(dialog.cbx_campaigns, 0) != -1:
-                self.selected_camp = gw_utilities.get_item_data(dialog.cbx_campaigns, 0)
+            if widget_manager.isChecked(dialog.chk_campaign) and widget_manager.get_item_data(dialog.cbx_campaigns, 0) != -1:
+                self.selected_camp = widget_manager.get_item_data(dialog.cbx_campaigns, 0)
                 sql = ("SELECT DISTINCT(campaign_id) FROM " + self.schema_name + ".planning"
                        " WHERE campaign_id ='" + str(self.selected_camp) + "'")
                 row = self.controller.get_row(sql)
@@ -276,7 +265,7 @@ class Basic(ParentAction):
 
         sql = ("SELECT DISTINCT(work_id), work_name FROM "+self.schema_name + "." + tableleft)
         rows = self.controller.get_rows(sql)
-        gw_utilities.set_item_data(dlg_selector.cmb_poda_type, rows, 1)
+        widget_manager.set_item_data(dlg_selector.cmb_poda_type, rows, 1)
 
         # CheckBox
         dlg_selector.chk_permanent.stateChanged.connect(partial(self.force_chk_current, dlg_selector))
@@ -404,7 +393,7 @@ class Basic(ParentAction):
             if str(dialog.selected_rows.model().record(x).value('campaign_id')) == str(year):
                 if str(dialog.selected_rows.model().record(x).value('price')) != 'NULL':
                     total += float(dialog.selected_rows.model().record(x).value('price'))
-        gw_utilities.setText(dialog.lbl_total_price, str(total))
+        widget_manager.setText(dialog.lbl_total_price, str(total))
 
 
     def insert_into_planning(self, tableright):
@@ -469,14 +458,14 @@ class Basic(ParentAction):
 
         # Select all rows and get all id
         self.select_all_rows(dialog.selected_rows, id_table_right)
-        if gw_utilities.isChecked(dialog.chk_current):
-            current_poda_type = gw_utilities.get_item_data(dialog.cmb_poda_type, 0)
-            current_poda_name = gw_utilities.get_item_data(dialog.cmb_poda_type, 1)
+        if widget_manager.isChecked(dialog.chk_current):
+            current_poda_type = widget_manager.get_item_data(dialog.cmb_poda_type, 0)
+            current_poda_name = widget_manager.get_item_data(dialog.cmb_poda_type, 1)
             if current_poda_type is None:
                 message = "No heu seleccionat cap poda"
                 self.controller.show_warning(message)
                 return
-        if gw_utilities.isChecked(dialog.chk_permanent):
+        if widget_manager.isChecked(dialog.chk_permanent):
             for i in range(0, len(left_selected_list)):
                 row = left_selected_list[i].row()
                 sql = ("UPDATE " + self.schema_name + ".cat_mu "
@@ -495,7 +484,7 @@ class Basic(ParentAction):
                 values += 'null, '
 
             if dialog.all_rows.model().record(row).value('work_id') is not None:
-                if gw_utilities.isChecked(dialog.chk_current):
+                if widget_manager.isChecked(dialog.chk_current):
                     values += "'" + str(current_poda_type) + "', "
                     function_values += "'" + str(current_poda_type) + "', "
                 else:
@@ -564,7 +553,7 @@ class Basic(ParentAction):
         self.load_settings(month_manage)
         month_manage.setWindowTitle("Planificador mensual")
         # TODO borrar esta linea
-        gw_utilities.setWidgetText(month_manage.txt_plan_code, "")
+        widget_manager.setWidgetText(month_manage.txt_plan_code, "")
         table_name = 'planning'
 
         self.set_completer_object(table_name, month_manage.txt_plan_code, 'plan_code')
@@ -582,14 +571,14 @@ class Basic(ParentAction):
 
     def get_planned_camp(self, dialog):
 
-        if str(gw_utilities.getWidgetText(dialog.txt_plan_code)) == 'null':
+        if str(widget_manager.getWidgetText(dialog.txt_plan_code)) == 'null':
             message = "El camp text a no pot estar vuit"
             self.controller.show_warning(message)
             return
 
-        self.plan_code = str(gw_utilities.getWidgetText(dialog.txt_plan_code))
-        self.planned_camp_id = gw_utilities.get_item_data(dialog.cbx_years, 0)
-        self.planned_camp_name = gw_utilities.get_item_data(dialog.cbx_years, 1)
+        self.plan_code = str(widget_manager.getWidgetText(dialog.txt_plan_code))
+        self.planned_camp_id = widget_manager.get_item_data(dialog.cbx_years, 0)
+        self.planned_camp_name = widget_manager.get_item_data(dialog.cbx_years, 1)
 
         if self.planned_camp_id == -1:
             message = "No hi ha cap any planificat"
@@ -621,8 +610,8 @@ class Basic(ParentAction):
             start_date = QDate.currentDate()
             end_date = QDate.currentDate().addYears(1)
 
-        gw_utilities.setCalendarDate(month_selector.date_inici, start_date)
-        gw_utilities.setCalendarDate(month_selector.date_fi, end_date)
+        widget_manager.setCalendarDate(month_selector.date_inici, start_date)
+        widget_manager.setCalendarDate(month_selector.date_fi, end_date)
 
         view_name = 'v_plan_mu_year'
         tableleft = 'planning'
@@ -666,8 +655,8 @@ class Basic(ParentAction):
             field_list.append(id_)
 
         # Get dates
-        plan_month_start = gw_utilities.getCalendarDate(dialog.date_inici)
-        plan_month_end = gw_utilities.getCalendarDate(dialog.date_fi)
+        plan_month_start = widget_manager.getCalendarDate(dialog.date_inici)
+        plan_month_end = widget_manager.getCalendarDate(dialog.date_fi)
 
         # Get year from string
         calendar_year = QDate.fromString(plan_month_start, 'yyyy/MM/dd').year()
@@ -760,7 +749,7 @@ class Basic(ParentAction):
 
         if expression is not None:
             expr += expression
-        self.controller.log_info(str(expr))
+
         qtable.setModel(model)
         qtable.model().setFilter(expr)
 
