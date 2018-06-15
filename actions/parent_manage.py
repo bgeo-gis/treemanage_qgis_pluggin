@@ -57,10 +57,13 @@ class ParentManage(ParentAction, object):
         try:
             if remove_groups:
                 for layer in self.layers['node']:
+                    self.controller.log_info(str(layer.name()))
                     layer.removeSelection()
         except:
             pass
         self.canvas.refresh()
+        self.canvas.setMapTool(self.previous_map_tool)
+        #self.iface.actionPan().trigger()
 
 
 
@@ -389,6 +392,17 @@ class ParentManage(ParentAction, object):
 
         self.connect_signal_selection_changed(table_object)
 
+
+    def disconnect_snapping(self):
+        """ Select 'Pan' as current map tool and disconnect snapping """
+
+        try:
+            self.iface.actionPan().trigger()
+            self.canvas.xyCoordinates.disconnect()
+            if self.emit_point:
+                self.emit_point.canvasClicked.disconnect()
+        except:
+            pass
 
     def connect_signal_selection_changed(self, table_object):
         """ Connect signal selectionChanged """

@@ -65,14 +65,11 @@ class ManageVisit(ParentManage, QObject):
         # TODO necesito saber que capas van a estar cargadas en la toc
         self.layers['node'] = self.controller.get_group_layers('node')
 
-
         self.remove_selection(True)
-
 
         # Reset geometry
         self.x = None
         self.y = None
-
 
         # Set icons
         self.set_icon(self.dlg_add_visit.btn_feature_insert, "111")
@@ -191,6 +188,8 @@ class ManageVisit(ParentManage, QObject):
         if self.x:
             self.update_geom()
         self.refresh_map_canvas()
+        self.canvas.setMapTool(self.previous_map_tool)
+        #self.iface.actionPan().trigger()
 
 
     def update_geom(self):
@@ -207,13 +206,13 @@ class ManageVisit(ParentManage, QObject):
         """Do all action when closed the dialog with Cancel or X.
         e.g. all necessary rollbacks and cleanings."""
 
-
         # removed current working visit. This should cascade removing of all related records
         if hasattr(self, 'it_is_new_visit') and self.it_is_new_visit:
             self.current_visit.delete()
 
         # Remove all previous selections
         self.remove_selection()
+
 
 
     def tab_index(self, tab_name):
