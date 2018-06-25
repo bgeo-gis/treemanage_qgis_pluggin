@@ -50,8 +50,6 @@ class ParentManage(ParentAction, object):
         self.layers['node'] = []
 
 
-
-
     def remove_selection(self, remove_groups=True):
         """ Remove all previous selections """
         try:
@@ -63,9 +61,6 @@ class ParentManage(ParentAction, object):
             pass
         self.canvas.refresh()
         self.canvas.setMapTool(self.previous_map_tool)
-        #self.iface.actionPan().trigger()
-
-
 
 
     def add_point(self):
@@ -108,10 +103,6 @@ class ParentManage(ParentAction, object):
 
             model.setStringList(row)
             self.completer.setModel(model)
-
-
-
-
 
 
     def set_table_model(self, qtable, geom_type, expr_filter):
@@ -157,6 +148,7 @@ class ParentManage(ParentAction, object):
 
         return expr
 
+
     def apply_lazy_init(self, widget):
         """Apply the init function related to the model. It's necessary
         a lazy init because model is changed everytime is loaded."""
@@ -165,6 +157,7 @@ class ParentManage(ParentAction, object):
         if widget != self.lazy_widget:
             return
         self.lazy_init_function(self.lazy_widget)
+        
 
     def lazy_configuration(self, widget, init_function):
         """set the init_function where all necessary events are set.
@@ -174,6 +167,7 @@ class ParentManage(ParentAction, object):
         # to allow multiple lazy initialization
         self.lazy_widget = widget
         self.lazy_init_function = init_function
+        
 
     def select_features_by_ids(self, geom_type, expr):
         """ Select features of layers of group @geom_type applying @expr """
@@ -189,6 +183,7 @@ class ParentManage(ParentAction, object):
                     layer.selectByIds(id_list)
                 else:
                     layer.removeSelection()
+
 
     def delete_records(self, dialog, table_object):
         """ Delete selected elements of the table """
@@ -215,7 +210,6 @@ class ParentManage(ParentAction, object):
             message = "Any record selected"
             self.controller.show_info_box(message)
             return
-
 
         self.ids = self.list_ids[self.geom_type]
         field_id = self.geom_type + "_id"
@@ -267,12 +261,6 @@ class ParentManage(ParentAction, object):
         self.list_ids[self.geom_type] = self.ids
 
         self.connect_signal_selection_changed(table_object)
-
-
-
-
-
-
 
 
     def selection_init(self, table_object):
@@ -404,6 +392,7 @@ class ParentManage(ParentAction, object):
         except:
             pass
 
+
     def connect_signal_selection_changed(self, table_object):
         """ Connect signal selectionChanged """
 
@@ -412,6 +401,7 @@ class ParentManage(ParentAction, object):
         except Exception:
             pass
 
+
     def disconnect_signal_selection_changed(self):
         """ Disconnect signal selectionChanged """
 
@@ -419,6 +409,7 @@ class ParentManage(ParentAction, object):
             self.canvas.selectionChanged.disconnect()
         except Exception:
             pass
+
 
     def fill_widget_with_fields(self, dialog, data_object, field_names):
         """Fill the Widget with value get from data_object limited to
@@ -453,7 +444,6 @@ class ParentManage(ParentAction, object):
                     continue
 
 
-
     def reload_table(self, qtable, geom_type, expr_filter):
         """ Reload @widget with contents of @tablename applying selected @expr_filter """
 
@@ -466,3 +456,5 @@ class ParentManage(ParentAction, object):
 
         expr = self.set_table_model(widget, geom_type, expr_filter)
         return expr
+    
+    

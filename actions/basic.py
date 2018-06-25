@@ -29,6 +29,7 @@ sys.path.append(plugin_path)
 
 
 class Basic(ParentAction):
+    
     def __init__(self, iface, settings, controller, plugin_dir):
         """ Class to control toolbar 'basic' """
         self.minor_version = "3.0"
@@ -38,14 +39,18 @@ class Basic(ParentAction):
         self.campaign_id = None
         self.campaign_name = None
 
+
     def set_tree_manage(self, tree_manage):
         self.tree_manage = tree_manage
+
 
     def set_project_type(self, project_type):
         self.project_type = project_type
 
+
     def basic_new_prices(self, dialog=None):
         """ Button 03: Price generator """
+        
         # Close previous dialog
         if dialog is not None:
             self.close_dialog(dialog)
@@ -59,7 +64,6 @@ class Basic(ParentAction):
         end_date = QDate.fromString(str(int(current_year)+1)+'/10/31', 'yyyy/MM/dd')
         self.dlg_new_campaign.end_date.setDate(end_date)
 
-
         table_name = 'cat_campaign'
         field_id = 'id'
         field_name = 'name'
@@ -70,6 +74,7 @@ class Basic(ParentAction):
         self.set_completer_object(table_name, self.dlg_new_campaign.txt_campaign, field_name)
 
         self.dlg_new_campaign.exec_()
+
 
     def manage_new_price_catalog(self):
 
@@ -139,6 +144,7 @@ class Basic(ParentAction):
         self.set_table_columns(dlg_prices_management.tbl_price_list, table_view, 'basic_cat_price')
         dlg_prices_management.exec_()
 
+
     def fill_table_prices(self, qtable, table_view, new_camp, set_edit_triggers=QTableView.NoEditTriggers):
         """ Set a model with selected filter.
         Attach that model to selected table
@@ -165,12 +171,10 @@ class Basic(ParentAction):
         qtable.model().setFilter(expr)
 
 
-
     def main_tree_manage(self):
         """ Button 01: Tree selector """
 
         dlg_tree_manage = TreeManage()
-        #dlg_tree_manage.setFixedSize(300, 170)
         self.load_settings(dlg_tree_manage)
 
         validator = QIntValidator(1, 9999999)
@@ -180,15 +184,8 @@ class Basic(ParentAction):
         field_name = 'name'
         self.populate_cmb_years(table_name,  field_id, field_name, dlg_tree_manage.cbx_campaigns)
 
-
-      
         #TODO borrar estas 5 lineas
         dlg_tree_manage.txt_campaign.setText("2021/2022")
-        # now = datetime.datetime.now()
-        # dlg_tree_manage.setWidgetText(dlg_tree_manage.txt_year, str(now.year + 1))
-        # dlg_tree_manage.setChecked(dlg_tree_manage.chk_year, True)
-        # dlg_tree_manage.set_combo_itemData(dlg_tree_manage.cbx_years, str(now.year + 1), 1)
-
 
         dlg_tree_manage.rejected.connect(partial(self.close_dialog, dlg_tree_manage))
         dlg_tree_manage.btn_cancel.clicked.connect(partial(self.close_dialog, dlg_tree_manage))
@@ -199,12 +196,9 @@ class Basic(ParentAction):
 
 
     def populate_cmb_years(self, table_name, field_id, field_name, combo, reverse=False):
-        """
-        sql = ("SELECT current_database()")
-        rows = self.controller.get_rows(sql)
-        self.controller.log_info(str(rows))
-        """
-        sql = ("SELECT DISTINCT(" + str(field_id) + ")::text, " + str(field_name) + "::text FROM "+self.schema_name+"."+table_name + ""
+
+        sql = ("SELECT DISTINCT(" + str(field_id) + ")::text, " + str(field_name) + "::text"
+               " FROM "+self.schema_name+"."+table_name + ""
                " WHERE " + str(field_name) + "::text != ''")
         rows = self.controller.get_rows(sql)
         if rows is None:
@@ -218,6 +212,7 @@ class Basic(ParentAction):
         self.selected_camp = None
 
         if dialog.txt_campaign.text() != '':
+            
             sql = ("SELECT id FROM " + self.schema_name + ".cat_campaign "
                    " WHERE name = '"+str(dialog.txt_campaign.text())+"'")
             row = self.controller.get_row(sql)
@@ -236,6 +231,7 @@ class Basic(ParentAction):
                     update = True
             else:
                 self.selected_camp = self.campaign_id
+                
             self.campaign_name = dialog.txt_campaign.text()
             self.close_dialog(dialog)
             self.tree_selector(update)
@@ -261,7 +257,6 @@ class Basic(ParentAction):
 
         dlg_selector.all_rows.setSelectionBehavior(QAbstractItemView.SelectRows)
         dlg_selector.selected_rows.setSelectionBehavior(QAbstractItemView.SelectRows)
-        #dlg_selector.all_rows.horizontalHeader().setStyleSheet("QHeaderView { font-size: 10pt; }")
 
         sql = ("SELECT DISTINCT(work_id), work_name FROM "+self.schema_name + "." + tableleft)
         rows = self.controller.get_rows(sql)
@@ -270,7 +265,7 @@ class Basic(ParentAction):
         # CheckBox
         dlg_selector.chk_permanent.stateChanged.connect(partial(self.force_chk_current, dlg_selector))
 
-        # Button selec
+        # Button select
         dlg_selector.btn_select.clicked.connect(partial(self.rows_selector, dlg_selector, id_table_left, tableright, id_table_right, tableleft, table_view))
         dlg_selector.all_rows.doubleClicked.connect(partial(self.rows_selector, dlg_selector, id_table_left, tableright, id_table_right, tableleft, table_view))
 
@@ -291,9 +286,10 @@ class Basic(ParentAction):
         self.set_table_columns(dlg_selector.all_rows, tableleft, 'basic_year_left')
 
         # Filter field
-        dlg_selector.txt_search.textChanged.connect(partial(self.fill_main_table, dlg_selector, tableleft, set_edit_triggers=QTableView.NoEditTriggers))
-        dlg_selector.txt_selected_filter.textChanged.connect(partial(self.fill_table, dlg_selector, table_view, set_edit_triggers=QTableView.NoEditTriggers))
-
+        dlg_selector.txt_search.textChanged.connect(
+            partial(self.fill_main_table, dlg_selector, tableleft, set_edit_triggers=QTableView.NoEditTriggers))
+        dlg_selector.txt_selected_filter.textChanged.connect(
+            partial(self.fill_table, dlg_selector, table_view, set_edit_triggers=QTableView.NoEditTriggers))
         dlg_selector.btn_close.clicked.connect(partial(self.close_dialog, dlg_selector))
         dlg_selector.btn_close.clicked.connect(partial(self.close_dialog, dlg_selector))
         dlg_selector.rejected.connect(partial(self.close_dialog, dlg_selector))
@@ -343,7 +339,7 @@ class Basic(ParentAction):
         dialog.all_rows.model().setFilter(expr)
 
 
-    def fill_table(self, dialog,  table_view, set_edit_triggers=QTableView.NoEditTriggers, update=False):
+    def fill_table(self, dialog, table_view, set_edit_triggers=QTableView.NoEditTriggers, update=False):
         """ Set a model with selected filter.
         Attach that model to selected table
         @setEditStrategy:
@@ -384,6 +380,7 @@ class Basic(ParentAction):
 
     def calculate_total_price(self, dialog, year):
         """ Update QLabel @lbl_total_price with sum of all price in @select_rows """
+        
         selected_list = dialog.selected_rows.model()
         if selected_list is None:
             return
@@ -397,6 +394,7 @@ class Basic(ParentAction):
 
 
     def insert_into_planning(self, tableright):
+        
         sql = ("SELECT * FROM " + self.schema_name+"."+tableright + " "
                " WHERE campaign_id::text ='"+str(self.selected_camp) + "'")
         rows = self.controller.get_rows(sql)
@@ -444,6 +442,7 @@ class Basic(ParentAction):
 
     def rows_selector(self, dialog, id_table_left, tableright, id_table_right, tableleft, table_view):
         """ Copy the selected lines in the qtable_all_rows and in the table """
+        
         left_selected_list = dialog.all_rows.selectionModel().selectedRows()
         if len(left_selected_list) == 0:
             message = "Cap registre seleccionat"
@@ -541,6 +540,7 @@ class Basic(ParentAction):
         for i in range(0, len(field_list)):
             sql = (query + "'" + str(field_list[i]) + "'")
             self.controller.execute_sql(sql)
+            
         # Refresh model with selected filter
         self.fill_table(dialog, table_view, set_edit_triggers=QTableView.NoEditTriggers)
         self.fill_main_table(dialog, tableleft)
@@ -548,6 +548,7 @@ class Basic(ParentAction):
 
     def basic_month_manage(self):
         """ Button 02: Planned year manage """
+        
         month_manage = MonthManage()
 
         self.load_settings(month_manage)
@@ -589,6 +590,7 @@ class Basic(ParentAction):
 
 
     def month_selector(self):
+        
         month_selector = MonthSelector()
         
         self.load_settings(month_selector)
@@ -641,6 +643,7 @@ class Basic(ParentAction):
 
 
     def month_selector_row(self, dialog, id_table_left, tableleft, view_name):
+        
         left_selected_list = dialog.all_rows.selectionModel().selectedRows()
         if len(left_selected_list) == 0:
             message = "Cap registre seleccionat"
@@ -690,6 +693,7 @@ class Basic(ParentAction):
 
 
     def month_unselector_row(self, dialog, id_table_left, tableleft, view_name):
+        
         left_selected_list = dialog.selected_rows.selectionModel().selectedRows()
         if len(left_selected_list) == 0:
             message = "Cap registre seleccionat"
@@ -721,9 +725,7 @@ class Basic(ParentAction):
         self.calculate_total_price(dialog, self.planned_camp_id)
 
 
-
     def fill_table_planned_month(self, qtable, txt_filter, tableright, expression=None, set_edit_triggers=QTableView.NoEditTriggers):
-
         """ Set a model with selected filter.
         Attach that model to selected table
         @setEditStrategy:
@@ -755,7 +757,7 @@ class Basic(ParentAction):
 
 
     def select_all_rows(self, qtable, id, clear_selection=True):
-        """ retrun list of index in @qtable"""
+        """ return list of index in @qtable """
         # Select all rows and get all id
         qtable.selectAll()
         right_selected_list = qtable.selectionModel().selectedRows()
@@ -768,17 +770,20 @@ class Basic(ParentAction):
             qtable.clearSelection()
         return right_field_list
 
+
     def get_table_columns(self, tablename):
+        
         # Get columns name in order of the table
         sql = ("SELECT column_name FROM information_schema.columns"
                " WHERE table_name = '" + tablename + "'"
                " AND table_schema = '" + self.schema_name.replace('"', '') + "'"
                " ORDER BY ordinal_position")
-        column_name = self.controller.get_rows(sql)
-        return column_name
+        column_names = self.controller.get_rows(sql)
+        return column_names
 
 
     def accept_changes(self, dialog, tableleft):
+        
         model = dialog.selected_rows.model()
         model.database().transaction()
         if model.submitAll():
@@ -808,4 +813,6 @@ class Basic(ParentAction):
 
     def add_visit(self):
         """ Button 04: Add visit """
+        
         self.manage_visit.manage_visit()
+        

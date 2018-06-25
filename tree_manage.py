@@ -8,16 +8,14 @@ or (at your option) any later version.
 # -*- coding: utf-8 -*-
 from qgis.core import QgsExpressionContextUtils
 from PyQt4.QtCore import QObject, QSettings
-from PyQt4.QtGui import QAction, QActionGroup, QIcon, QMenu
+from PyQt4.QtGui import QAction, QActionGroup, QIcon
 
 import os.path
 import sys  
 from functools import partial
 
 from actions.basic import Basic
-
 from dao.controller import DaoController
-
 from models.plugin_toolbar import PluginToolbar
 
 
@@ -30,6 +28,7 @@ class TreeManage(QObject):
             application at run time.
         :type iface: QgsInterface
         """
+        
         super(TreeManage, self).__init__()
 
         # Initialize instance attributes
@@ -117,7 +116,6 @@ class TreeManage(QObject):
             action = QAction(text, action_group) 
         else:
             action = QAction(icon, text, action_group)  
-            
 
         toolbar.addAction(action)  
         action.setCheckable(is_checkable)    
@@ -127,7 +125,6 @@ class TreeManage(QObject):
         self.manage_action(index_action, function_name)
 
         return action
-      
       
 
     def add_action(self, index_action, toolbar, action_group):
@@ -164,6 +161,7 @@ class TreeManage(QObject):
         if key in self.actions:
             action = self.actions[key]
             action.setEnabled(enable)
+
 
     def manage_toolbars(self):
         """ Manage actions of the different plugin toolbars """ 
@@ -237,8 +235,6 @@ class TreeManage(QObject):
     
     """ Slots """             
 
-
-
     def project_read(self, show_warning=True): 
         """ Function executed when a user opens a QGIS project (*.qgs) """
 
@@ -259,6 +255,7 @@ class TreeManage(QObject):
                 
         # Manage locale and corresponding 'i18n' file
         self.controller.manage_translation(self.plugin_name)
+        
         # Get schema name from table 'version' and set it in controller and in config file
         layer_version = self.controller.get_layer_by_tablename("version_tm")
         layer_source = self.controller.get_layer_source(layer_version)
@@ -266,15 +263,9 @@ class TreeManage(QObject):
         self.controller.plugin_settings_set_value("schema_name", self.schema_name)   
         self.controller.set_schema_name(self.schema_name)
 
-        # Check if schema exists
-        # self.schema_exists = self.controller.dao.check_schema(self.schema_name)
-        # if not self.schema_exists:
-        #     if show_warning:
-        #         self.controller.show_warning("Selected schema not found", parameter=self.schema_name)
         # Set actions classes (define one class per plugin toolbar)
         self.basic = Basic(self.iface, self.settings, self.controller, self.plugin_dir)
         self.basic.set_tree_manage(self)
-
 
         # Get SRID from table node
         # TODO parametrizar srid
