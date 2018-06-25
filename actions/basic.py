@@ -38,6 +38,7 @@ class Basic(ParentAction):
         self.selected_camp = None
         self.campaign_id = None
         self.campaign_name = None
+        self.rows_cmb_poda_type = None
 
 
     def set_tree_manage(self, tree_manage):
@@ -70,8 +71,12 @@ class Basic(ParentAction):
         self.dlg_new_campaign.rejected.connect(partial(self.close_dialog, self.dlg_new_campaign))
         self.dlg_new_campaign.btn_cancel.clicked.connect(partial(self.close_dialog, self.dlg_new_campaign))
         self.dlg_new_campaign.btn_accept.clicked.connect(partial(self.manage_new_price_catalog))
+        
         self.populate_cmb_years(table_name, field_id, field_name,  self.dlg_new_campaign.cbx_years)
         self.set_completer_object(table_name, self.dlg_new_campaign.txt_campaign, field_name)
+        
+        if self.rows_cmb_poda_type is None:
+            self.update_cmb_poda_type()     
 
         self.dlg_new_campaign.exec_()
 
@@ -86,21 +91,24 @@ class Basic(ParentAction):
             self.controller.show_warning(msg)
             return
         sql = ("SELECT id FROM " + self.schema_name + ".cat_campaign "
-               " WHERE name ='"+str(new_camp)+"'")
+               " WHERE name = '" + str(new_camp) + "'")
         row = self.controller.get_row(sql)
 
-        # If campaign not exist, create new and get new id_campaign
+        # If campaign not exist, create new one
         if row is None:
             start_date = widget_manager.getCalendarDate(self.dlg_new_campaign.start_date)
             end_date = widget_manager.getCalendarDate(self.dlg_new_campaign.end_date)
             sql = ("INSERT INTO " + self.schema_name + ".cat_campaign(name, start_date, end_date) "
-                   " VALUES('"+str(new_camp)+"', '"+str(start_date)+"', '"+str(end_date)+"')")
+                   " VALUES('" + str(new_camp) + "', '" + str(start_date) + "', '" + str(end_date) + "');")
             self.controller.execute_sql(sql)
-            sql = ("SELECT currval('"+self.schema_name+".cat_campaign_id_seq')")
+            sql = ("SELECT currval('" + self.schema_name + ".cat_campaign_id_seq');")
             row = self.controller.get_row(sql)
-            id_new_camp = str(row[0])
-        else:
-            id_new_camp = str(row[0])
+            
+            # Update contents of variable 'self.cmb_poda_type'
+            self.update_cmb_poda_type()
+          
+        # Get id_campaign            
+        id_new_camp = str(row[0])
 
         # Check if want copy any campaign or do new price list
         copy_years = self.dlg_new_campaign.chk_campaign.isChecked()
@@ -144,6 +152,17 @@ class Basic(ParentAction):
         self.fill_table_prices(dlg_prices_management.tbl_price_list, table_view, id_new_camp, set_edit_triggers=QTableView.DoubleClicked)
         self.set_table_columns(dlg_prices_management.tbl_price_list, table_view, 'basic_cat_price')
         dlg_prices_management.exec_()
+
+
+    def update_cmb_poda_type(self):
+
+        sql = ("SELECT DISTINCT(work_id), work_name"
+               " FROM " + self.schema_name + ".v_plan_mu"
+               " ORDER BY work_name")
+        self.rows_cmb_poda_type = self.controller.get_rows(sql)
+        
+        if not self.rows_cmb_poda_type:
+            self.controller.log_info("Error in update_cmb_poda_type")                 
 
 
     def fill_table_prices(self, qtable, table_view, new_camp, set_edit_triggers=QTableView.NoEditTriggers):
@@ -209,6 +228,7 @@ class Basic(ParentAction):
 
 
     def get_year(self, dialog):
+               
         update = False
         self.selected_camp = None
 
@@ -240,10 +260,14 @@ class Basic(ParentAction):
         else:
             message = "Any recuperat es obligatori"
             self.controller.show_warning(message)
-            return None
-
+        
+        self.controller.log_info("get_year_end")
+        
 
     def tree_selector(self, update=False):
+        
+        self.controller.log_info("tree_selector_start")     
+           
         dlg_selector = TreeSelector()
         self.load_settings(dlg_selector)
         dlg_selector.setWindowTitle("Tree selector")
@@ -256,7 +280,13 @@ class Basic(ParentAction):
         table_view = 'v_plan_mu_year'
         id_table_left = 'mu_id'
         id_table_right = 'mu_id'
-
+        
+        # Get data to fill combo from memory
+        if self.rows_cmb_poda_type is None:
+            self.update_cmb_poda_type()   
+                    
+        widget_manager.set_item_data(dlg_selector.cmb_poda_type, self.rows_cmb_poda_type, 1)              
+        
         # Populate QTableView
         self.fill_table(dlg_selector, table_view, set_edit_triggers=QTableView.NoEditTriggers, update=True)
         if update:
@@ -285,10 +315,10 @@ class Basic(ParentAction):
             partial(self.fill_table, dlg_selector, table_view, set_edit_triggers=QTableView.NoEditTriggers))
         dlg_selector.btn_close.clicked.connect(partial(self.close_dialog, dlg_selector))
         dlg_selector.btn_close.clicked.connect(partial(self.close_dialog, dlg_selector))
-        dlg_selector.rejected.connect(partial(self.close_dialog, dlg_selector))
-
-        dlg_selector.exec_()
-
+        dlg_selector.rejected.connect(partial(self.close_dialog, dlg_selector))  
+        
+        dlg_selector.open()
+        
 
     def force_chk_current(self, dialog):
         if dialog.chk_permanent.isChecked():
@@ -307,9 +337,7 @@ class Basic(ParentAction):
         model = QSqlTableModel()
         model.setTable(self.schema_name + "." + table_name)
         model.setEditStrategy(QSqlTableModel.OnFieldChange)
-        model.setSort(2, 0)
-        model.select()
-
+        
         dialog.all_rows.setEditTriggers(set_edit_triggers)
         # Check for errors
         if model.lastError().isValid():
