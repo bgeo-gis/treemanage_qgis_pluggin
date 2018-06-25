@@ -146,6 +146,7 @@ class ParentAction(object):
         else:
             self.controller.log_info("File not found", parameter=icon_path)
 
+
     def check_expression(self, expr_filter, log_info=False):
         """ Check if expression filter @expr_filter is valid """
 
@@ -156,6 +157,7 @@ class ParentAction(object):
             message = "Expression Error"
             self.controller.log_warning(message, parameter=expr_filter)
             return False, expr
+        
         return True, expr
 
 
@@ -175,7 +177,7 @@ class ParentAction(object):
             sql += (" AND project_type = '" + project_type + "' ")
         sql += (" ORDER BY column_index")
 
-        rows = self.controller.get_rows(sql, log_info=False, log_sql=True)
+        rows = self.controller.get_rows(sql, log_info=False)
         if not rows:
             return
 
@@ -199,6 +201,7 @@ class ParentAction(object):
         """ Set autocomplete of widget @table_object + "_id"
             getting id's from selected @table_object
         """
+        
         if not widget:
             return
 

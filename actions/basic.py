@@ -182,9 +182,12 @@ class Basic(ParentAction):
         model.select()
 
         qtable.setEditTriggers(set_edit_triggers)
+        
         # Check for errors
         if model.lastError().isValid():
             self.controller.show_warning(model.lastError().text())
+            return
+        
         # Attach model to table view
         expr = "campaign_id = '"+new_camp+"'"
         qtable.setModel(model)
@@ -296,7 +299,7 @@ class Basic(ParentAction):
         self.set_table_columns(dlg_selector.selected_rows, table_view, 'basic_year_right')
         self.fill_table(dlg_selector, table_view, set_edit_triggers=QTableView.NoEditTriggers)
 
-        self.fill_main_table(dlg_selector, tableleft)
+        self.fill_main_table(dlg_selector, tableleft, refresh_model=False)
         self.set_table_columns(dlg_selector.all_rows, tableleft, 'basic_year_left')
 
         # Set signals
@@ -325,7 +328,7 @@ class Basic(ParentAction):
             dialog.chk_current.setChecked(True)
 
 
-    def fill_main_table(self, dialog, table_name, set_edit_triggers=QTableView.NoEditTriggers):
+    def fill_main_table(self, dialog, table_name, set_edit_triggers=QTableView.NoEditTriggers, refresh_model=True):
         """ Set a model with selected filter.
         Attach that model to selected table
         @setEditStrategy:
@@ -342,6 +345,7 @@ class Basic(ParentAction):
         # Check for errors
         if model.lastError().isValid():
             self.controller.show_warning(model.lastError().text())
+            return
 
         # Get all ids from Qtable selected_rows
         id_all_selected_rows = self.select_all_rows(dialog.selected_rows, 'mu_id')
@@ -352,12 +356,20 @@ class Basic(ParentAction):
             ids += str(id_all_selected_rows[x]) + ", "
         ids = ids[:-2] + ""
 
-        # Attach model to table view
+        # Build expression
         expr = (" mu_name ILIKE '%" + dialog.txt_search.text() + "%'"
                 " AND mu_id NOT IN (" + ids + ")"
                 " AND campaign_id::text = '" + str(self.campaign_id) + "'")
+        self.controller.log_info(expr)
+        model.setFilter(expr)
+        
+        # Refresh model?
+        if refresh_model:               
+            model.select()
+                    
+        # Attach model to table view
         dialog.all_rows.setModel(model)
-        dialog.all_rows.model().setFilter(expr)
+             
 
 
     def fill_table(self, dialog, table_view, set_edit_triggers=QTableView.NoEditTriggers, update=False):
