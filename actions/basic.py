@@ -32,7 +32,7 @@ class Basic(ParentAction):
     
     def __init__(self, iface, settings, controller, plugin_dir):
         """ Class to control toolbar 'basic' """
-        self.minor_version = "3.0"
+        
         ParentAction.__init__(self, iface, settings, controller, plugin_dir)
         self.manage_visit = ManageVisit(iface, settings, controller, plugin_dir)
         self.selected_camp = None
@@ -59,9 +59,9 @@ class Basic(ParentAction):
 
         # Set default dates
         current_year = QDate.currentDate().year()
-        start_date = QDate.fromString(str(int(current_year))+'/11/01', 'yyyy/MM/dd')
+        start_date = QDate.fromString(str(int(current_year)) + '/11/01', 'yyyy/MM/dd')
         self.dlg_new_campaign.start_date.setDate(start_date)
-        end_date = QDate.fromString(str(int(current_year)+1)+'/10/31', 'yyyy/MM/dd')
+        end_date = QDate.fromString(str(int(current_year)+1) + '/10/31', 'yyyy/MM/dd')
         self.dlg_new_campaign.end_date.setDate(end_date)
 
         table_name = 'cat_campaign'
@@ -138,6 +138,7 @@ class Basic(ParentAction):
         self.load_settings(dlg_prices_management)
         dlg_prices_management.btn_close.clicked.connect(partial(self.close_dialog, dlg_prices_management))
         dlg_prices_management.rejected.connect(partial(self.close_dialog, dlg_prices_management))
+        
         # Populate QTableView
         table_view = 'v_edit_price'
         self.fill_table_prices(dlg_prices_management.tbl_price_list, table_view, id_new_camp, set_edit_triggers=QTableView.DoubleClicked)
@@ -214,7 +215,7 @@ class Basic(ParentAction):
         if dialog.txt_campaign.text() != '':
             
             sql = ("SELECT id FROM " + self.schema_name + ".cat_campaign "
-                   " WHERE name = '"+str(dialog.txt_campaign.text())+"'")
+                   " WHERE name = '" + str(dialog.txt_campaign.text()) + "'")
             row = self.controller.get_row(sql)
             if row is None:
                 message = "No hi ha preus per aquest any"
@@ -245,33 +246,16 @@ class Basic(ParentAction):
     def tree_selector(self, update=False):
         dlg_selector = TreeSelector()
         self.load_settings(dlg_selector)
-
         dlg_selector.setWindowTitle("Tree selector")
         dlg_selector.lbl_year.setText(self.campaign_name)
+        dlg_selector.all_rows.setSelectionBehavior(QAbstractItemView.SelectRows)
+        dlg_selector.selected_rows.setSelectionBehavior(QAbstractItemView.SelectRows)
 
         tableleft = 'v_plan_mu'
         tableright = 'planning'
         table_view = 'v_plan_mu_year'
         id_table_left = 'mu_id'
         id_table_right = 'mu_id'
-
-        dlg_selector.all_rows.setSelectionBehavior(QAbstractItemView.SelectRows)
-        dlg_selector.selected_rows.setSelectionBehavior(QAbstractItemView.SelectRows)
-
-        sql = ("SELECT DISTINCT(work_id), work_name FROM "+self.schema_name + "." + tableleft)
-        rows = self.controller.get_rows(sql)
-        widget_manager.set_item_data(dlg_selector.cmb_poda_type, rows, 1)
-
-        # CheckBox
-        dlg_selector.chk_permanent.stateChanged.connect(partial(self.force_chk_current, dlg_selector))
-
-        # Button select
-        dlg_selector.btn_select.clicked.connect(partial(self.rows_selector, dlg_selector, id_table_left, tableright, id_table_right, tableleft, table_view))
-        dlg_selector.all_rows.doubleClicked.connect(partial(self.rows_selector, dlg_selector, id_table_left, tableright, id_table_right, tableleft, table_view))
-
-        # Button unselect
-        dlg_selector.btn_unselect.clicked.connect(partial(self.rows_unselector, dlg_selector, tableright, id_table_right, tableleft, table_view))
-        dlg_selector.selected_rows.doubleClicked.connect(partial(self.rows_unselector, dlg_selector, tableright, id_table_right, tableleft, table_view))
 
         # Populate QTableView
         self.fill_table(dlg_selector, table_view, set_edit_triggers=QTableView.NoEditTriggers, update=True)
@@ -285,7 +269,16 @@ class Basic(ParentAction):
         self.fill_main_table(dlg_selector, tableleft)
         self.set_table_columns(dlg_selector.all_rows, tableleft, 'basic_year_left')
 
-        # Filter field
+        # Set signals
+        dlg_selector.chk_permanent.stateChanged.connect(partial(self.force_chk_current, dlg_selector))
+        dlg_selector.btn_select.clicked.connect(
+            partial(self.rows_selector, dlg_selector, id_table_left, tableright, id_table_right, tableleft, table_view))
+        dlg_selector.all_rows.doubleClicked.connect(
+            partial(self.rows_selector, dlg_selector, id_table_left, tableright, id_table_right, tableleft, table_view))
+        dlg_selector.btn_unselect.clicked.connect(
+            partial(self.rows_unselector, dlg_selector, tableright, id_table_right, tableleft, table_view))
+        dlg_selector.selected_rows.doubleClicked.connect(
+            partial(self.rows_unselector, dlg_selector, tableright, id_table_right, tableleft, table_view))   
         dlg_selector.txt_search.textChanged.connect(
             partial(self.fill_main_table, dlg_selector, tableleft, set_edit_triggers=QTableView.NoEditTriggers))
         dlg_selector.txt_selected_filter.textChanged.connect(
@@ -332,9 +325,9 @@ class Basic(ParentAction):
         ids = ids[:-2] + ""
 
         # Attach model to table view
-        expr = " mu_name ILIKE '%" + dialog.txt_search.text() + "%'"
-        expr += " AND mu_id NOT IN ("+ids+")"
-        expr += " AND campaign_id::text = '" + str(self.campaign_id) + "'"
+        expr = (" mu_name ILIKE '%" + dialog.txt_search.text() + "%'"
+                " AND mu_id NOT IN (" + ids + ")"
+                " AND campaign_id::text = '" + str(self.campaign_id) + "'")
         dialog.all_rows.setModel(model)
         dialog.all_rows.model().setFilter(expr)
 
@@ -354,7 +347,9 @@ class Basic(ParentAction):
         model.setEditStrategy(QSqlTableModel.OnManualSubmit)
         model.setSort(2, 0)
         model.select()
+                
         dialog.selected_rows.setEditTriggers(set_edit_triggers)
+        
         # Check for errors
         if model.lastError().isValid():
             self.controller.show_warning(model.lastError().text())
@@ -362,9 +357,9 @@ class Basic(ParentAction):
         # Create expresion
         expr = " mu_name ILIKE '%" + dialog.txt_selected_filter.text() + "%'"
         if self.selected_camp is not None:
-            expr += " AND campaign_id ='" + str(self.campaign_id) + "'"
+            expr += " AND campaign_id = '" + str(self.campaign_id) + "'"
             if update:
-                expr += " OR campaign_id ='" + str(self.selected_camp) + "'"
+                expr += " OR campaign_id = '" + str(self.selected_camp) + "'"
 
         # Attach model to table or view
         dialog.selected_rows.setModel(model)
@@ -375,6 +370,7 @@ class Basic(ParentAction):
             i = int(dialog.selected_rows.model().fieldIndex('campaign_id'))
             index = dialog.selected_rows.model().index(x, i)
             model.setData(index, self.campaign_id)
+            
         self.calculate_total_price(dialog, self.campaign_id)
 
 
@@ -385,59 +381,62 @@ class Basic(ParentAction):
         if selected_list is None:
             return
         total = 0
+        
         # Sum all price
         for x in range(0, selected_list.rowCount()):
             if str(dialog.selected_rows.model().record(x).value('campaign_id')) == str(year):
                 if str(dialog.selected_rows.model().record(x).value('price')) != 'NULL':
                     total += float(dialog.selected_rows.model().record(x).value('price'))
+                    
         widget_manager.setText(dialog.lbl_total_price, str(total))
 
 
     def insert_into_planning(self, tableright):
         
-        sql = ("SELECT * FROM " + self.schema_name+"."+tableright + " "
-               " WHERE campaign_id::text ='"+str(self.selected_camp) + "'")
+        sql = ("SELECT * FROM " + self.schema_name+"."+tableright + ""
+               " WHERE campaign_id::text = '" + str(self.selected_camp) + "'")
         rows = self.controller.get_rows(sql)
 
-        if rows:
-            for row in rows:
-                insert_values = ""
-                function_values = ""
-                if row['mu_id'] is not None:
-                    insert_values += "'" + str(row['mu_id']) + "', "
-                    function_values += "'" + str(row['mu_id']) + "', "
-                else:
-                    insert_values += 'null, '
-                if row['work_id'] is not None:
-                    insert_values += "'" + str(row['work_id']) + "', "
-                    function_values += "'" + str(row['work_id']) + "', "
-                else:
-                    insert_values += 'null, '
-                if str(row['price']) != 'NULL':
-                    insert_values += "'" + str(row['price']) + "', "
-                else:
-                    insert_values += 'null, '
-                insert_values += "'" + str(self.campaign_id) + "', "
-                insert_values = insert_values[:len(insert_values) - 2]
-                function_values += "" + str(self.campaign_id) + ", "
-                function_values = function_values[:len(function_values) - 2]
-                # Check if mul_id and year_ already exists in planning
-                sql = ("SELECT  mu_id  "
-                       " FROM " + self.schema_name + "." + tableright + ""
-                       " WHERE mu_id = '" + str(row['mu_id']) + "'"
-                       " AND campaign_id ='" + str(self.campaign_id) + "'")
-                rowx = self.controller.get_row(sql)
+        if not rows:
+            return
+        
+        for row in rows:
+            insert_values = ""
+            function_values = ""
+            if row['mu_id'] is not None:
+                insert_values += "'" + str(row['mu_id']) + "', "
+                function_values += "'" + str(row['mu_id']) + "', "
+            else:
+                insert_values += 'null, '
+            if row['work_id'] is not None:
+                insert_values += "'" + str(row['work_id']) + "', "
+                function_values += "'" + str(row['work_id']) + "', "
+            else:
+                insert_values += 'null, '
+            if str(row['price']) != 'NULL':
+                insert_values += "'" + str(row['price']) + "', "
+            else:
+                insert_values += 'null, '
+            insert_values += "'" + str(self.campaign_id) + "', "
+            insert_values = insert_values[:len(insert_values) - 2]
+            function_values += "" + str(self.campaign_id) + ", "
+            function_values = function_values[:len(function_values) - 2]
+            # Check if mul_id and year_ already exists in planning
+            sql = ("SELECT  mu_id  "
+                   " FROM " + self.schema_name + "." + tableright + ""
+                   " WHERE mu_id = '" + str(row['mu_id']) + "'"
+                   " AND campaign_id ='" + str(self.campaign_id) + "'")
+            rowx = self.controller.get_row(sql)
 
-                if rowx is None:
-                    #     # Put a new row in QTableView
-                    #     # dialog.selected_rows.model().insertRow(dialog.selected_rows.verticalHeader().count())
-                    #
-                    sql = ("INSERT INTO " + self.schema_name + "." + tableright + ""
-                           " (mu_id,  work_id,  price, campaign_id) "
-                           " VALUES (" + insert_values + ")")
-                    self.controller.execute_sql(sql)
-                    sql = ("SELECT " + self.schema_name + ".set_plan_price(" + function_values + ")")
-                    self.controller.execute_sql(sql)
+            if rowx is None:
+                #     # Put a new row in QTableView
+                #     # dialog.selected_rows.model().insertRow(dialog.selected_rows.verticalHeader().count())
+                #
+                sql = ("INSERT INTO " + self.schema_name + "." + tableright + ""
+                       " (mu_id, work_id, price, campaign_id) "
+                       " VALUES (" + insert_values + ");")
+                sql += ("\nSELECT " + self.schema_name + ".set_plan_price(" + function_values + ");")
+                self.controller.execute_sql(sql)
 
 
     def rows_selector(self, dialog, id_table_left, tableright, id_table_right, tableleft, table_view):
@@ -448,6 +447,7 @@ class Basic(ParentAction):
             message = "Cap registre seleccionat"
             self.controller.show_warning(message)
             return
+        
         # Get all selected ids
         field_list = []
         for i in range(0, len(left_selected_list)):
@@ -464,12 +464,13 @@ class Basic(ParentAction):
                 message = "No heu seleccionat cap poda"
                 self.controller.show_warning(message)
                 return
+            
         if widget_manager.isChecked(dialog.chk_permanent):
             for i in range(0, len(left_selected_list)):
                 row = left_selected_list[i].row()
                 sql = ("UPDATE " + self.schema_name + ".cat_mu "
-                       " SET work_id ='"+str(current_poda_type)+"' "
-                       " WHERE id ='"+str(dialog.all_rows.model().record(row).value('mu_id'))+"'")
+                       " SET work_id = '" + str(current_poda_type) + "'"
+                       " WHERE id = '" + str(dialog.all_rows.model().record(row).value('mu_id')) + "'")
                 self.controller.execute_sql(sql)
 
         for i in range(0, len(left_selected_list)):
@@ -492,17 +493,17 @@ class Basic(ParentAction):
             else:
                 values += 'null, '
 
-            values += "'"+str(self.campaign_id)+"', "
+            values += "'" + str(self.campaign_id) + "', "
             values = values[:len(values) - 2]
-            function_values += "'"+str(self.campaign_id)+"', "
+            function_values += "'" + str(self.campaign_id) + "', "
             function_values = function_values[:len(function_values) - 2]
 
             # Check if mul_id and year_ already exists in planning
             sql = ("SELECT " + id_table_right + ""
                    " FROM " + self.schema_name + "." + tableright + ""
                    " WHERE " + id_table_right + " = '" + str(field_list[i]) + "'"
-                   " AND campaign_id ='"+str(self.campaign_id)+"'")
-            row = self.controller.get_row(sql)
+                   " AND campaign_id = '" + str(self.campaign_id) + "';")
+            row = self.controller.get_row(sql, log_sql=True)
             if row is not None:
                 # if exist - show warning
                 message = "Aquest registre ja esta seleccionat"
@@ -518,30 +519,31 @@ class Basic(ParentAction):
                 sql = ("SELECT " + self.schema_name + ".set_plan_price(" + function_values + ")")
                 self.controller.execute_sql(sql)
 
-        # Refresh
+        # Refresh tables
         self.fill_table(dialog, table_view, set_edit_triggers=QTableView.NoEditTriggers)
         self.fill_main_table(dialog, tableleft)
 
 
     def rows_unselector(self, dialog, tableright, field_id_right, tableleft, table_view):
 
-        query = ("DELETE FROM " + self.schema_name + "." + tableright + ""
-                 " WHERE  campaign_id='" + str(self.campaign_id) + "' AND " + field_id_right + " = ")
+        sql = ("DELETE FROM " + self.schema_name + "." + tableright + ""
+               " WHERE campaign_id = '" + str(self.campaign_id) + "' AND " + field_id_right + " = ")
         selected_list = dialog.selected_rows.selectionModel().selectedRows()
         if len(selected_list) == 0:
             message = "Cap registre seleccionat"
             self.controller.show_warning(message)
             return
+        
         field_list = []
         for i in range(0, len(selected_list)):
             row = selected_list[i].row()
             id_ = str(dialog.selected_rows.model().record(row).value(field_id_right))
             field_list.append(id_)
         for i in range(0, len(field_list)):
-            sql = (query + "'" + str(field_list[i]) + "'")
-            self.controller.execute_sql(sql)
+            sql = (sql + "'" + str(field_list[i]) + "'")
+            self.controller.execute_sql(sql, log_sql=True)
             
-        # Refresh model with selected filter
+        # Refresh tables
         self.fill_table(dialog, table_view, set_edit_triggers=QTableView.NoEditTriggers)
         self.fill_main_table(dialog, tableleft)
 
@@ -585,6 +587,7 @@ class Basic(ParentAction):
             message = "No hi ha cap any planificat"
             self.controller.show_warning(message)
             return
+        
         self.close_dialog(dialog)
         self.month_selector()
 
@@ -623,15 +626,19 @@ class Basic(ParentAction):
         expr = " AND (plan_code != '" + str(self.plan_code) + "'"
         expr += " OR plan_code is NULL)"
         self.fill_table_planned_month(month_selector.all_rows, month_selector.txt_search, view_name, expr)
-        month_selector.txt_search.textChanged.connect(partial(self.fill_table_planned_month, month_selector.all_rows, month_selector.txt_search, view_name, expr, QTableView.NoEditTriggers))
-        month_selector.btn_select.clicked.connect(partial(self.month_selector_row, month_selector, id_table_left, tableleft, view_name))
+        month_selector.txt_search.textChanged.connect(
+            partial(self.fill_table_planned_month, month_selector.all_rows, month_selector.txt_search, view_name, expr, QTableView.NoEditTriggers))
+        month_selector.btn_select.clicked.connect(
+            partial(self.month_selector_row, month_selector, id_table_left, tableleft, view_name))
         self.set_table_columns(month_selector.all_rows, view_name, 'basic_month_left')
 
         # Right QTableView
         expr = " AND plan_code = '" + str(self.plan_code) + "'"
         self.fill_table_planned_month(month_selector.selected_rows, month_selector.txt_selected_filter, view_name, expr)
-        month_selector.txt_selected_filter.textChanged.connect(partial(self.fill_table_planned_month, month_selector.selected_rows, month_selector.txt_selected_filter, view_name, expr, QTableView.NoEditTriggers))
-        month_selector.btn_unselect.clicked.connect(partial(self.month_unselector_row, month_selector, id_table_left, tableleft, view_name))
+        month_selector.txt_selected_filter.textChanged.connect(
+            partial(self.fill_table_planned_month, month_selector.selected_rows, month_selector.txt_selected_filter, view_name, expr, QTableView.NoEditTriggers))
+        month_selector.btn_unselect.clicked.connect(
+            partial(self.month_unselector_row, month_selector, id_table_left, tableleft, view_name))
         self.set_table_columns(month_selector.selected_rows, view_name, 'basic_month_right')
 
         self.calculate_total_price(month_selector, self.planned_camp_id)
@@ -676,11 +683,11 @@ class Basic(ParentAction):
             row = left_selected_list[i].row()
             sql = ("UPDATE " + self.schema_name + "." + tableleft + " "
                    " SET plan_code ='" + str(self.plan_code) + "', "
-                   " plan_month_start = '"+plan_month_start+"', "
-                   " plan_month_end = '"+plan_month_end+"' "
+                   " plan_month_start = '" + plan_month_start + "', "
+                   " plan_month_end = '" + plan_month_end + "' "
                    " WHERE id='" + str(dialog.all_rows.model().record(row).value('id')) + "'"
                    " AND mu_id ='" + str(dialog.all_rows.model().record(row).value('mu_id')) + "'"
-                   " AND campaign_id = '"+self.planned_camp_id+"'")
+                   " AND campaign_id = '" + self.planned_camp_id + "'")
             self.controller.execute_sql(sql)
 
         # Refresh QTableViews and recalculate price
@@ -712,8 +719,8 @@ class Basic(ParentAction):
                    " SET plan_code = null, "
                    " plan_month_start = null, "
                    " plan_month_end = null "
-                   " WHERE mu_id ='" + str(dialog.selected_rows.model().record(row).value('mu_id')) + "'"
-                   " AND campaign_id = '"+self.planned_camp_id+"'")
+                   " WHERE mu_id = '" + str(dialog.selected_rows.model().record(row).value('mu_id')) + "'"
+                   " AND campaign_id = '" + self.planned_camp_id + "'")
             self.controller.execute_sql(sql)
 
         # Refresh QTableViews and recalculate price
@@ -758,6 +765,7 @@ class Basic(ParentAction):
 
     def select_all_rows(self, qtable, id, clear_selection=True):
         """ return list of index in @qtable """
+                       
         # Select all rows and get all id
         qtable.selectAll()
         right_selected_list = qtable.selectionModel().selectedRows()
@@ -768,6 +776,7 @@ class Basic(ParentAction):
             right_field_list.append(id_)
         if clear_selection:
             qtable.clearSelection()
+                    
         return right_field_list
 
 
@@ -797,9 +806,9 @@ class Basic(ParentAction):
                 if dialog.selected_rows.model().record(row).value('work_id') is not None:
                     work_id = str(dialog.selected_rows.model().record(row).value('work_id'))
                     mu_id = str(dialog.selected_rows.model().record(row).value('mu_id'))
-                    sql = ("UPDATE " + self.schema_name+"."+tableleft + ""
-                           " SET work_id= '"+str(work_id)+"' "
-                           " WHERE mu_id= '"+str(mu_id)+"'")
+                    sql = ("UPDATE " + self.schema_name + "." + tableleft + ""
+                           " SET work_id = '" + str(work_id) + "' "
+                           " WHERE mu_id = '" + str(mu_id) + "'")
                     self.controller.execute_sql(sql)
         else:
             model.database().rollback()

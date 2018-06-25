@@ -17,6 +17,7 @@ from _utils import widget_manager
 
 
 class ParentAction(object):
+    
     def __init__(self, iface, settings, controller, plugin_dir):
         ''' Class constructor '''
 
@@ -34,11 +35,13 @@ class ParentAction(object):
         self.gsw_settings = None
         self.lazy_widget = None
 
+
     def set_controller(self, controller):
         """ Set controller class """
 
         self.controller = controller
         self.schema_name = self.controller.schema_name
+
 
     def get_plugin_version(self):
         """ Get plugin version from metadata.txt file """
@@ -78,6 +81,7 @@ class ParentAction(object):
         except:
             pass
 
+
     def save_settings(self, dialog=None):
         """ Save QGIS settings related with dialog position and size """
 
@@ -89,6 +93,7 @@ class ParentAction(object):
         self.controller.plugin_settings_set_value(dialog.objectName() + "_x", dialog.pos().x() + 8)
         self.controller.plugin_settings_set_value(dialog.objectName() + "_y", dialog.pos().y() + 31)
 
+
     def open_dialog(self, dlg=None, dlg_name=None, maximize_button=True, stay_on_top=True):
         """ Open dialog """
 
@@ -99,7 +104,7 @@ class ParentAction(object):
         if dlg_name:
             self.controller.manage_translation(dlg_name, dlg)
 
-            # Manage stay on top and maximize button
+        # Manage stay on top and maximize button
         if maximize_button and stay_on_top:
             dlg.setWindowFlags(Qt.WindowMinimizeButtonHint | Qt.WindowMaximizeButtonHint | Qt.WindowStaysOnTopHint)
         elif not maximize_button and stay_on_top:
@@ -107,14 +112,13 @@ class ParentAction(object):
         elif maximize_button and not stay_on_top:
             dlg.setWindowFlags(Qt.WindowMaximizeButtonHint)
 
-            # Open dialog
+        # Open dialog
         dlg.open()
+
 
     def close_dialog(self, dlg=None):
         """ Close dialog """
 
-        # if dlg is None or type(dlg) is bool:
-        #     dlg = self.dlg
         try:
             self.save_settings(dlg)
             dlg.close()
@@ -129,6 +133,7 @@ class ParentAction(object):
     def hide_colums(self, widget, comuns_to_hide):
         for i in range(0, len(comuns_to_hide)):
             widget.hideColumn(comuns_to_hide[i])
+
 
     def set_icon(self, widget, icon):
         """ Set @icon to selected @widget """
@@ -170,7 +175,6 @@ class ParentAction(object):
             sql += (" AND project_type = '" + project_type + "' ")
         sql += (" ORDER BY column_index")
 
-
         rows = self.controller.get_rows(sql, log_info=False, log_sql=True)
         if not rows:
             return
@@ -184,8 +188,6 @@ class ParentAction(object):
                     widget.setColumnWidth(row['column_index'] - 1, width)
                 widget.model().setHeaderData(row['column_index'] - 1, Qt.Horizontal, row['alias'])
 
-        # Set order
-        # widget.model().setSort(0, Qt.AscendingOrder)
         widget.model().select()
 
         # Delete columns
@@ -235,6 +237,7 @@ class ParentAction(object):
         """ Restore to previous cursors """
         QApplication.restoreOverrideCursor()
 
+
     def get_cursor_multiple_selection(self):
         """ Set cursor for multiple selection """
 
@@ -246,18 +249,4 @@ class ParentAction(object):
             cursor = QCursor(Qt.ArrowCursor)
 
         return cursor
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
