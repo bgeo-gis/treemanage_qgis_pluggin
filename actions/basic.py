@@ -16,13 +16,13 @@ from PyQt4.QtSql import QSqlTableModel
 
 from _utils import widget_manager
 from parent import ParentAction
-from ..actions.manage_visit import ManageVisit
-from ..ui.month_manage import MonthManage
-from ..ui.month_selector import MonthSelector
-from ..ui.new_prices import NewPrices
-from ..ui.price_management import PriceManagement
-from ..ui.tree_manage import TreeManage
-from ..ui.tree_selector import TreeSelector
+from tree_manage.actions.manage_visit import ManageVisit
+from tree_manage.ui.month_manage import MonthManage
+from tree_manage.ui.month_selector import MonthSelector
+from tree_manage.ui.new_prices import NewPrices
+from tree_manage.ui.price_management import PriceManagement
+from tree_manage.ui.tree_manage import TreeManage
+from tree_manage.ui.tree_selector import TreeSelector
 
 plugin_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(plugin_path)

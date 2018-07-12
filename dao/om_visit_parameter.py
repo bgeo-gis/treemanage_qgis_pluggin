@@ -9,7 +9,7 @@ or (at your option) any later version.
 
 __revision__ = '$Format:%H$'
 
-from dao.table import Table, GenericDescriptor
+from tree_manage.dao.table import Table, GenericDescriptor
 
 
 class OmVisitParameter(Table):

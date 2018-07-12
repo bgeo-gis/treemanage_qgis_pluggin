@@ -16,8 +16,8 @@ from qgis.core import QgsFeatureRequest
 from qgis.gui import QgsMapToolEmitPoint
 
 from _utils import widget_manager
-from parent import ParentAction
-from ..actions.multiple_selection import MultipleSelection
+from tree_manage.actions.parent import ParentAction
+from tree_manage.actions.multiple_selection import MultipleSelection
 
 
 class ParentManage(ParentAction, object):

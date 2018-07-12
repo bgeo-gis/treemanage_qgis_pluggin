@@ -18,7 +18,7 @@ from functools import partial
 
 plugin_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(plugin_path)
-from pg_dao import PgDao
+from tree_manage.dao.pg_dao import PgDao
 
 
 class DaoController():

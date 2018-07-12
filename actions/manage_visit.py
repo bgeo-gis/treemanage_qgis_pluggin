@@ -13,13 +13,13 @@ from PyQt4.QtGui import QCompleter, QLineEdit, QTableView, QStringListModel, QCo
 from PyQt4.QtSql import QSqlTableModel
 
 from _utils import widget_manager
-from ..actions.parent_manage import ParentManage
-from ..dao.om_visit import OmVisit
-from ..dao.om_visit_event import OmVisitEvent
-from ..dao.om_visit_parameter import OmVisitParameter
-from ..dao.om_visit_x_node import OmVisitXNode
-from ..ui_manager import AddVisit
-from ..ui_manager import EventStandard
+from tree_manage.actions.parent_manage import ParentManage
+from tree_manage.dao.om_visit import OmVisit
+from tree_manage.dao.om_visit_event import OmVisitEvent
+from tree_manage.dao.om_visit_parameter import OmVisitParameter
+from tree_manage.dao.om_visit_x_node import OmVisitXNode
+from tree_manage.ui_manager import AddVisit
+from tree_manage.ui_manager import EventStandard
 
 
 class ManageVisit(ParentManage, QObject):
