@@ -207,9 +207,6 @@ class Basic(ParentAction):
         field_name = 'name'
         self.populate_cmb_years(table_name,  field_id, field_name, dlg_tree_manage.cbx_campaigns)
 
-        #TODO borrar estas 5 lineas
-        dlg_tree_manage.txt_campaign.setText("2021/2022")
-
         dlg_tree_manage.rejected.connect(partial(self.close_dialog, dlg_tree_manage))
         dlg_tree_manage.btn_cancel.clicked.connect(partial(self.close_dialog, dlg_tree_manage))
         dlg_tree_manage.btn_accept.clicked.connect(partial(self.get_year, dlg_tree_manage))
@@ -595,10 +592,8 @@ class Basic(ParentAction):
 
         self.load_settings(month_manage)
         month_manage.setWindowTitle("Planificador mensual")
-        # TODO borrar esta linea
-        widget_manager.setWidgetText(month_manage.txt_plan_code, "")
-        table_name = 'planning'
 
+        table_name = 'planning'
         self.set_completer_object(table_name, month_manage.txt_plan_code, 'plan_code')
         table_name = 'cat_campaign'
         field_id = 'id'

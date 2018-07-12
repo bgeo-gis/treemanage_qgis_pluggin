@@ -62,7 +62,7 @@ class ManageVisit(ParentManage, QObject):
         # Get layers of every geom_type
         self.reset_lists()
         self.reset_layers()
-        # TODO necesito saber que capas van a estar cargadas en la toc
+
         self.layers['node'] = self.controller.get_group_layers('node')
 
         self.remove_selection(True)
