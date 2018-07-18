@@ -200,8 +200,6 @@ class Basic(ParentAction):
         dlg_tree_manage = TreeManage()
         self.load_settings(dlg_tree_manage)
 
-        validator = QIntValidator(1, 9999999)
-        dlg_tree_manage.txt_campaign.setValidator(validator)
         table_name = 'cat_campaign'
         field_id = 'id'
         field_name = 'name'
