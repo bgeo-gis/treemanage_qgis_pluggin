@@ -213,7 +213,7 @@ class ParentAction(object):
 
         for i in range(0, len(row)):
             aux = row[i]
-            row[i] = str(aux[0])
+            row[i] = aux[0]
 
         # Set completer and model: add autocomplete in the widget
         self.completer = QCompleter()
