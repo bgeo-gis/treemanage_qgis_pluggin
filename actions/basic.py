@@ -135,7 +135,7 @@ class Basic(ParentAction):
             sql = ("SELECT " + self.schema_name + ".create_price('" + str(id_new_camp) + "','" + str(id_old_camp) + "')")
             self.controller.execute_sql(sql)
         else:
-            message = ("Estas a punt de sobreescriure els preus de la campanya " + str(new_camp) + " ")
+            message = ("Estas a punt de sobreescriure els preus de la campanya " + new_camp + " ")
             answer = self.controller.ask_question(message, "Warning")
             if not answer:
                 return
@@ -617,7 +617,7 @@ class Basic(ParentAction):
             self.controller.show_warning(message)
             return
 
-        self.plan_code = str(widget_manager.getWidgetText(dialog.txt_plan_code))
+        self.plan_code = widget_manager.getWidgetText(dialog.txt_plan_code)
         self.planned_camp_id = widget_manager.get_item_data(dialog.cbx_years, 0)
         self.planned_camp_name = widget_manager.get_item_data(dialog.cbx_years, 1)
 
@@ -641,7 +641,7 @@ class Basic(ParentAction):
 
         # Set label with selected text from previus dialog
         month_selector.lbl_plan_code.setText(self.plan_code)
-        month_selector.lbl_year.setText(str(self.planned_camp_name))
+        month_selector.lbl_year.setText(self.planned_camp_name)
 
         sql = ("SELECT start_date, end_date FROM " + self.schema_name + ".cat_campaign "
                " WHERE id ='" + str(self.planned_camp_id) + "'")
