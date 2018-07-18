@@ -294,7 +294,7 @@ class Basic(ParentAction):
         self.set_table_columns(dlg_selector.selected_rows, table_view, 'basic_year_right')
         self.fill_table(dlg_selector, table_view, set_edit_triggers=QTableView.NoEditTriggers)
 
-        self.fill_main_table(dlg_selector, tableleft, refresh_model=False)
+        self.fill_main_table(dlg_selector, tableleft)
         self.set_table_columns(dlg_selector.all_rows, tableleft, 'basic_year_left')
 
         # Set signals
