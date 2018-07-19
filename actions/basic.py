@@ -661,7 +661,7 @@ class Basic(ParentAction):
         id_table_left = 'mu_id'
 
         # Left QTableView
-        expr = " AND (plan_code != '" + str(self.plan_code) + "'"
+        expr = " AND (plan_code != '" + self.plan_code + "'"
         expr += " OR plan_code is NULL)"
         self.fill_table_planned_month(month_selector.all_rows, month_selector.txt_search, view_name, expr)
         month_selector.txt_search.textChanged.connect(
@@ -671,7 +671,7 @@ class Basic(ParentAction):
         self.set_table_columns(month_selector.all_rows, view_name, 'basic_month_left')
 
         # Right QTableView
-        expr = " AND plan_code = '" + str(self.plan_code) + "'"
+        expr = " AND plan_code = '" + self.plan_code + "'"
         self.fill_table_planned_month(month_selector.selected_rows, month_selector.txt_selected_filter, view_name, expr)
         month_selector.txt_selected_filter.textChanged.connect(
             partial(self.fill_table_planned_month, month_selector.selected_rows, month_selector.txt_selected_filter, view_name, expr, QTableView.NoEditTriggers))
@@ -721,7 +721,7 @@ class Basic(ParentAction):
         for i in range(0, len(left_selected_list)):
             row = left_selected_list[i].row()
             sql = ("UPDATE " + self.schema_name + "." + tableleft + " "
-                   " SET plan_code ='" + str(self.plan_code) + "', "
+                   " SET plan_code ='" + self.plan_code + "', "
                    " plan_month_start = '" + plan_month_start + "', "
                    " plan_month_end = '" + plan_month_end + "' "
                    " WHERE id='" + str(dialog.all_rows.model().record(row).value('id')) + "'"
@@ -730,10 +730,10 @@ class Basic(ParentAction):
             self.controller.execute_sql(sql)
 
         # Refresh QTableViews and recalculate price
-        expr = " AND (plan_code != '" + str(self.plan_code) + "'"
+        expr = " AND (plan_code != '" + self.plan_code + "'"
         expr += " OR plan_code is NULL)"
         self.fill_table_planned_month(dialog.all_rows, dialog.txt_search, view_name, expr)
-        expr = " AND plan_code = '" + str(self.plan_code) + "'"
+        expr = " AND plan_code = '" + self.plan_code + "'"
         self.fill_table_planned_month(dialog.selected_rows, dialog.txt_selected_filter, view_name, expr)
         self.calculate_total_price(dialog, self.planned_camp_id)
 
@@ -763,10 +763,10 @@ class Basic(ParentAction):
             self.controller.execute_sql(sql)
 
         # Refresh QTableViews and recalculate price
-        expr = " AND (plan_code != '" + str(self.plan_code) + "'"
+        expr = " AND (plan_code != '" + self.plan_code + "'"
         expr += " OR plan_code is NULL)"
         self.fill_table_planned_month(dialog.all_rows, dialog.txt_search, view_name, expr)
-        expr = " AND plan_code = '" + str(self.plan_code) + "'"
+        expr = " AND plan_code = '" + self.plan_code + "'"
         self.fill_table_planned_month(dialog.selected_rows, dialog.txt_selected_filter, view_name, expr)
         self.calculate_total_price(dialog, self.planned_camp_id)
 
