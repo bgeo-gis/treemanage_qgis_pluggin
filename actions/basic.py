@@ -625,7 +625,7 @@ class Basic(ParentAction):
             message = "No hi ha cap any planificat"
             self.controller.show_warning(message)
             return
-        
+        self.controller.log_info(str(self.planned_camp_id))
         self.close_dialog(dialog)
         self.month_selector()
 
@@ -708,13 +708,14 @@ class Basic(ParentAction):
 
         # Get year from string
         calendar_year = QDate.fromString(plan_month_start, 'yyyy/MM/dd').year()
-        if int(calendar_year) < int(self.planned_camp_id):
-            self.controller.show_details(detail_text="La data d'inici no pot ser anterior a 'Any planificacio'")
-            return
 
-        if plan_month_start > plan_month_end:
-            self.controller.show_details(detail_text="La data d'inici no pot ser posterior a la data final")
-            return
+        # if int(calendar_year) < int(self.planned_camp_id):
+        #     self.controller.show_details(detail_text="La data d'inici no pot ser anterior a 'Any planificacio'")
+        #     return
+        #
+        # if plan_month_start > plan_month_end:
+        #     self.controller.show_details(detail_text="La data d'inici no pot ser posterior a la data final")
+        #     return
 
         # Update values
         for i in range(0, len(left_selected_list)):
