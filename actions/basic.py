@@ -24,7 +24,7 @@ from tree_manage.ui.price_management import PriceManagement
 from tree_manage.ui.tree_manage import TreeManage
 from tree_manage.ui.tree_selector import TreeSelector
 
-from dao.om_visit import OmVisit
+from tree_manage.dao.om_visit import OmVisit
 
 plugin_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(plugin_path)
