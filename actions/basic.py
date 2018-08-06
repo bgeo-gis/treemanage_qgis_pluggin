@@ -24,7 +24,6 @@ from tree_manage.ui.price_management import PriceManagement
 from tree_manage.ui.tree_manage import TreeManage
 from tree_manage.ui.tree_selector import TreeSelector
 
-from tree_manage.dao.om_visit import OmVisit
 
 plugin_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(plugin_path)
@@ -41,9 +40,6 @@ class Basic(ParentAction):
         self.campaign_id = None
         self.campaign_name = None
         self.rows_cmb_poda_type = None
-
-        self.current_visit = OmVisit(self.controller)
-        self.current_visit.delete()
 
 
     def set_tree_manage(self, tree_manage):
