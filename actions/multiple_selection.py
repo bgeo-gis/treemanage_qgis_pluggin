@@ -71,12 +71,11 @@ class MultipleSelection(QgsMapTool):
             self.parent_manage.disconnect_signal_selection_changed()           
         
         for i in range(len(self.layers)):
-            
             layer = self.layers[i]
             if self.iface.legendInterface().isLayerVisible(layer):
-                if (i == len(self.layers) - 1):
-                    if self.parent_manage:
-                        self.parent_manage.connect_signal_selection_changed(self.table_object)
+                # if (i == len(self.layers) - 1):
+                if self.parent_manage:
+                    self.parent_manage.connect_signal_selection_changed(self.table_object)
 
                 # Selection by rectangle
                 if rectangle:
