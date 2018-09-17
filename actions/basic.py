@@ -576,8 +576,8 @@ class Basic(ParentAction):
             id_ = str(dialog.selected_rows.model().record(row).value(field_id_right))
             field_list.append(id_)
         for i in range(0, len(field_list)):
-            sql = (sql + "'" + str(field_list[i]) + "'")
-            self.controller.execute_sql(sql, log_sql=True)
+            _sql = (sql + "'" + str(field_list[i]) + "'")
+            self.controller.execute_sql(_sql, log_sql=True)
             
         # Refresh tables
         self.fill_table(dialog, table_view, set_edit_triggers=QTableView.NoEditTriggers)
