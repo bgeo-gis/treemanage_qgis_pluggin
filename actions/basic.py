@@ -355,8 +355,12 @@ class Basic(ParentAction):
         # Build expression
         expr = (" mu_name ILIKE '%" + dialog.txt_search.text() + "%'"
                 " AND mu_id NOT IN (" + ids + ")"
-                " AND campaign_id::text = '" + str(self.campaign_id) + "'")
+                " AND campaign_id::text = '" + str(self.campaign_id) + "'"
+                " OR campaign_id IS null")
         self.controller.log_info(expr)
+        # (is_valid, expr) = self.check_expression(expr)  # @UnusedVariable
+        # # if not is_valid:
+        # #     return
         model.setFilter(expr)
         
         # Refresh model?

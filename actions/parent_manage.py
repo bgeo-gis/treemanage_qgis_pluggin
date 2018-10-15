@@ -12,7 +12,7 @@ from PyQt4.Qt import QDate
 from PyQt4.QtCore import Qt
 from PyQt4.QtGui import QCompleter, QStringListModel, QTableView, QDateEdit, QLineEdit, QTextEdit, QDateTimeEdit, QComboBox
 from PyQt4.QtSql import QSqlTableModel
-from qgis.core import QgsFeatureRequest
+from qgis.core import QgsFeatureRequest, QgsMapLayerRegistry
 from qgis.gui import QgsMapToolEmitPoint
 
 from _utils import widget_manager
@@ -48,15 +48,19 @@ class ParentManage(ParentAction, object):
         """ Reset list of layers """
         self.layers = {}
         self.layers['node'] = []
+        self.visible_layers = []
 
-
-    def remove_selection(self, remove_groups=True):
+    def remove_selection(self):
         """ Remove all previous selections """
         try:
-            if remove_groups:
-                for layer in self.layers['node']:
-                    self.controller.log_info(str(layer.name()))
+            for layer in self.layers['node']:
+                if layer in self.visible_layers:
+                    self.iface.legendInterface().setLayerVisible(layer, False)
+            for layer in self.layers['node']:
+                if layer in self.visible_layers:
+                    self.iface.legendInterface().setLayerVisible(layer, True)
                     layer.removeSelection()
+
         except:
             pass
         self.canvas.refresh()
@@ -265,7 +269,11 @@ class ParentManage(ParentAction, object):
 
     def selection_init(self, table_object):
         """ Set canvas map tool to an instance of class 'MultipleSelection' """
-
+        current_visible_layers = self.get_visible_layers()
+        for layer in current_visible_layers:
+            if layer not in self.visible_layers:
+                self.visible_layers.append(layer)
+        self.controller.log_info(str(self.visible_layers))
         multiple_selection = MultipleSelection(self.iface, self.controller, self.layers[self.geom_type],
                                              parent_manage=self, table_object=table_object)
         self.previous_map_tool = self.canvas.mapTool()
@@ -456,5 +464,21 @@ class ParentManage(ParentAction, object):
 
         expr = self.set_table_model(widget, geom_type, expr_filter)
         return expr
-    
-    
+
+
+    def get_visible_layers(self, return_as_list=True):
+        """ Return list or string as {...} with all visible layer in TOC """
+
+        visible_layer = []
+        if return_as_list:
+            for layer in self.iface.legendInterface().layers():
+                if self.iface.legendInterface().isLayerVisible(layer):
+                    visible_layer.append(layer)
+            #visible_layer = [lyr for lyr in QgsMapLayerRegistry.instance().mapLayers().values()]
+            return visible_layer
+
+        for layer in self.iface.legendInterface().layers():
+            if self.iface.legendInterface().isLayerVisible(layer):
+                visible_layer += '"' + str(layer.name()) + '", '
+        visible_layer = visible_layer[:-2] + "}"
+        return visible_layer

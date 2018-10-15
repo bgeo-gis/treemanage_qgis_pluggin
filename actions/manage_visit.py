@@ -64,8 +64,8 @@ class ManageVisit(ParentManage, QObject):
         self.reset_layers()
 
         self.layers['node'] = self.controller.get_group_layers('node')
-
-        self.remove_selection(True)
+        self.visible_layers = self.get_visible_layers()
+        self.remove_selection()
 
         # Reset geometry
         self.x = None
