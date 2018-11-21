@@ -6,10 +6,26 @@ or (at your option) any later version.
 """
 
 # -*- coding: utf-8 -*-
-from PyQt4.QtCore import QCoreApplication, QSettings, Qt, QTranslator 
-from PyQt4.QtGui import QCheckBox, QLabel, QMessageBox, QPushButton, QTabWidget
-from PyQt4.QtSql import QSqlDatabase
-from qgis.core import QgsMessageLog, QgsMapLayerRegistry, QgsDataSourceURI, QgsCredentials
+try:
+    from qgis.core import Qgis
+except:
+    from qgis.core import QGis as Qgis
+
+if Qgis.QGIS_VERSION_INT >= 20000 and Qgis.QGIS_VERSION_INT < 29900:
+    from PyQt4.Qt import QToolBox
+    from PyQt4.QtCore import QCoreApplication, QSettings, Qt, QTranslator
+    from PyQt4.QtGui import QCheckBox, QLabel, QMessageBox, QPushButton, QTabWidget, QApplication, QAction
+    from PyQt4.QtSql import QSqlDatabase
+    from qgis.core import QgsDataSourceURI as QgsDataSourceUri
+    from qgis.core import QgsMapLayerRegistry
+else:
+    from qgis.PyQt.QtCore import QCoreApplication, QSettings, Qt, QTranslator
+    from qgis.PyQt.QtWidgets import QToolBox, QCheckBox, QLabel, QMessageBox, QPushButton, QTabWidget, QApplication, QAction
+    from qgis.PyQt.QtSql import QSqlDatabase
+    from qgis.core import QgsDataSourceUri
+    from qgis.core import QgsProject
+
+from qgis.core import QgsMessageLog, QgsCredentials
 
 import os.path
 import sys
@@ -103,9 +119,8 @@ class DaoController():
         self.logged = self.connect_to_database(layer_source['host'], layer_source['port'], 
                                                layer_source['db'], layer_source['user'], layer_source['password']) 
                        
-        return self.logged    
-    
-    
+        return self.logged
+
     def get_layer_source_from_credentials(self):
 
         # Get database parameters from layer 'version'
@@ -113,24 +128,30 @@ class DaoController():
         if not layer:
             self.last_error = self.tr("Layer not found") + ": 'version_tm'"
             return None
-        
-        layer_source = self.get_layer_source(layer)    
+
+        layer_source = self.get_layer_source(layer)
         self.schema_name = layer_source['schema']
-               
-        conn_info = QgsDataSourceURI(layer.dataProvider().dataSourceUri()).connectionInfo()
-        (success, user, pwd) = QgsCredentials.instance().get(conn_info, None, None)  
-        # Put the credentials back (for yourself and the provider), as QGIS removes it when you "get" it
-        if success: 
-            QgsCredentials.instance().put(conn_info, user, pwd)            
-            layer_source['user'] = user            
-            layer_source['password'] = pwd   
-            return layer_source         
-        else:
-            self.log_info("Error getting credentials")
-            self.last_error = "Error getting credentials"  
-            return None
-                
-    
+        conn_info = QgsDataSourceUri(layer.dataProvider().dataSourceUri()).connectionInfo()
+
+        attempts = 1
+        logged = self.connect_to_database(layer_source['host'], layer_source['port'],
+                                          layer_source['db'], layer_source['user'], layer_source['password'])
+        while not logged:
+            attempts += 1
+            if attempts <= 2:
+                (success, layer_source['user'], layer_source['password']) = QgsCredentials.instance().get(conn_info,layer_source['user'], layer_source['password'])
+                logged = self.connect_to_database(layer_source['host'], layer_source['port'],
+                                                  layer_source['db'], layer_source['user'], layer_source['password'])
+            else:
+                return None
+
+                # Put the credentials back (for yourself and the provider), as QGIS removes it when you "get" it
+        QgsCredentials.instance().put(conn_info, layer_source['user'], layer_source['password'])
+
+        return layer_source
+
+
+
     def connect_to_database(self, host, port, db, user, pwd):
         """ Connect to database with selected parameters """
         
