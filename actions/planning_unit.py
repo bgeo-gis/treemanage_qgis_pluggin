@@ -65,8 +65,10 @@ class PlanningUnit(ParentAction):
         self.set_icon(dlg_unit.btn_insert, "111")
         self.set_icon(dlg_unit.btn_delete, "112")
         self.set_icon(dlg_unit.btn_snapping, "137")
+
         validator = QIntValidator(1, 9999999)
         dlg_unit.txt_times.setValidator(validator)
+
         wm.set_qtv_config(dlg_unit.tbl_unit)
 
         sql = ("SELECT id, name FROM " + self.schema_name + ".cat_campaign")
@@ -75,19 +77,19 @@ class PlanningUnit(ParentAction):
         sql = ("SELECT id, name FROM " + self.schema_name + ".cat_work")
         rows = self.controller.get_rows(sql, log_sql=True)
         wm.set_item_data(dlg_unit.cmb_work, rows, 1)
-        #TODO al iniciar hay que coger el valor del combo y filtrar la qtable segun el valor
-        #self.update_table(dlg_unit.tbl_unit,)
 
+        table_name = "v_ui_planning_unit"
+        self.update_table(dlg_unit.tbl_unit, table_name, dlg_unit.cmb_campaign)
 
-        dlg_unit.cmb_campaign.currentIndexChanged.connect(partial(self.update_table, dlg_unit.tbl_unit, dlg_unit.cmb_campaign ))
+        dlg_unit.cmb_campaign.currentIndexChanged.connect(
+            partial(self.update_table, dlg_unit.tbl_unit, table_name, dlg_unit.cmb_campaign))
+
         dlg_unit.btn_close.clicked.connect(partial(self.close_dialog, dlg_unit))
         dlg_unit.exec_()
 
-    def update_table(self, qtable, combo, expr_filter=None):
-        table_name = "v_ui_planning_unit"
-        if expr_filter is None:
-            id = wm.get_item_data(combo, 0)
-            expr_filter = "campaign_id = " + str(id)
+    def update_table(self, qtable, table_name, combo):
+        id = wm.get_item_data(combo, 0)
+        expr_filter = "campaign_id = " + str(id)
         self.fill_table(qtable, table_name, expr_filter=expr_filter)
 
 
