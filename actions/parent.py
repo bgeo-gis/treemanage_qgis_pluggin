@@ -301,7 +301,7 @@ class ParentAction(object):
         # Set model
         model = QSqlTableModel()
         model.setTable(table_name)
-        model.setEditStrategy(QSqlTableModel.OnFieldChange)
+        model.setEditStrategy(QSqlTableModel.OnManualSubmit)
         model.setSort(0, 0)
         model.select()
 
