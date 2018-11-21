@@ -12,6 +12,8 @@ def get_ui_class(ui_file_name):
     return uic.loadUiType(ui_file_path)[0]
 
 
+
+
 FORM_CLASS = get_ui_class('add_visit.ui')
 class AddVisit(QtGui.QDialog, FORM_CLASS):
     def __init__(self):
@@ -20,6 +22,12 @@ class AddVisit(QtGui.QDialog, FORM_CLASS):
 
 FORM_CLASS = get_ui_class('event_standard.ui')
 class EventStandard(QtGui.QDialog, FORM_CLASS):
+    def __init__(self):
+        QtGui.QDialog.__init__(self)
+        self.setupUi(self)
+
+FORM_CLASS = get_ui_class('planning_unit.ui')
+class PlaningUnit(QtGui.QDialog, FORM_CLASS):
     def __init__(self):
         QtGui.QDialog.__init__(self)
         self.setupUi(self)

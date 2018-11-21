@@ -17,6 +17,7 @@ from PyQt4.QtSql import QSqlTableModel
 from _utils import widget_manager
 from parent import ParentAction
 from tree_manage.actions.manage_visit import ManageVisit
+from tree_manage.actions.planning_unit import PlanningUnit
 from tree_manage.ui.month_manage import MonthManage
 from tree_manage.ui.month_selector import MonthSelector
 from tree_manage.ui.new_prices import NewPrices
@@ -864,3 +865,7 @@ class Basic(ParentAction):
         
         self.manage_visit.manage_visit()
         
+
+    def open_planning_unit(self):
+        plan_unit = PlanningUnit(self.iface, self.settings, self.controller, self.plugin_dir)
+        plan_unit.open_form()

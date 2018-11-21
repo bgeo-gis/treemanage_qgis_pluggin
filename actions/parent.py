@@ -5,16 +5,33 @@ General Public License as published by the Free Software Foundation, either vers
 or (at your option) any later version.
 """
 
-# -*- coding: utf-8 -*-
-import ConfigParser
-import os
 
-from PyQt4.QtCore import Qt
-from PyQt4.QtGui import QStringListModel, QCompleter, QIcon, QApplication, QCursor, QPixmap
-from qgis.core import QgsExpression
+# -*- coding: utf-8 -*-
+
+try:
+    from qgis.core import Qgis
+except:
+    from qgis.core import QGis as Qgis
+
+if Qgis.QGIS_VERSION_INT >= 20000 and Qgis.QGIS_VERSION_INT < 29900:
+    from PyQt4.QtCore import Qt
+    from PyQt4.QtGui import QCursor, QIcon, QPixmap, QCompleter, QStringListModel, QApplication, QTableView
+    from PyQt4.QtSql import QSqlTableModel
+
+else:
+    from qgis.PyQt.QtCore import Qt, QStringListModel
+    from qgis.PyQt.QtGui import QCursor, QIcon, QPixmap
+    from qgis.PyQt.QtWidgets import QCompleter, QApplication, QTableView
+    from qgis.PyQt.QtSql import QSqlQueryModel, QSqlTableModel
+
+
+from qgis.core import QgsPoint, QgsExpression
+
 
 from _utils import widget_manager
-
+import ConfigParser
+import ctypes
+import os
 
 class ParentAction(object):
     
@@ -65,18 +82,25 @@ class ParentAction(object):
 
     def load_settings(self, dialog=None):
         """ Load QGIS settings related with dialog position and size """
-
+        screens = ctypes.windll.user32
+        screen_x = screens.GetSystemMetrics(78)
+        screen_y = screens.GetSystemMetrics(79)
         if dialog is None:
             dialog = self.dlg
 
         try:
-            width = self.controller.plugin_settings_value(dialog.objectName() + "_width", dialog.width())
-            height = self.controller.plugin_settings_value(dialog.objectName() + "_height", dialog.height())
             x = self.controller.plugin_settings_value(dialog.objectName() + "_x")
             y = self.controller.plugin_settings_value(dialog.objectName() + "_y")
+            width = self.controller.plugin_settings_value(dialog.objectName() + "_width", dialog.property('width'))
+            height = self.controller.plugin_settings_value(dialog.objectName() + "_height", dialog.property('height'))
+
             if int(x) < 0 or int(y) < 0:
                 dialog.resize(int(width), int(height))
             else:
+                if int(x) > screen_x:
+                    x = int(screen_x) - int(width)
+                if int(y) > screen_y:
+                    y = int(screen_y)
                 dialog.setGeometry(int(x), int(y), int(width), int(height))
         except:
             pass
@@ -253,3 +277,45 @@ class ParentAction(object):
 
         return cursor
 
+
+    def fill_table(self, qtable, table_name, set_edit_triggers=QTableView.NoEditTriggers, expr_filter=None):
+        """ Fill table @widget filtering query by @workcat_id
+         Set a model with selected filter.
+         Attach that model to selected table
+         @setEditStrategy:
+             0: OnFieldChange
+             1: OnRowChange
+             2: OnManualSubmit
+         """
+        expr = None
+        if expr_filter:
+            # Check expression
+            (is_valid, expr) = self.check_expression(expr_filter)  # @UnusedVariable
+            if not is_valid:
+                return expr
+
+        # Set a model with selected filter expression
+        if self.schema_name not in table_name:
+            table_name = self.schema_name + "." + table_name
+
+        # Set model
+        model = QSqlTableModel()
+        model.setTable(table_name)
+        model.setEditStrategy(QSqlTableModel.OnFieldChange)
+        model.setSort(0, 0)
+        model.select()
+
+        # When change some field we need to refresh Qtableview and filter by psector_id
+        qtable.setEditTriggers(set_edit_triggers)
+
+        # Check for errors
+        if model.lastError().isValid():
+            self.controller.show_warning(model.lastError().text())
+        # Attach model to table view
+        if expr:
+            qtable.setModel(model)
+            qtable.model().setFilter(expr_filter)
+        else:
+            qtable.setModel(model)
+
+        return expr
