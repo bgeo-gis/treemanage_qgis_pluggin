@@ -319,3 +319,11 @@ class ParentAction(object):
             qtable.setModel(model)
 
         return expr
+
+
+    def get_feature_by_id(self, layer, id, field_id):
+        iter = layer.getFeatures()
+        for feature in iter:
+            if feature[field_id] == id:
+                return feature
+        return False

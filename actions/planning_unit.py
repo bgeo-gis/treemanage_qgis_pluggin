@@ -73,7 +73,7 @@ class PlanningUnit(ParentAction):
 
     def open_form(self):
         self.previous_map_tool = self.canvas.mapTool()
-        self.remove_selection()
+
         self.dlg_unit = PlaningUnit()
         self.load_settings(self.dlg_unit)
         self.set_icon(self.dlg_unit.btn_insert, "111")
@@ -86,7 +86,7 @@ class PlanningUnit(ParentAction):
         self.geom_type = 'node'
         self.layers['node'] = self.controller.get_group_layers('node')
         self.visible_layers = self.get_visible_layers()
-
+        self.remove_selection()
         validator = QIntValidator(1, 9999999)
         self.dlg_unit.txt_times.setValidator(validator)
 
@@ -112,13 +112,16 @@ class PlanningUnit(ParentAction):
         self.dlg_unit.txt_id.textChanged.connect(
             partial(self.populate_comboline, self.dlg_unit,self.dlg_unit.txt_id,   completer))
 
-
+        self.dlg_unit.btn_cancel.clicked.connect(partial(self.cancel_changes))
         self.dlg_unit.btn_cancel.clicked.connect(partial(self.close_dialog, self.dlg_unit))
         self.dlg_unit.btn_cancel.clicked.connect(partial(self.remove_selection))
 
-        self.dlg_unit.btn_accept.clicked.connect(partial(self.remove_selection))
-        self.dlg_unit.btn_accept.clicked.connect(partial(self.accept_changes, self.dlg_unit.tbl_unit))
+        self.dlg_unit.rejected.connect(partial(self.cancel_changes))
         self.dlg_unit.rejected.connect(partial(self.close_dialog, self.dlg_unit))
+        self.dlg_unit.rejected.connect(partial(self.remove_selection))
+
+        self.dlg_unit.btn_accept.clicked.connect(partial(self.accept_changes, self.dlg_unit.tbl_unit))
+        self.dlg_unit.btn_accept.clicked.connect(partial(self.remove_selection))
 
 
         self.dlg_unit.btn_snapping.clicked.connect(partial(self.selection_init,  self.dlg_unit.tbl_unit))
@@ -157,6 +160,11 @@ class PlanningUnit(ParentAction):
     def accept_changes(self, qtable):
         qtable.model().submitAll()
 
+    def cancel_changes(self, qtable):
+        qtable.model().revertAll()
+
+
+
     def delete_row(self, qtable):
         # Get selected rows
         selected_list = qtable.selectionModel().selectedRows()
@@ -164,10 +172,17 @@ class PlanningUnit(ParentAction):
             message = "Any record selected"
             self.controller.show_info_box(message)
             return
-
+        layer = self.controller.get_layer_by_tablename('v_edit_node')
         for index in selected_list:
-            self.controller.log_info(str(index))
+            row = index.row()
+            column_index = wm.get_col_index_by_col_name(qtable, 'node_id')
+            feature_id = index.sibling(row, column_index).data()
+            if feature_id in self.ids:
+                self.ids.remove(feature_id)
+                feature = self.get_feature_by_id(layer, feature_id, 'node_id')
+                layer.deselect(feature.id())
             qtable.model().removeRow(index.row())
+
 
 
     def selection_init(self,  qtable):
@@ -261,8 +276,9 @@ class PlanningUnit(ParentAction):
         record = model.record()
         campaign_id = wm.get_item_data(self.dlg_unit.cmb_campaign, 0)
         work_id = wm.get_item_data(self.dlg_unit.cmb_work, 0)
-        times = wm.getWidgetText(self.dlg_unit.txt_times)
-        if int(times) < 1:
+        times = wm.getWidgetText(self.dlg_unit.txt_times, return_string_null=False)
+        self.controller.log_info(str(times))
+        if times is None or times < 1:
             times = 1
 
         record.setValue("node_id", selected_id)
@@ -347,19 +363,17 @@ class PlanningUnit(ParentAction):
 
     def remove_selection(self):
         """ Remove all previous selections """
-        try:
-            for layer in self.layers['node']:
-                if layer in self.visible_layers:
-                    self.iface.legendInterface().setLayerVisible(layer, False)
-            for layer in self.layers['node']:
-                if layer in self.visible_layers:
-                    self.iface.legendInterface().setLayerVisible(layer, True)
-                    layer.removeSelection()
 
-        except:
-            pass
-        self.canvas.refresh()
+        for layer in self.layers['node']:
+            if layer in self.visible_layers:
+                self.iface.legendInterface().setLayerVisible(layer, False)
+        for layer in self.layers['node']:
+            if layer in self.visible_layers:
+                self.iface.legendInterface().setLayerVisible(layer, True)
+                layer.removeSelection()
+        self.refresh_map_canvas()
         self.canvas.setMapTool(self.previous_map_tool)
+
 
     def get_visible_layers(self, return_as_list=True):
         """ Return list or string as {...} with all visible layer in TOC """
