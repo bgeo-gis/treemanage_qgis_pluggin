@@ -99,6 +99,7 @@ class PlanningUnit(ParentAction):
         rows = self.controller.get_rows(sql, log_sql=True)
         wm.set_item_data(self.dlg_unit.cmb_work, rows, 1)
 
+        self.load_default_values()
         table_name = "v_ui_planning_unit"
         self.update_table(self.dlg_unit.tbl_unit, table_name, self.dlg_unit.cmb_campaign, self.dlg_unit.cmb_work)
 
@@ -113,13 +114,16 @@ class PlanningUnit(ParentAction):
             partial(self.populate_comboline, self.dlg_unit,self.dlg_unit.txt_id,   completer))
 
         self.dlg_unit.btn_cancel.clicked.connect(partial(self.cancel_changes))
+        self.dlg_unit.btn_cancel.clicked.connect(partial(self.save_default_values))
         self.dlg_unit.btn_cancel.clicked.connect(partial(self.close_dialog, self.dlg_unit))
         self.dlg_unit.btn_cancel.clicked.connect(partial(self.remove_selection))
 
         self.dlg_unit.rejected.connect(partial(self.cancel_changes))
+        self.dlg_unit.rejected.connect(partial(self.save_default_values))
         self.dlg_unit.rejected.connect(partial(self.close_dialog, self.dlg_unit))
         self.dlg_unit.rejected.connect(partial(self.remove_selection))
 
+        self.dlg_unit.btn_accept.clicked.connect(partial(self.save_default_values))
         self.dlg_unit.btn_accept.clicked.connect(partial(self.accept_changes, self.dlg_unit.tbl_unit))
         self.dlg_unit.btn_accept.clicked.connect(partial(self.remove_selection))
 
@@ -391,3 +395,19 @@ class PlanningUnit(ParentAction):
                 visible_layer += '"' + str(layer.name()) + '", '
         visible_layer = visible_layer[:-2] + "}"
         return visible_layer
+
+    def save_default_values(self):
+        cur_user = self.controller.get_current_user()
+        campaign = wm.get_item_data(self.dlg_unit, self.dlg_unit.cmb_campaign, 0)
+        work = wm.get_item_data(self.dlg_unit, self.dlg_unit.cmb_work, 0)
+        self.controller.plugin_settings_set_value("PlanningUnit_cmb_campaign_" + cur_user, campaign)
+        self.controller.plugin_settings_set_value("PlanningUnit_cmb_work_" + cur_user, work)
+
+
+    def load_default_values(self):
+        """ Load QGIS settings related with csv options """
+        cur_user = self.controller.get_current_user()
+        campaign = self.controller.plugin_settings_value('PlanningUnit_cmb_campaign_' + cur_user)
+        work = self.controller.plugin_settings_value('PlanningUnit_cmb_work_' + cur_user)
+        wm.set_combo_itemData(self.dlg_unit.cmb_campaign, str(campaign), 0)
+        wm.set_combo_itemData(self.dlg_unit.cmb_work, str(work), 0)
