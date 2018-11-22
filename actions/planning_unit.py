@@ -73,8 +73,6 @@ class PlanningUnit(ParentAction):
         self.visible_layers = []
 
 
-
-
     def open_form(self):
         self.previous_map_tool = self.canvas.mapTool()
         # Get layers of every geom_type
@@ -85,18 +83,14 @@ class PlanningUnit(ParentAction):
         self.visible_layers = self.get_visible_layers()
         self.remove_selection()
 
-
         self.dlg_unit = PlaningUnit()
         self.load_settings(self.dlg_unit)
         self.set_icon(self.dlg_unit.btn_insert, "111")
         self.set_icon(self.dlg_unit.btn_delete, "112")
         self.set_icon(self.dlg_unit.btn_snapping, "137")
 
-
         validator = QIntValidator(1, 9999999)
         self.dlg_unit.txt_times.setValidator(validator)
-
-
 
         wm.set_qtv_config(self.dlg_unit.tbl_unit)
 
@@ -109,8 +103,6 @@ class PlanningUnit(ParentAction):
         self.load_default_values()
         table_name = "v_ui_planning_unit"
         self.update_table(self.dlg_unit, self.dlg_unit.tbl_unit, table_name, self.dlg_unit.cmb_campaign, self.dlg_unit.cmb_work)
-
-
 
         # Signals
         self.dlg_unit.cmb_campaign.currentIndexChanged.connect(
@@ -171,12 +163,20 @@ class PlanningUnit(ParentAction):
         model.setStringList(list_items)
         completer.setModel(model)
 
+
     def accept_changes(self, qtable):
-        qtable.model().submitAll()
+        """ Save changes on click btn_accept """
+        if qtable.model().submitAll():
+            message = "Values has been updated"
+            self.controller.show_info(message)
+        else:
+            message = "Values has not updated"
+            self.controller.show_info(message)
+            qtable.model().revertAll()
+
 
     def cancel_changes(self, qtable):
         qtable.model().revertAll()
-
 
 
     def delete_row(self, qtable):
