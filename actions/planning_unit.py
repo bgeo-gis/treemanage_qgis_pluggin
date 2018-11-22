@@ -65,21 +65,18 @@ class PlanningUnit(ParentAction):
         self.list_ids = {}
         self.list_ids['node'] = []
 
+
     def reset_layers(self):
         """ Reset list of layers """
         self.layers = {}
         self.layers['node'] = []
         self.visible_layers = []
 
+
+
+
     def open_form(self):
         self.previous_map_tool = self.canvas.mapTool()
-
-        self.dlg_unit = PlaningUnit()
-        self.load_settings(self.dlg_unit)
-        self.set_icon(self.dlg_unit.btn_insert, "111")
-        self.set_icon(self.dlg_unit.btn_delete, "112")
-        self.set_icon(self.dlg_unit.btn_snapping, "137")
-
         # Get layers of every geom_type
         self.reset_lists()
         self.reset_layers()
@@ -87,8 +84,19 @@ class PlanningUnit(ParentAction):
         self.layers['node'] = self.controller.get_group_layers('node')
         self.visible_layers = self.get_visible_layers()
         self.remove_selection()
+
+
+        self.dlg_unit = PlaningUnit()
+        self.load_settings(self.dlg_unit)
+        self.set_icon(self.dlg_unit.btn_insert, "111")
+        self.set_icon(self.dlg_unit.btn_delete, "112")
+        self.set_icon(self.dlg_unit.btn_snapping, "137")
+
+
         validator = QIntValidator(1, 9999999)
         self.dlg_unit.txt_times.setValidator(validator)
+
+
 
         wm.set_qtv_config(self.dlg_unit.tbl_unit)
 
@@ -98,34 +106,36 @@ class PlanningUnit(ParentAction):
         sql = ("SELECT id, name FROM " + self.schema_name + ".cat_work")
         rows = self.controller.get_rows(sql, log_sql=True)
         wm.set_item_data(self.dlg_unit.cmb_work, rows, 1)
-
         self.load_default_values()
         table_name = "v_ui_planning_unit"
-        self.update_table(self.dlg_unit.tbl_unit, table_name, self.dlg_unit.cmb_campaign, self.dlg_unit.cmb_work)
+        self.update_table(self.dlg_unit, self.dlg_unit.tbl_unit, table_name, self.dlg_unit.cmb_campaign, self.dlg_unit.cmb_work)
+
+
 
         # Signals
         self.dlg_unit.cmb_campaign.currentIndexChanged.connect(
-            partial(self.update_table, self.dlg_unit.tbl_unit, table_name, self.dlg_unit.cmb_campaign, self.dlg_unit.cmb_work))
+            partial(self.update_table, self.dlg_unit, self.dlg_unit.tbl_unit, table_name, self.dlg_unit.cmb_campaign, self.dlg_unit.cmb_work))
         self.dlg_unit.cmb_work.currentIndexChanged.connect(
-            partial(self.update_table, self.dlg_unit.tbl_unit, table_name, self.dlg_unit.cmb_campaign, self.dlg_unit.cmb_work))
+            partial(self.update_table, self.dlg_unit, self.dlg_unit.tbl_unit, table_name, self.dlg_unit.cmb_campaign, self.dlg_unit.cmb_work))
 
         completer = QCompleter()
         self.dlg_unit.txt_id.textChanged.connect(
-            partial(self.populate_comboline, self.dlg_unit,self.dlg_unit.txt_id,   completer))
+            partial(self.populate_comboline, self.dlg_unit,self.dlg_unit.txt_id, completer))
 
-        self.dlg_unit.btn_cancel.clicked.connect(partial(self.cancel_changes))
         self.dlg_unit.btn_cancel.clicked.connect(partial(self.save_default_values))
+        self.dlg_unit.btn_cancel.clicked.connect(partial(self.cancel_changes, self.dlg_unit.tbl_unit))
         self.dlg_unit.btn_cancel.clicked.connect(partial(self.close_dialog, self.dlg_unit))
         self.dlg_unit.btn_cancel.clicked.connect(partial(self.remove_selection))
 
-        self.dlg_unit.rejected.connect(partial(self.cancel_changes))
         self.dlg_unit.rejected.connect(partial(self.save_default_values))
+        self.dlg_unit.rejected.connect(partial(self.cancel_changes, self.dlg_unit.tbl_unit))
         self.dlg_unit.rejected.connect(partial(self.close_dialog, self.dlg_unit))
         self.dlg_unit.rejected.connect(partial(self.remove_selection))
 
         self.dlg_unit.btn_accept.clicked.connect(partial(self.save_default_values))
         self.dlg_unit.btn_accept.clicked.connect(partial(self.accept_changes, self.dlg_unit.tbl_unit))
         self.dlg_unit.btn_accept.clicked.connect(partial(self.remove_selection))
+
 
 
         self.dlg_unit.btn_snapping.clicked.connect(partial(self.selection_init,  self.dlg_unit.tbl_unit))
@@ -136,7 +146,7 @@ class PlanningUnit(ParentAction):
 
 
     def populate_comboline(self, dialog, widget, completer):
-        filter = wm.getWidgetText(widget)
+        filter = wm.getWidgetText(dialog, widget)
         sql = ("SELECT node_id FROM " + self.schema_name + ".v_edit_node "
                " WHERE node_id ILIKE '%" + str(filter)+"%'")
         rows = self.controller.get_rows(sql, log_sql=True)
@@ -278,32 +288,23 @@ class PlanningUnit(ParentAction):
         """ Reload @widget with contents of @tablename applying selected @expr_filter """
         model = qtable.model()
         record = model.record()
-        campaign_id = wm.get_item_data(self.dlg_unit.cmb_campaign, 0)
-        work_id = wm.get_item_data(self.dlg_unit.cmb_work, 0)
-        times = wm.getWidgetText(self.dlg_unit.txt_times, return_string_null=False)
-        self.controller.log_info(str(times))
-        if times is None or times < 1:
-            times = 1
+        campaign_id = wm.get_item_data(self.dlg_unit, self.dlg_unit.cmb_campaign, 0)
+        work_id = wm.get_item_data(self.dlg_unit, self.dlg_unit.cmb_work, 0)
+        times = wm.getWidgetText(self.dlg_unit, self.dlg_unit.txt_times, return_string_null=False)
+        if times is None or times < 1 or times == "":
+            times = "1"
 
         record.setValue("node_id", selected_id)
         record.setValue("campaign_id", campaign_id)
         record.setValue("work_id", work_id)
-        record.setValue("frecuency", times)
+        record.setValue("frequency", str(times))
         if model.insertRecord(-1, record):
             self.controller.log_info(str("INSERT"))
             # model.submitAll()
         else:
             self.controller.log_info(str("FAIL"))
-        # self.controller.log_info(str(expr_filter))
-        # if type(qtable) is QTableView:
-        #     widget = qtable
-        # else:
-        #     message = "Table_object is not a table name or QTableView"
-        #     self.controller.log_info(message)
-        #     return None
-        #
-        # expr = self.set_table_model(widget, geom_type, expr_filter)
-        # return expr
+
+
     def set_table_model(self, qtable, geom_type, expr_filter):
         """ Sets a TableModel to @widget_name attached to
             @table_name and filter @expr_filter
@@ -348,13 +349,13 @@ class PlanningUnit(ParentAction):
         return expr
 
 
-    def update_table(self, qtable, table_name, combo1, combo2):
+    def update_table(self, dialog, qtable, table_name, combo1, combo2):
 
-        campaign_id = wm.get_item_data(combo1, 0)
-        work_id = wm.get_item_data(combo2, 0)
+        campaign_id = wm.get_item_data(dialog, combo1, 0)
+        work_id = wm.get_item_data(dialog, combo2, 0)
         expr_filter = "campaign_id = " + str(campaign_id)
         expr_filter += " AND work_id = " + str(work_id)
-        self.fill_table(qtable, table_name, expr_filter=expr_filter)
+        self.fill_table(qtable, table_name, set_edit_triggers=QTableView.DoubleClicked, expr_filter=expr_filter)
         self.get_id_list()
 
 

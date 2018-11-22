@@ -140,8 +140,8 @@ class ManageVisit(ParentManage, QObject):
         row = self.controller.get_row(sql)
         if row:
             widget_manager.set_combo_itemData(self.visitcat_id, str(row['value']), 1)
-        self.set_combos(self.dlg_add_visit.parameter_type_id, 'parameter_type_id')
-        self.set_combos(self.dlg_add_visit.parameter_id, 'parameter_id')
+        self.set_combos(self.dlg_add_visit, self.dlg_add_visit.parameter_type_id, 'parameter_type_id')
+        self.set_combos(self.dlg_add_visit, self.dlg_add_visit.parameter_id, 'parameter_id')
         # Set autocompleters of the form
         self.set_completers(self.dlg_add_visit.visit_id, 'om_visit')
 
@@ -157,12 +157,12 @@ class ManageVisit(ParentManage, QObject):
         self.open_dialog(self.dlg_add_visit, dlg_name="add_visit")
 
 
-    def set_combos(self,  qcombo, parameter):
+    def set_combos(self, dialog, qcombo, parameter):
         sql = ("SELECT value FROM " + self.schema_name + ".config_param_user "
                " WHERE parameter = '"+str(parameter)+"' AND cur_user= current_user AND context='arbrat'")
         row = self.controller.get_row(sql)
         if row:
-            widget_manager.setWidgetText(qcombo, str(row['value']))
+            widget_manager.setWidgetText(dialog, qcombo, str(row['value']))
 
 
     def manage_accepted(self):
@@ -506,7 +506,7 @@ class ManageVisit(ParentManage, QObject):
                     for i in range(0, self.dlg_add_visit.visitcat_id.count()):
                         elem = self.dlg_add_visit.visitcat_id.itemData(i)
                         if str(row[0]) == str(elem[0]):
-                            widget_manager.setWidgetText(self.dlg_add_visit.visitcat_id, (elem[1]))
+                            widget_manager.setWidgetText(self.dlg_add_visit, self.dlg_add_visit.visitcat_id, (elem[1]))
                 except TypeError:
                     pass
                 except ValueError:
@@ -520,14 +520,14 @@ class ManageVisit(ParentManage, QObject):
         #        " ORDER BY id")
         # rows = self.controller.get_rows(sql, commit=self.autocommit)
         rows = [['node']]
-        widget_manager.fillComboBox(self.dlg_add_visit.feature_type, rows, allow_nulls=False)
+        widget_manager.fillComboBox(self.dlg_add_visit, self.dlg_add_visit.feature_type, rows, allow_nulls=False)
 
         # Event tab
         # Fill ComboBox parameter_type_id
         sql = ("SELECT id FROM " + self.schema_name + ".om_visit_parameter_type"
                " ORDER BY id")
         parameter_type_ids = self.controller.get_rows(sql, commit=self.autocommit)
-        widget_manager.fillComboBox(self.dlg_add_visit.parameter_type_id, parameter_type_ids, allow_nulls=False)
+        widget_manager.fillComboBox(self.dlg_add_visit, self.dlg_add_visit.parameter_type_id, parameter_type_ids, allow_nulls=False)
 
         # now get default value to be show in parameter_type_id
         # sql = ("SELECT value FROM " + self.schema_name + ".config_param_user"
@@ -587,7 +587,7 @@ class ManageVisit(ParentManage, QObject):
     def event_insert(self):
         """Add and event basing on form associated to the selected parameter_id."""
         # check a parameter_id is selected (can be that no value is available)
-        parameter_id = widget_manager.get_item_data(self.dlg_add_visit.parameter_id, 0)
+        parameter_id = widget_manager.get_item_data(self.dlg_add_visit, self.dlg_add_visit.parameter_id, 0)
         if not parameter_id:
             message = "You need to select a valid parameter id"
             self.controller.show_info_box(message)

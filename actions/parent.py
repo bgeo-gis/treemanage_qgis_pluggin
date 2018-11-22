@@ -185,10 +185,10 @@ class ParentAction(object):
         return True, expr
 
 
-    def set_table_columns(self, widget, table_name, project_type=None):
+    def set_table_columns(self, dialog, widget, table_name, project_type=None):
         """ Configuration of tables. Set visibility and width of columns """
 
-        widget = widget_manager.getWidget(widget)
+        widget = widget_manager.getWidget(dialog, widget)
         if not widget:
             return
 

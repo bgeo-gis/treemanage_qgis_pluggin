@@ -131,7 +131,7 @@
      <item row="0" column="2">
       <widget class="QLabel" name="label_3">
        <property name="text">
-        <string>Vegades:</string>
+        <string>Nº de regs:</string>
        </property>
       </widget>
      </item>

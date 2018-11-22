@@ -196,7 +196,7 @@ class ParentManage(ParentAction, object):
 
         if type(table_object) is str:
             widget_name = "tbl_" + table_object + "_x_" + self.geom_type
-            widget = widget_manager.getWidget(widget_name)
+            widget = widget_manager.getWidget(dialog, widget_name)
             if not widget:
                 message = "Widget not found"
                 self.controller.show_warning(message, parameter=widget_name)

@@ -848,4 +848,15 @@ class DaoController():
                 self.tree_manage.enable_toolbar("om_ws")
             elif self.tree_manage.wsoftware == 'ud':
                 self.tree_manage.enable_toolbar("om_ud")
-        
+
+
+    def get_current_user(self):
+        """ Get current user connected to database """
+
+        sql = ("SELECT current_user")
+        row = self.get_row(sql)
+        cur_user = ""
+        if row:
+            cur_user = str(row[0])
+
+        return cur_user

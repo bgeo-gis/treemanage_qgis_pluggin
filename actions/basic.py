@@ -98,8 +98,8 @@ class Basic(ParentAction):
 
         # If campaign not exist, create new one
         if row is None:
-            start_date = widget_manager.getCalendarDate(self.dlg_new_campaign.start_date)
-            end_date = widget_manager.getCalendarDate(self.dlg_new_campaign.end_date)
+            start_date = widget_manager.getCalendarDate(self.dlg_new_campaign, self.dlg_new_campaign.start_date)
+            end_date = widget_manager.getCalendarDate(self.dlg_new_campaign, self.dlg_new_campaign.end_date)
             sql = ("INSERT INTO " + self.schema_name + ".cat_campaign(name, start_date, end_date) "
                    " VALUES('" + str(new_camp) + "', '" + str(start_date) + "', '" + str(end_date) + "');")
             self.controller.execute_sql(sql)
@@ -115,7 +115,7 @@ class Basic(ParentAction):
         # Check if want copy any campaign or do new price list
         copy_years = self.dlg_new_campaign.chk_campaign.isChecked()
         if copy_years:
-            id_old_camp = widget_manager.get_item_data(self.dlg_new_campaign.cbx_years)
+            id_old_camp = widget_manager.get_item_data(self.dlg_new_campaign, self.dlg_new_campaign.cbx_years)
             # If checkbox is checked but don't have any campaign selected do return.
             if id_old_camp == -1:
                 msg = "No tens cap any seleccionat, desmarca l'opcio de copiar preus"
@@ -152,7 +152,7 @@ class Basic(ParentAction):
         # Populate QTableView
         table_view = 'v_edit_price'
         self.fill_table_prices(dlg_prices_management.tbl_price_list, table_view, id_new_camp, set_edit_triggers=QTableView.DoubleClicked)
-        self.set_table_columns(dlg_prices_management.tbl_price_list, table_view, 'basic_cat_price')
+        self.set_table_columns(dlg_prices_management, dlg_prices_management.tbl_price_list, table_view, 'basic_cat_price')
         dlg_prices_management.exec_()
 
 
@@ -243,8 +243,8 @@ class Basic(ParentAction):
                 return None
             self.campaign_id = row[0]
 
-            if widget_manager.isChecked(dialog.chk_campaign) and widget_manager.get_item_data(dialog.cbx_campaigns, 0) != -1:
-                self.selected_camp = widget_manager.get_item_data(dialog.cbx_campaigns, 0)
+            if widget_manager.isChecked(dialog, dialog.chk_campaign) and widget_manager.get_item_data(dialog, dialog.cbx_campaigns, 0) != -1:
+                self.selected_camp = widget_manager.get_item_data(dialog, dialog.cbx_campaigns, 0)
                 sql = ("SELECT DISTINCT(campaign_id) FROM " + self.schema_name + ".planning"
                        " WHERE campaign_id ='" + str(self.selected_camp) + "'")
                 row = self.controller.get_row(sql)
@@ -293,11 +293,11 @@ class Basic(ParentAction):
             self.insert_into_planning(tableright)
 
         # Need fill table before set table columns, and need re-fill table for upgrade fields
-        self.set_table_columns(dlg_selector.selected_rows, table_view, 'basic_year_right')
+        self.set_table_columns(dlg_selector, dlg_selector.selected_rows, table_view, 'basic_year_right')
         self.fill_table(dlg_selector, table_view, set_edit_triggers=QTableView.NoEditTriggers)
 
         self.fill_main_table(dlg_selector, tableleft)
-        self.set_table_columns(dlg_selector.all_rows, tableleft, 'basic_year_left')
+        self.set_table_columns(dlg_selector, dlg_selector.all_rows, tableleft, 'basic_year_left')
 
         # Set signals
         dlg_selector.chk_permanent.stateChanged.connect(partial(self.force_chk_current, dlg_selector))
@@ -429,7 +429,7 @@ class Basic(ParentAction):
                 if str(dialog.selected_rows.model().record(x).value('price')) != 'NULL':
                     total += float(dialog.selected_rows.model().record(x).value('price'))
                     
-        widget_manager.setText(dialog.lbl_total_price, str(total))
+        widget_manager.setText(dialog, dialog.lbl_total_price, str(total))
 
 
     def insert_into_planning(self, tableright):
@@ -498,15 +498,15 @@ class Basic(ParentAction):
 
         # Select all rows and get all id
         self.select_all_rows(dialog.selected_rows, id_table_right)
-        if widget_manager.isChecked(dialog.chk_current):
-            current_poda_type = widget_manager.get_item_data(dialog.cmb_poda_type, 0)
-            current_poda_name = widget_manager.get_item_data(dialog.cmb_poda_type, 1)
+        if widget_manager.isChecked(dialog, dialog.chk_current):
+            current_poda_type = widget_manager.get_item_data(dialog, dialog.cmb_poda_type, 0)
+            current_poda_name = widget_manager.get_item_data(dialog, dialog.cmb_poda_type, 1)
             if current_poda_type is None:
                 message = "No heu seleccionat cap poda"
                 self.controller.show_warning(message)
                 return
             
-        if widget_manager.isChecked(dialog.chk_permanent):
+        if widget_manager.isChecked(dialog, dialog.chk_permanent):
             for i in range(0, len(left_selected_list)):
                 row = left_selected_list[i].row()
                 sql = ("UPDATE " + self.schema_name + ".cat_mu "
@@ -525,7 +525,7 @@ class Basic(ParentAction):
                 values += 'null, '
 
             if dialog.all_rows.model().record(row).value('work_id') is not None:
-                if widget_manager.isChecked(dialog.chk_current):
+                if widget_manager.isChecked(dialog, dialog.chk_current):
                     values += "'" + str(current_poda_type) + "', "
                     function_values += "'" + str(current_poda_type) + "', "
                 else:
@@ -613,14 +613,14 @@ class Basic(ParentAction):
 
     def get_planned_camp(self, dialog):
 
-        if str(widget_manager.getWidgetText(dialog.txt_plan_code)) == 'null':
+        if str(widget_manager.getWidgetText(dialog, dialog.txt_plan_code)) == 'null':
             message = "El camp text a no pot estar vuit"
             self.controller.show_warning(message)
             return
 
-        self.plan_code = widget_manager.getWidgetText(dialog.txt_plan_code)
-        self.planned_camp_id = widget_manager.get_item_data(dialog.cbx_years, 0)
-        self.planned_camp_name = widget_manager.get_item_data(dialog.cbx_years, 1)
+        self.plan_code = widget_manager.getWidgetText(dialog, dialog.txt_plan_code)
+        self.planned_camp_id = widget_manager.get_item_data(dialog, dialog.cbx_years, 0)
+        self.planned_camp_name = widget_manager.get_item_data(dialog, dialog.cbx_years, 1)
 
         if self.planned_camp_id == -1:
             message = "No hi ha cap any planificat"
@@ -654,8 +654,8 @@ class Basic(ParentAction):
             start_date = QDate.currentDate()
             end_date = QDate.currentDate().addYears(1)
 
-        widget_manager.setCalendarDate(month_selector.date_inici, start_date)
-        widget_manager.setCalendarDate(month_selector.date_fi, end_date)
+        widget_manager.setCalendarDate(month_selector, month_selector.date_inici, start_date)
+        widget_manager.setCalendarDate(month_selector, month_selector.date_fi, end_date)
 
         view_name = 'v_plan_mu_year'
         tableleft = 'planning'
@@ -669,7 +669,7 @@ class Basic(ParentAction):
             partial(self.fill_table_planned_month, month_selector.all_rows, month_selector.txt_search, view_name, expr, QTableView.NoEditTriggers))
         month_selector.btn_select.clicked.connect(
             partial(self.month_selector_row, month_selector, id_table_left, tableleft, view_name))
-        self.set_table_columns(month_selector.all_rows, view_name, 'basic_month_left')
+        self.set_table_columns(month_selector, month_selector.all_rows, view_name, 'basic_month_left')
 
         # Right QTableView
         expr = " AND plan_code = '" + self.plan_code + "'"
@@ -678,7 +678,7 @@ class Basic(ParentAction):
             partial(self.fill_table_planned_month, month_selector.selected_rows, month_selector.txt_selected_filter, view_name, expr, QTableView.NoEditTriggers))
         month_selector.btn_unselect.clicked.connect(
             partial(self.month_unselector_row, month_selector, id_table_left, tableleft, view_name))
-        self.set_table_columns(month_selector.selected_rows, view_name, 'basic_month_right')
+        self.set_table_columns(month_selector, month_selector.selected_rows, view_name, 'basic_month_right')
 
         self.calculate_total_price(month_selector, self.planned_camp_id)
 
@@ -704,8 +704,8 @@ class Basic(ParentAction):
             field_list.append(id_)
 
         # Get dates
-        plan_month_start = widget_manager.getCalendarDate(dialog.date_inici)
-        plan_month_end = widget_manager.getCalendarDate(dialog.date_fi)
+        plan_month_start = widget_manager.getCalendarDate(dialog, dialog.date_inici)
+        plan_month_end = widget_manager.getCalendarDate(dialog, dialog.date_fi)
 
         # Get year from string
         calendar_year = QDate.fromString(plan_month_start, 'yyyy/MM/dd').year()
