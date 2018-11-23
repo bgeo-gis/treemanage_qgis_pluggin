@@ -129,7 +129,7 @@ class PlanningUnit(ParentAction):
 
         self.dlg_unit.btn_snapping.clicked.connect(partial(self.selection_init,  self.dlg_unit.tbl_unit))
         #self.dlg_unit.btn_insert.clicked.connect(partial(self.selection_init, self.dlg_unit.tbl_unit))
-        self.dlg_unit.btn_delete.clicked.connect(partial(self.delete_row, self.dlg_unit.tbl_unit))
+        self.dlg_unit.btn_delete.clicked.connect(partial(self.delete_row, self.dlg_unit.tbl_unit, table_name))
 
         self.open_dialog(self.dlg_unit)
 
@@ -141,7 +141,6 @@ class PlanningUnit(ParentAction):
         rows = self.controller.get_rows(sql, log_sql=True)
         list_items = [row[0] for row in rows]
         model = QStringListModel()
-
         self.set_completer_object(completer, model, widget, list_items)
 
 
@@ -161,31 +160,46 @@ class PlanningUnit(ParentAction):
         completer.setModel(model)
 
 
-    def delete_row(self, qtable):
+    def delete_row(self, qtable, table_name):
         # Get selected rows
         selected_list = qtable.selectionModel().selectedRows()
         if len(selected_list) == 0:
             message = "Any record selected"
             self.controller.show_info_box(message)
             return
-        layer = self.controller.get_layer_by_tablename('v_edit_node')
-        for index in selected_list:
-            row = index.row()
-            column_index = wm.get_col_index_by_col_name(qtable, 'node_id')
-            feature_id = index.sibling(row, column_index).data()
-            self.controller.log_info(str(feature_id))
-            if feature_id in self.ids:
-                self.ids.remove(feature_id)
-                feature = self.get_feature_by_id(layer, feature_id, 'node_id')
-                layer.deselect(feature.id())
-            qtable.model().removeRow(index.row())
 
 
+        inf_text = ""
+        list_id = ""
+        for i in range(0, len(selected_list)):
+            row = selected_list[i].row()
+            id_ = qtable.model().record(row).value(str('node_id'))
+            inf_text += str(id_) + ", "
+            list_id = list_id + "'" + str(id_) + "', "
+        inf_text = inf_text[:-2]
+        list_id = list_id[:-2]
+        message = "Are you sure you want to delete these records?"
+        answer = self.controller.ask_question(message, "Delete records", inf_text)
+
+        if answer:
+            model = qtable.model()
+            for index in selected_list:
+                model.removeRow(index.row())
+
+            # campaign_id = wm.get_item_data(self.dlg_unit, self.dlg_unit.cmb_campaign, 0)
+            # work_id = wm.get_item_data(self.dlg_unit, self.dlg_unit.cmb_work, 0)
+            # sql = ("DELETE FROM " + self.schema_name + "." + table_name + ""
+            #        " WHERE node_id IN (" + list_id + ") "
+            #        " AND campaign_id ='"+str(campaign_id)+"' AND work_id='"+str(work_id)+"'")
+            # self.controller.execute_sql(sql, log_sql=True)
+
+        self.update_table(self.dlg_unit, self.dlg_unit.tbl_unit, table_name, self.dlg_unit.cmb_campaign,
+                          self.dlg_unit.cmb_work)
 
     def selection_init(self,  qtable):
         """ Set canvas map tool to an instance of class 'MultipleSelection' """
         multiple_selection = MultipleSelection(self.iface, self.controller, self.layers['node'], parent_manage=self, table_object=qtable)
-        
+
         self.canvas.setMapTool(multiple_selection)
         self.disconnect_signal_selection_changed()
         self.connect_signal_selection_changed(qtable)
@@ -266,6 +280,28 @@ class PlanningUnit(ParentAction):
         record.setValue("frequency", str(times))
         model.insertRecord(-1, record)
 
+        # sql = ("INSERT INTO " + self.schema_name + " .v_ui_planning_unit (node_id, campaign_id, work_id, frequency) "
+        #         " VALUES('"+str(selected_id)+"', '"+str(campaign_id)+"', '"+str(work_id)+"', '"+str(times)+"')")
+        # self.controller.log_info(str(sql))
+
+
+    # def insert_row(self, node_id):
+    #     """ Reload @widget with contents of @tablename applying selected @expr_filter """
+    #
+    #     campaign_id = wm.get_item_data(self.dlg_unit, self.dlg_unit.cmb_campaign, 0)
+    #     work_id = wm.get_item_data(self.dlg_unit, self.dlg_unit.cmb_work, 0)
+    #     times = wm.getWidgetText(self.dlg_unit, self.dlg_unit.txt_times, return_string_null=False)
+    #     if times is None or times < 1 or times == "":
+    #         times = "1"
+    #     sql = ("INSERT INTO " + self.schema_name + " .v_ui_planning_unit (node_id, campaign_id, work_id, frequency) "
+    #            " VALUES('"+str(node_id)+"', '"+str(campaign_id)+"', '"+str(work_id)+"', '"+str(times)+"')")
+    #     self.controller.execute_sql(sql)
+    #     # record.setValue("node_id", selected_id)
+    #     # record.setValue("campaign_id", campaign_id)
+    #     # record.setValue("work_id", work_id)
+    #     # record.setValue("frequency", str(times))
+    #     # model.insertRecord(-1, record)
+
 
     def update_table(self, dialog, qtable, table_name, combo1, combo2):
 
@@ -284,16 +320,6 @@ class PlanningUnit(ParentAction):
         self.fill_table_unit(qtable, table_name, expr_filter=expr_filter)
         self.get_id_list()
 
-
-    # def select_features(self):
-    #     layer = self.controller.get_layer_by_tablename("v_edit_node")
-    #     self.controller.log_info(str(self.ids))
-    #     for feature_id in self.ids:
-    #         self.controller.log_info(str(feature_id))
-    #         feature = self.get_feature_by_id(layer, feature_id, 'node_id')
-    #         self.controller.log_info(str(feature.id()))
-    #         self.controller.log_info(str(type(feature)))
-    #         layer.select(feature.id())
 
     def fill_table_unit(self, qtable, table_name,  expr_filter=None):
         """ Fill table @widget filtering query by @workcat_id
