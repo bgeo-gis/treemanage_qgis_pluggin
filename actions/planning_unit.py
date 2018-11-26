@@ -6,7 +6,6 @@ or (at your option) any later version.
 """
 
 # -*- coding: latin-1 -*-
-from PyQt4.QtGui import QIcon
 
 try:
     from qgis.core import Qgis
@@ -14,28 +13,17 @@ except:
     from qgis.core import QGis as Qgis
 
 if Qgis.QGIS_VERSION_INT >= 20000 and Qgis.QGIS_VERSION_INT < 29900:
-    from PyQt4 import QtCore
-    from PyQt4.QtCore import Qt, QDate, QPoint
-    from PyQt4.QtGui import QIntValidator, QDoubleValidator, QMenu
-    from PyQt4.QtGui import QWidget, QAction, QPushButton, QLabel, QLineEdit, QComboBox, QCheckBox, QDateEdit
-    from PyQt4.QtGui import QGridLayout, QSpacerItem, QSizePolicy, QStringListModel, QCompleter, QAbstractItemView
-    from PyQt4.QtGui import QTableView, QListWidgetItem, QStandardItemModel, QStandardItem, QTabWidget, QListWidget
+    from PyQt4.QtCore import Qt
+    from PyQt4.QtGui import QIntValidator, QStringListModel, QCompleter, QTableView
     from PyQt4.QtSql import QSqlTableModel
-    import urlparse
-    import win32gui
 
 else:
-    from qgis.PyQt import QtCore
-    from qgis.PyQt.QtCore import Qt, QDate, QStringListModel,QPoint
-    from qgis.PyQt.QtGui import QIntValidator, QDoubleValidator, QStandardItem, QStandardItemModel
-    from qgis.PyQt.QtWidgets import QWidget, QAction, QPushButton, QLabel, QLineEdit, QComboBox, QCheckBox, \
-        QGridLayout, QSpacerItem, QSizePolicy, QCompleter, QTableView, QListWidget, QListWidgetItem, \
-        QTabWidget, QAbstractItemView, QMenu
+    from qgis.PyQt.QtCore import Qt, QStringListModel
+    from qgis.PyQt.QtGui import QIntValidator
+    from qgis.PyQt.QtWidgets import QCompleter, QTableView
     from qgis.PyQt.QtSql import QSqlTableModel
-    import urllib.parse as urlparse
+
 from qgis.core import QgsExpression, QgsFeatureRequest
-
-
 
 
 from functools import partial
@@ -43,7 +31,6 @@ from functools import partial
 from _utils import widget_manager as wm
 from tree_manage.actions.multiple_selection import MultipleSelection
 from tree_manage.actions.parent import ParentAction
-from tree_manage.actions.parent_manage import ParentManage
 from tree_manage.ui_manager import PlaningUnit
 
 
@@ -51,7 +38,6 @@ class PlanningUnit(ParentAction):
     def __init__(self, iface, settings, controller, plugin_dir):
         """ Class constructor """
         ParentAction.__init__(self, iface, settings, controller, plugin_dir)
-        #ParentManage.__init__(self, iface, settings, controller, plugin_dir)
 
         self.iface = iface
         self.settings = settings
@@ -78,12 +64,14 @@ class PlanningUnit(ParentAction):
         self.reset_lists()
         self.reset_layers()
         self.geom_type = 'node'
-        self.layers['node'] = [self.controller.get_layer_by_tablename('v_edit_node')]
+        layer = self.controller.get_layer_by_tablename('v_edit_node')
+        if not layer:
+            self.last_error = self.tr("Layer not found") + ": v_edit_node"
+            return None
+        self.layers['node'] = [layer]
 
-        #self.layers['node'] = self.controller.get_group_layers('node')
         self.visible_layers = self.get_visible_layers()
         self.remove_selection()
-
 
         self.dlg_unit = PlaningUnit()
         self.load_settings(self.dlg_unit)
@@ -128,21 +116,20 @@ class PlanningUnit(ParentAction):
 
 
         self.dlg_unit.btn_snapping.clicked.connect(partial(self.selection_init,  self.dlg_unit.tbl_unit))
-        #self.dlg_unit.btn_insert.clicked.connect(partial(self.selection_init, self.dlg_unit.tbl_unit))
+        self.dlg_unit.btn_insert.clicked.connect(partial(self.insert_single, self.dlg_unit, self.dlg_unit.txt_id))
         self.dlg_unit.btn_delete.clicked.connect(partial(self.delete_row, self.dlg_unit.tbl_unit, table_name))
 
         self.open_dialog(self.dlg_unit)
 
 
     def populate_comboline(self, dialog, widget, completer):
-        filter = wm.getWidgetText(dialog, widget)
+        _filter = wm.getWidgetText(dialog, widget)
         sql = ("SELECT node_id FROM " + self.schema_name + ".v_edit_node "
-               " WHERE node_id ILIKE '%" + str(filter)+"%'")
+               " WHERE node_id ILIKE '%" + str(_filter)+"%'")
         rows = self.controller.get_rows(sql, log_sql=True)
         list_items = [row[0] for row in rows]
         model = QStringListModel()
         self.set_completer_object(completer, model, widget, list_items)
-
 
 
     def set_completer_object(self, completer, model, widget, list_items, max_visible=10):
@@ -168,12 +155,11 @@ class PlanningUnit(ParentAction):
             self.controller.show_info_box(message)
             return
 
-
         inf_text = ""
         list_id = ""
         for i in range(0, len(selected_list)):
             row = selected_list[i].row()
-            id_ = qtable.model().record(row).value(str('node_id'))
+            id_ = qtable.model().record(row).value(str('id'))
             inf_text += str(id_) + ", "
             list_id = list_id + "'" + str(id_) + "', "
         inf_text = inf_text[:-2]
@@ -183,23 +169,19 @@ class PlanningUnit(ParentAction):
 
         if answer:
             model = qtable.model()
-            for index in selected_list:
+            # Need to order from highest to lowest,
+            # because if we eliminate the lower index, the rest of the indexes are regenerated
+            records_sorted = sorted(selected_list, reverse=True)
+            for index in records_sorted:
                 model.removeRow(index.row())
-
-            # campaign_id = wm.get_item_data(self.dlg_unit, self.dlg_unit.cmb_campaign, 0)
-            # work_id = wm.get_item_data(self.dlg_unit, self.dlg_unit.cmb_work, 0)
-            # sql = ("DELETE FROM " + self.schema_name + "." + table_name + ""
-            #        " WHERE node_id IN (" + list_id + ") "
-            #        " AND campaign_id ='"+str(campaign_id)+"' AND work_id='"+str(work_id)+"'")
-            # self.controller.execute_sql(sql, log_sql=True)
 
         self.update_table(self.dlg_unit, self.dlg_unit.tbl_unit, table_name, self.dlg_unit.cmb_campaign,
                           self.dlg_unit.cmb_work)
 
+
     def selection_init(self,  qtable):
         """ Set canvas map tool to an instance of class 'MultipleSelection' """
         multiple_selection = MultipleSelection(self.iface, self.controller, self.layers['node'], parent_manage=self, table_object=qtable)
-
         self.canvas.setMapTool(multiple_selection)
         self.disconnect_signal_selection_changed()
         self.connect_signal_selection_changed(qtable)
@@ -225,6 +207,19 @@ class PlanningUnit(ParentAction):
             pass
 
 
+    def insert_single(self, dialog, qline):
+        feature_id = wm.getWidgetText(dialog, qline)
+        layer = self.controller.get_layer_by_tablename('v_edit_node')
+        if not layer:
+            self.last_error = self.tr("Layer not found") + ": v_edit_node"
+            return None
+
+        feature = self.get_feature_by_id(layer, feature_id, 'node_id')
+
+        if feature is not False:
+            self.insert_row(self.dlg_unit.tbl_unit, feature_id)
+
+
     def selection_changed(self, qtable, geom_type):
         """ Slot function for signal 'canvas.selectionChanged' """
 
@@ -248,6 +243,7 @@ class PlanningUnit(ParentAction):
         self.connect_signal_selection_changed(qtable)
 
 
+
     def select_features_by_ids(self, geom_type, expr):
         """ Select features of layers of group @geom_type applying @expr """
 
@@ -262,6 +258,7 @@ class PlanningUnit(ParentAction):
                     layer.selectByIds(id_list)
                 else:
                     layer.removeSelection()
+
 
 
     def insert_row(self, qtable, selected_id):
@@ -279,28 +276,6 @@ class PlanningUnit(ParentAction):
         record.setValue("work_id", work_id)
         record.setValue("frequency", str(times))
         model.insertRecord(-1, record)
-
-        # sql = ("INSERT INTO " + self.schema_name + " .v_ui_planning_unit (node_id, campaign_id, work_id, frequency) "
-        #         " VALUES('"+str(selected_id)+"', '"+str(campaign_id)+"', '"+str(work_id)+"', '"+str(times)+"')")
-        # self.controller.log_info(str(sql))
-
-
-    # def insert_row(self, node_id):
-    #     """ Reload @widget with contents of @tablename applying selected @expr_filter """
-    #
-    #     campaign_id = wm.get_item_data(self.dlg_unit, self.dlg_unit.cmb_campaign, 0)
-    #     work_id = wm.get_item_data(self.dlg_unit, self.dlg_unit.cmb_work, 0)
-    #     times = wm.getWidgetText(self.dlg_unit, self.dlg_unit.txt_times, return_string_null=False)
-    #     if times is None or times < 1 or times == "":
-    #         times = "1"
-    #     sql = ("INSERT INTO " + self.schema_name + " .v_ui_planning_unit (node_id, campaign_id, work_id, frequency) "
-    #            " VALUES('"+str(node_id)+"', '"+str(campaign_id)+"', '"+str(work_id)+"', '"+str(times)+"')")
-    #     self.controller.execute_sql(sql)
-    #     # record.setValue("node_id", selected_id)
-    #     # record.setValue("campaign_id", campaign_id)
-    #     # record.setValue("work_id", work_id)
-    #     # record.setValue("frequency", str(times))
-    #     # model.insertRecord(-1, record)
 
 
     def update_table(self, dialog, qtable, table_name, combo1, combo2):
@@ -370,14 +345,11 @@ class PlanningUnit(ParentAction):
 
     def remove_selection(self):
         """ Remove all previous selections """
-        self.controller.log_info(str("TEST"))
         for layer in self.layers['node']:
             if layer in self.visible_layers:
                 self.iface.legendInterface().setLayerVisible(layer, False)
-                self.controller.log_info(str(layer.name()))
         for layer in self.layers['node']:
             if layer in self.visible_layers:
-                self.controller.log_info(str(layer.name()))
                 layer.removeSelection()
                 self.iface.legendInterface().setLayerVisible(layer, True)
 

@@ -39,7 +39,11 @@
     </layout>
    </item>
    <item row="5" column="0">
-    <widget class="QTableView" name="tbl_unit"/>
+    <widget class="QTableView" name="tbl_unit">
+     <property name="sortingEnabled">
+      <bool>true</bool>
+     </property>
+    </widget>
    </item>
    <item row="1" column="0">
     <layout class="QGridLayout" name="gridLayout_2">
