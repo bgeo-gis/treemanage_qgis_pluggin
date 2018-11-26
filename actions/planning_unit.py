@@ -241,7 +241,7 @@ class PlanningUnit(ParentAction):
 
         self.remove_selection()
         self.connect_signal_selection_changed(qtable)
-
+        self.canvas.setMapTool(self.previous_map_tool)
 
 
     def select_features_by_ids(self, geom_type, expr):
