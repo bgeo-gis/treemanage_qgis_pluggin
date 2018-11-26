@@ -203,7 +203,6 @@ class PlanningUnit(ParentAction):
         try:
             self.canvas.selectionChanged.connect(partial(self.selection_changed, qtable, self.geom_type))
         except Exception:
-
             pass
 
 
@@ -240,8 +239,8 @@ class PlanningUnit(ParentAction):
                         self.insert_row(qtable, selected_id)
 
         self.remove_selection()
-        self.connect_signal_selection_changed(qtable)
-        self.canvas.setMapTool(self.previous_map_tool)
+        self.iface.actionPan().trigger()
+        # self.connect_signal_selection_changed(qtable)
 
 
     def select_features_by_ids(self, geom_type, expr):
@@ -355,7 +354,7 @@ class PlanningUnit(ParentAction):
 
         self.canvas.clear()
         self.canvas.refresh()
-        self.canvas.setMapTool(self.previous_map_tool)
+        # self.canvas.setMapTool(self.previous_map_tool)
 
 
 
