@@ -662,8 +662,8 @@ class Basic(ParentAction):
         id_table_left = 'mu_id'
 
         # Left QTableView
-        expr = " AND (plan_code != '" + self.plan_code + "'"
-        expr += " OR plan_code is NULL)"
+        expr = " AND ( plan_code is NULL OR plan_code = '')"
+
         self.fill_table_planned_month(month_selector.all_rows, month_selector.txt_search, view_name, expr)
         month_selector.txt_search.textChanged.connect(
             partial(self.fill_table_planned_month, month_selector.all_rows, month_selector.txt_search, view_name, expr, QTableView.NoEditTriggers))
@@ -673,6 +673,7 @@ class Basic(ParentAction):
 
         # Right QTableView
         expr = " AND plan_code = '" + self.plan_code + "'"
+
         self.fill_table_planned_month(month_selector.selected_rows, month_selector.txt_selected_filter, view_name, expr)
         month_selector.txt_selected_filter.textChanged.connect(
             partial(self.fill_table_planned_month, month_selector.selected_rows, month_selector.txt_selected_filter, view_name, expr, QTableView.NoEditTriggers))
@@ -731,8 +732,7 @@ class Basic(ParentAction):
             self.controller.execute_sql(sql)
 
         # Refresh QTableViews and recalculate price
-        expr = " AND (plan_code != '" + self.plan_code + "'"
-        expr += " OR plan_code is NULL)"
+        expr = " AND ( plan_code is NULL OR plan_code = '')"
         self.fill_table_planned_month(dialog.all_rows, dialog.txt_search, view_name, expr)
         expr = " AND plan_code = '" + self.plan_code + "'"
         self.fill_table_planned_month(dialog.selected_rows, dialog.txt_selected_filter, view_name, expr)
@@ -764,8 +764,7 @@ class Basic(ParentAction):
             self.controller.execute_sql(sql)
 
         # Refresh QTableViews and recalculate price
-        expr = " AND (plan_code != '" + self.plan_code + "'"
-        expr += " OR plan_code is NULL)"
+        expr = " AND ( plan_code is NULL OR plan_code = '')"
         self.fill_table_planned_month(dialog.all_rows, dialog.txt_search, view_name, expr)
         expr = " AND plan_code = '" + self.plan_code + "'"
         self.fill_table_planned_month(dialog.selected_rows, dialog.txt_selected_filter, view_name, expr)
