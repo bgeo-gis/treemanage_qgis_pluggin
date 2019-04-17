@@ -301,7 +301,7 @@ class ManageVisit(ParentManage, QObject):
         self.current_visit.enddate = self.dlg_add_visit.enddate.date().toString(Qt.ISODate)
         self.current_visit.user_name = self.user_name.text()
         self.current_visit.ext_code = self.ext_code.text()
-        self.current_visit.visitcat_id = widget_manager.get_item_data(self.dlg_add_visit.visitcat_id, 0)
+        self.current_visit.visitcat_id = widget_manager.get_item_data(self.dlg_add_visit, self.dlg_add_visit.visitcat_id, 0)
         self.current_visit.descript = self.dlg_add_visit.descript.text()
         if self.expl_id:
             self.current_visit.expl_id = self.expl_id
