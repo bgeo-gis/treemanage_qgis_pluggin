@@ -24,7 +24,8 @@ class ParentManage(ParentAction, object):
 
     def __init__(self, iface, settings, controller, plugin_dir):
         """ Class to keep common functions of classes
-            'ManageDocument', 'ManageElement' and 'ManageVisit' of toolbar 'edit'."""
+            'ManageDocument', 'ManageElement' and 'ManageVisit' of toolbar 'edit' """
+
         super(ParentManage, self).__init__(iface, settings, controller, plugin_dir)
 
         self.x = ""
@@ -39,6 +40,7 @@ class ParentManage(ParentAction, object):
 
     def reset_lists(self):
         """ Reset list of selected records """
+
         self.ids = []
         self.list_ids = {}
         self.list_ids['node'] = []
@@ -46,12 +48,15 @@ class ParentManage(ParentAction, object):
 
     def reset_layers(self):
         """ Reset list of layers """
+
         self.layers = {}
         self.layers['node'] = []
         self.visible_layers = []
 
+
     def remove_selection(self):
         """ Remove all previous selections """
+
         try:
             for layer in self.layers['node']:
                 if layer in self.visible_layers:
@@ -60,9 +65,9 @@ class ParentManage(ParentAction, object):
                 if layer in self.visible_layers:
                     self.iface.legendInterface().setLayerVisible(layer, True)
                     layer.removeSelection()
-
         except:
             pass
+
         self.canvas.refresh()
         self.canvas.setMapTool(self.previous_map_tool)
 
@@ -154,8 +159,9 @@ class ParentManage(ParentAction, object):
 
 
     def apply_lazy_init(self, widget):
-        """Apply the init function related to the model. It's necessary
-        a lazy init because model is changed everytime is loaded."""
+        """ Apply the init function related to the model. It's necessary
+        a lazy init because model is changed everytime is loaded """
+
         if self.lazy_widget is None:
             return
         if widget != self.lazy_widget:
@@ -164,9 +170,10 @@ class ParentManage(ParentAction, object):
         
 
     def lazy_configuration(self, widget, init_function):
-        """set the init_function where all necessary events are set.
+        """ set the init_function where all necessary events are set.
         This is necessary to allow a lazy setup of the events because set_table_events
-        can create a table with a None model loosing any event connection."""
+        can create a table with a None model loosing any event connection """
+
         # TODO: create a dictionary with key:widged.objectName value:initFuction
         # to allow multiple lazy initialization
         self.lazy_widget = widget
@@ -269,6 +276,7 @@ class ParentManage(ParentAction, object):
 
     def selection_init(self, table_object):
         """ Set canvas map tool to an instance of class 'MultipleSelection' """
+
         current_visible_layers = self.get_visible_layers()
         for layer in current_visible_layers:
             if layer not in self.visible_layers:
@@ -481,4 +489,6 @@ class ParentManage(ParentAction, object):
             if self.iface.legendInterface().isLayerVisible(layer):
                 visible_layer += '"' + str(layer.name()) + '", '
         visible_layer = visible_layer[:-2] + "}"
+
         return visible_layer
+

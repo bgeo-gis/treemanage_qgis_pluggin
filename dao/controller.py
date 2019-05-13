@@ -11,19 +11,17 @@ try:
 except:
     from qgis.core import QGis as Qgis
 
-if Qgis.QGIS_VERSION_INT >= 20000 and Qgis.QGIS_VERSION_INT < 29900:
-    from PyQt4.Qt import QToolBox
+if Qgis.QGIS_VERSION_INT < 29900:
     from PyQt4.QtCore import QCoreApplication, QSettings, Qt, QTranslator
-    from PyQt4.QtGui import QCheckBox, QLabel, QMessageBox, QPushButton, QTabWidget, QApplication, QAction
+    from PyQt4.QtGui import QCheckBox, QLabel, QMessageBox, QPushButton, QTabWidget
     from PyQt4.QtSql import QSqlDatabase
     from qgis.core import QgsDataSourceURI as QgsDataSourceUri
     from qgis.core import QgsMapLayerRegistry
 else:
     from qgis.PyQt.QtCore import QCoreApplication, QSettings, Qt, QTranslator
-    from qgis.PyQt.QtWidgets import QToolBox, QCheckBox, QLabel, QMessageBox, QPushButton, QTabWidget, QApplication, QAction
+    from qgis.PyQt.QtWidgets import QCheckBox, QLabel, QMessageBox, QPushButton, QTabWidget
     from qgis.PyQt.QtSql import QSqlDatabase
     from qgis.core import QgsDataSourceUri
-    from qgis.core import QgsProject
 
 from qgis.core import QgsMessageLog, QgsCredentials
 
@@ -32,8 +30,6 @@ import sys
 import subprocess
 from functools import partial
 
-plugin_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-sys.path.append(plugin_path)
 from tree_manage.dao.pg_dao import PgDao
 
 

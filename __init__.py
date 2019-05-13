@@ -30,5 +30,5 @@ def classFactory(iface):  # pylint: disable=invalid-name
     :param iface: A QGIS interface instance.
     :type iface: QgsInterface
     '''
-    from tree_manage import TreeManage
+    from .tree_manage import TreeManage
     return TreeManage(iface)

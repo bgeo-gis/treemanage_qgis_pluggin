@@ -12,7 +12,7 @@ try:
 except:
     from qgis.core import QGis as Qgis
 
-if Qgis.QGIS_VERSION_INT >= 20000 and Qgis.QGIS_VERSION_INT < 29900:
+if Qgis.QGIS_VERSION_INT < 29900:
     from PyQt4.Qt import QDate, QDateTime
     from PyQt4.QtCore import QTime, Qt
     from PyQt4.QtGui import QWidget, QLineEdit, QComboBox, QPushButton, QCheckBox, QLabel, QTextEdit, QDateEdit
@@ -35,8 +35,6 @@ from qgis.gui import QgsDateTimeEdit
 import os
 import operator
 from functools import partial
-
-
 
 
 def setDialog(p_dialog):

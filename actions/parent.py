@@ -4,34 +4,29 @@ The program is free software: you can redistribute it and/or modify it under the
 General Public License as published by the Free Software Foundation, either version 3 of the License,
 or (at your option) any later version.
 """
-
-
 # -*- coding: utf-8 -*-
-
 try:
     from qgis.core import Qgis
 except:
     from qgis.core import QGis as Qgis
 
-if Qgis.QGIS_VERSION_INT >= 20000 and Qgis.QGIS_VERSION_INT < 29900:
+if Qgis.QGIS_VERSION_INT < 29900:
     from PyQt4.QtCore import Qt
     from PyQt4.QtGui import QCursor, QIcon, QPixmap, QCompleter, QStringListModel, QApplication, QTableView
     from PyQt4.QtSql import QSqlTableModel
-
 else:
     from qgis.PyQt.QtCore import Qt, QStringListModel
     from qgis.PyQt.QtGui import QCursor, QIcon, QPixmap
     from qgis.PyQt.QtWidgets import QCompleter, QApplication, QTableView
     from qgis.PyQt.QtSql import QSqlQueryModel, QSqlTableModel
 
-
 from qgis.core import QgsPoint, QgsExpression
-
 
 from _utils import widget_manager
 import ConfigParser
 import ctypes
 import os
+
 
 class ParentAction(object):
     
@@ -82,6 +77,7 @@ class ParentAction(object):
 
     def load_settings(self, dialog=None):
         """ Load QGIS settings related with dialog position and size """
+
         screens = ctypes.windll.user32
         screen_x = screens.GetSystemMetrics(78)
         screen_y = screens.GetSystemMetrics(79)
@@ -233,11 +229,11 @@ class ParentAction(object):
         sql = ("SELECT DISTINCT(" + field_search + ")"
                " FROM " + self.schema_name + "." + tablename + ""
                " ORDER BY " + field_search + "")
-        row = self.controller.get_rows(sql)
+        rows = self.controller.get_rows(sql)
 
-        for i in range(0, len(row)):
-            aux = row[i]
-            row[i] = aux[0]
+        for i in range(0, len(rows)):
+            aux = rows[i]
+            rows[i] = aux[0]
 
         # Set completer and model: add autocomplete in the widget
         self.completer = QCompleter()
@@ -245,7 +241,7 @@ class ParentAction(object):
         self.completer.setCompletionMode(0)
         widget.setCompleter(self.completer)
         model = QStringListModel()
-        model.setStringList(row)
+        model.setStringList(rows)
         self.completer.setModel(model)
 
 
@@ -280,13 +276,14 @@ class ParentAction(object):
 
     def fill_table(self, qtable, table_name, set_edit_triggers=QTableView.NoEditTriggers, expr_filter=None):
         """ Fill table @widget filtering query by @workcat_id
-         Set a model with selected filter.
-         Attach that model to selected table
-         @setEditStrategy:
+            Set a model with selected filter.
+            Attach that model to selected table
+            @setEditStrategy:
              0: OnFieldChange
              1: OnRowChange
              2: OnManualSubmit
-         """
+        """
+
         expr = None
         if expr_filter:
             # Check expression
@@ -322,8 +319,11 @@ class ParentAction(object):
 
 
     def get_feature_by_id(self, layer, id, field_id):
-        iter = layer.getFeatures()
-        for feature in iter:
+
+        features = layer.getFeatures()
+        for feature in features:
             if feature[field_id] == id:
                 return feature
+
         return False
+

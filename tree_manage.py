@@ -63,10 +63,6 @@ class TreeManage(QObject):
 
         # Define signals
         self.set_signals()
-        
-        # Set default encoding 
-        reload(sys)
-        sys.setdefaultencoding('utf-8')   #@UndefinedVariable
        
                
     def set_signals(self): 
@@ -91,7 +87,7 @@ class TreeManage(QObject):
             action = self.actions[index_action]                
 
             # Basic toolbar actions
-            if int(index_action) in (00, 01, 02, 03, 04, 05):
+            if int(index_action) in (0, 1, 2, 3, 4, 5):
                 callback_function = getattr(self.basic, function_name)  
                 action.triggered.connect(callback_function)
 
@@ -132,15 +128,14 @@ class TreeManage(QObject):
             It has to be defined in the configuration file.
             Associate it to corresponding @action_group
         """
-        
-        action = None
+
         text_action = self.tr(index_action+'_text')
         function_name = self.settings.value('actions/'+str(index_action)+'_function')
         if not function_name:
             return None
             
         # Buttons NOT checkable (normally because they open a form)
-        if int(index_action) in (00, 01, 02, 03, 04, 05):
+        if int(index_action) in (0, 1, 2, 3, 4, 5):
             action = self.create_action(index_action, text_action, toolbar, False, function_name, action_group)
         # Buttons checkable (normally related with 'map_tools')                
         else:
