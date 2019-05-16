@@ -20,7 +20,7 @@ from qgis.gui import QgsMapToolEmitPoint
 
 from functools import partial
 
-from ..ui import widget_manager
+from .. import widget_manager
 from .parent import ParentAction
 from .multiple_selection import MultipleSelection
 

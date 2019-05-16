@@ -11,7 +11,7 @@ from qgis.PyQt.QtCore import Qt, QDate, pyqtSignal, QObject, QStringListModel
 from qgis.PyQt.QtWidgets import QAbstractItemView, QCompleter, QLineEdit, QTableView, QComboBox, QTabWidget, QDialogButtonBox
 from qgis.PyQt.QtSql import QSqlTableModel
 
-from ..ui import widget_manager
+from .. import widget_manager
 from .parent_manage import ParentManage
 from ..dao.om_visit import OmVisit
 from ..dao.om_visit_event import OmVisitEvent

@@ -6,12 +6,9 @@ or (at your option) any later version.
 """
 
 # -*- coding: utf-8 -*-
-import os
-import sys
 from functools import partial
 
 from qgis.PyQt.Qt import QDate
-from qgis.PyQt.QtGui import QIntValidator
 from qgis.PyQt.QtWidgets import QAbstractItemView, QTableView
 from qgis.PyQt.QtSql import QSqlTableModel
 
@@ -24,7 +21,7 @@ from ..ui.new_prices import NewPrices
 from ..ui.price_management import PriceManagement
 from ..ui.tree_manage import TreeManage
 from ..ui.tree_selector import TreeSelector
-from ..ui import widget_manager
+from .. import widget_manager
 
 
 class Basic(ParentAction):

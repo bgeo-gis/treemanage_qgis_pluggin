@@ -24,7 +24,7 @@ else:
 
 from qgis.core import QgsExpression
 
-from ..ui import widget_manager
+from .. import widget_manager
 import ctypes
 import os
 
