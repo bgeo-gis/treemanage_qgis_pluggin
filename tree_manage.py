@@ -11,12 +11,17 @@ try:
 except:
     from qgis.core import QGis as Qgis
 
+if Qgis.QGIS_VERSION_INT < 29900:
+    import ConfigParser as configparser
+else:
+    import configparser
+   
 from qgis.core import QgsExpressionContextUtils, QgsProject
 from qgis.PyQt.QtCore import QObject, QSettings
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction, QActionGroup
 
-import os.path
+import os
 import sys  
 from functools import partial
 
@@ -44,9 +49,9 @@ class TreeManage(QObject):
         self.plugin_toolbars = {}
             
         # Initialize plugin directory
-        self.plugin_dir = os.path.dirname(__file__)    
-        self.plugin_name = os.path.basename(self.plugin_dir).lower()  
-        self.icon_folder = self.plugin_dir+'/icons/'
+        self.plugin_dir = os.path.dirname(__file__)
+        self.plugin_name = self.get_value_from_metadata('name', 'tree_manage')
+        self.icon_folder = self.plugin_dir + os.sep + 'icons' + os.sep
 
         # Initialize svg tree_manage directory
         svg_plugin_dir = os.path.join(self.plugin_dir, 'svg')
@@ -57,9 +62,9 @@ class TreeManage(QObject):
             QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), 'svg_path', svg_plugin_dir)
             
         # Check if config file exists    
-        setting_file = os.path.join(self.plugin_dir, 'config', self.plugin_name+'.config')
+        setting_file = os.path.join(self.plugin_dir, 'config', self.plugin_name + '.config')
         if not os.path.exists(setting_file):
-            message = "Config file not found at: "+setting_file
+            message = "Config file not found at: " + setting_file
             self.iface.messageBar().pushMessage("", message, 1, 20) 
             return
 
@@ -141,8 +146,8 @@ class TreeManage(QObject):
             Associate it to corresponding @action_group
         """
 
-        text_action = self.tr(index_action+'_text')
-        function_name = self.settings.value('actions/'+str(index_action)+'_function')
+        text_action = self.tr(index_action + '_text')
+        function_name = self.settings.value('actions/' + str(index_action) + '_function')
         if not function_name:
             return None
             
@@ -307,3 +312,25 @@ class TreeManage(QObject):
         except KeyError as e:
             self.controller.show_warning("KeyError: "+str(e))              
        
+       
+    def get_value_from_metadata(self, parameter, default_value):
+        """ Get @parameter from metadata.txt file """
+        
+        # Check if metadata file exists
+        metadata_file = os.path.join(self.plugin_dir, 'metadata.txt')
+        if not os.path.exists(metadata_file):
+            message = "Metadata file not found: " + metadata_file
+            self.iface.messageBar().pushMessage("", message, 1, 20)
+            return default_value
+          
+        try:
+            metadata = configparser.ConfigParser()
+            metadata.read(metadata_file)
+            value = metadata.get('general', parameter)
+        except configparser.NoOptionError:
+            message = "Parameter not found: " + parameter
+            self.iface.messageBar().pushMessage("", message, 1, 20)
+            value = default_value
+        finally:
+            return value
+
