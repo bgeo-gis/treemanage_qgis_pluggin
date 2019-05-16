@@ -12,11 +12,11 @@ from functools import partial
 
 from qgis.PyQt.Qt import QDate
 from qgis.PyQt.QtGui import QIntValidator
-from qgis.PyQt.QtWidgets import QAbstractItemView, QTableView, QIntValidator
+from qgis.PyQt.QtWidgets import QAbstractItemView, QTableView
 from qgis.PyQt.QtSql import QSqlTableModel
 
 from _utils import widget_manager
-from parent import ParentAction
+from tree_manage.actions.parent import ParentAction
 from tree_manage.actions.manage_visit import ManageVisit
 from tree_manage.actions.planning_unit import PlanningUnit
 from tree_manage.ui.month_manage import MonthManage

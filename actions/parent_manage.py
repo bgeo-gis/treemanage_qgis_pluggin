@@ -6,14 +6,24 @@ or (at your option) any later version.
 """
 
 # -*- coding: utf-8 -*-
-from functools import partial
+try:
+    from qgis.core import Qgis
+except:
+    from qgis.core import QGis as Qgis
+
+if Qgis.QGIS_VERSION_INT < 29900:
+    from qgis.core import QgsMapLayerRegistry as QgsProject
+else:
+    from qgis.core import QgsProject
 
 from qgis.PyQt.Qt import QDate
 from qgis.PyQt.QtCore import Qt, QStringListModel
 from qgis.PyQt.QtWidgets import QCompleter, QTableView, QDateEdit, QLineEdit, QTextEdit, QDateTimeEdit, QComboBox
 from qgis.PyQt.QtSql import QSqlTableModel
-from qgis.core import QgsFeatureRequest, QgsMapLayerRegistry
+from qgis.core import QgsFeatureRequest
 from qgis.gui import QgsMapToolEmitPoint
+
+from functools import partial
 
 from _utils import widget_manager
 from tree_manage.actions.parent import ParentAction
@@ -482,7 +492,6 @@ class ParentManage(ParentAction, object):
             for layer in self.iface.legendInterface().layers():
                 if self.iface.legendInterface().isLayerVisible(layer):
                     visible_layer.append(layer)
-            #visible_layer = [lyr for lyr in QgsMapLayerRegistry.instance().mapLayers().values()]
             return visible_layer
 
         for layer in self.iface.legendInterface().layers():

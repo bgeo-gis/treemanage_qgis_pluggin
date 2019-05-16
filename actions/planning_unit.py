@@ -378,7 +378,6 @@ class PlanningUnit(ParentAction):
             for layer in self.iface.legendInterface().layers():
                 if self.iface.legendInterface().isLayerVisible(layer):
                     visible_layer.append(layer)
-            # visible_layer = [lyr for lyr in QgsMapLayerRegistry.instance().mapLayers().values()]
             return visible_layer
 
         for layer in self.iface.legendInterface().layers():

@@ -11,10 +11,12 @@ except:
     from qgis.core import QGis as Qgis
 
 if Qgis.QGIS_VERSION_INT < 29900:
+    import ConfigParser as configparser
     from qgis.PyQt.QtCore import Qt
     from qgis.PyQt.QtGui import QCursor, QIcon, QPixmap, QCompleter, QStringListModel, QApplication, QTableView
     from qgis.PyQt.QtSql import QSqlTableModel
 else:
+    import configparser
     from qgis.PyQt.QtCore import Qt, QStringListModel
     from qgis.PyQt.QtGui import QCursor, QIcon, QPixmap
     from qgis.PyQt.QtWidgets import QCompleter, QApplication, QTableView
@@ -23,7 +25,6 @@ else:
 from qgis.core import QgsPoint, QgsExpression
 
 from _utils import widget_manager
-import ConfigParser
 import ctypes
 import os
 
@@ -65,7 +66,7 @@ class ParentAction(object):
             self.controller.show_warning(message, parameter=metadata_file)
             return None
 
-        metadata = ConfigParser.ConfigParser()
+        metadata = configparser.ConfigParser()
         metadata.read(metadata_file)
         plugin_version = metadata.get('general', 'version')
         if plugin_version is None:

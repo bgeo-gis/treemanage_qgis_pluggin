@@ -7,6 +7,7 @@ FORM_CLASS, _ = uic.loadUiType(os.path.join(os.path.dirname(__file__), 'tree_sel
 
 
 class TreeSelector(QDialog, FORM_CLASS):
+
     def __init__(self, parent=None):
         """ Constructor """
         super(TreeSelector, self).__init__(parent)

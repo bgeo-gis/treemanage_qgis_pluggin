@@ -15,13 +15,12 @@ if Qgis.QGIS_VERSION_INT < 29900:
     from qgis.PyQt.QtCore import QCoreApplication, QSettings, Qt, QTranslator
     from qgis.PyQt.QtGui import QCheckBox, QLabel, QMessageBox, QPushButton, QTabWidget
     from qgis.PyQt.QtSql import QSqlDatabase
-    from qgis.core import QgsDataSourceURI as QgsDataSourceUri
-    from qgis.core import QgsMapLayerRegistry
+    from qgis.core import QgsDataSourceURI as QgsDataSourceUri, QgsMapLayerRegistry as QgsProject
 else:
     from qgis.PyQt.QtCore import QCoreApplication, QSettings, Qt, QTranslator
     from qgis.PyQt.QtWidgets import QCheckBox, QLabel, QMessageBox, QPushButton, QTabWidget
     from qgis.PyQt.QtSql import QSqlDatabase
-    from qgis.core import QgsDataSourceUri
+    from qgis.core import QgsDataSourceUri, QgsProject
 
 from qgis.core import QgsMessageLog, QgsCredentials
 
@@ -542,7 +541,7 @@ class DaoController():
     def get_layer_by_layername(self, layername, log_info=False):
         """ Get layer with selected @layername (the one specified in the TOC) """
         
-        layer = QgsMapLayerRegistry.instance().mapLayersByName(layername)
+        layer = QgsProject.instance().mapLayersByName(layername)
         if layer:         
             layer = layer[0] 
         elif layer is None and log_info:
@@ -614,23 +613,23 @@ class DaoController():
         pos_user = uri.find(' user=')
         pos_password = uri.find(' password=')
         pos_sslmode = uri.find(' sslmode=')        
-        if pos_db <> -1 and pos_host <> -1:
+        if pos_db != -1 and pos_host != -1:
             uri_db = uri[pos_db + 8:pos_host - 1]
             layer_source['db'] = uri_db     
-        if pos_host <> -1 and pos_port <> -1:
+        if pos_host != -1 and pos_port != -1:
             uri_host = uri[pos_host + 6:pos_port]     
             layer_source['host'] = uri_host     
-        if pos_port <> -1:
-            if pos_user <> -1:
+        if pos_port != -1:
+            if pos_user != -1:
                 pos_end = pos_user
-            elif pos_sslmode <> -1:
+            elif pos_sslmode != -1:
                 pos_end = pos_sslmode
             uri_port = uri[pos_port + 6:pos_end]     
             layer_source['port'] = uri_port               
-        if pos_user <> -1 and pos_password <> -1:
+        if pos_user != -1 and pos_password != -1:
             uri_user = uri[pos_user + 7:pos_password - 1]
             layer_source['user'] = uri_user     
-        if pos_password <> -1 and pos_sslmode <> -1:
+        if pos_password != -1 and pos_sslmode != -1:
             uri_password = uri[pos_password + 11:pos_sslmode - 1]     
             layer_source['password'] = uri_password                     
          
@@ -638,7 +637,7 @@ class DaoController():
         pos_table = uri.find('table=')
         pos_end_schema = uri.rfind('.')
         pos_fi = uri.find('" ')
-        if pos_table <> -1 and pos_fi <> -1:
+        if pos_table != -1 and pos_fi != -1:
             uri_schema = uri[pos_table + 6:pos_end_schema]
             uri_table = uri[pos_end_schema + 2:pos_fi]
             layer_source['schema'] = uri_schema            
@@ -658,7 +657,7 @@ class DaoController():
         pos_ini = uri.find('table=')
         pos_end_schema = uri.rfind('.')
         pos_fi = uri.find('" ')
-        if pos_ini <> -1 and pos_fi <> -1:
+        if pos_ini != -1 and pos_fi != -1:
             uri_table = uri[pos_end_schema+2:pos_fi]
 
         return uri_table    
@@ -675,7 +674,7 @@ class DaoController():
         uri = layer.dataProvider().dataSourceUri().lower()
         pos_ini = uri.find('key=')
         pos_end = uri.rfind('srid=')
-        if pos_ini <> -1:
+        if pos_ini != -1:
             uri_pk = uri[pos_ini + 5:pos_end-2]
 
         return uri_pk

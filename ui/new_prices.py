@@ -6,7 +6,7 @@ import os
 FORM_CLASS, _ = uic.loadUiType(os.path.join(os.path.dirname(__file__), 'new_prices.ui'))
 
 
-class NewPrices(QtGui.QDialog, FORM_CLASS):
+class NewPrices(QDialog, FORM_CLASS):
 
     def __init__(self, parent=None):
         """ Constructor """
