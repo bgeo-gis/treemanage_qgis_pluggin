@@ -81,7 +81,7 @@ class MultipleSelection(QgsMapTool):
         
         for i in range(len(self.layers)):
             layer = self.layers[i]
-            if self.iface.legendInterface().isLayerVisible(layer):
+            if self.controller.is_layer_visible(layer):
                 # if (i == len(self.layers) - 1):
                 if self.parent_manage:
                     self.parent_manage.connect_signal_selection_changed(self.table_object)

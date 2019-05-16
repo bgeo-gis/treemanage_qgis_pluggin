@@ -112,12 +112,9 @@ class PlanningUnit(ParentAction):
         self.dlg_unit.btn_close.clicked.connect(partial(self.save_default_values))
         self.dlg_unit.btn_close.clicked.connect(partial(self.close_dialog, self.dlg_unit))
         self.dlg_unit.btn_close.clicked.connect(partial(self.remove_selection))
-
         self.dlg_unit.rejected.connect(partial(self.save_default_values))
         self.dlg_unit.rejected.connect(partial(self.close_dialog, self.dlg_unit))
         self.dlg_unit.rejected.connect(partial(self.remove_selection))
-
-
         self.dlg_unit.btn_snapping.clicked.connect(partial(self.selection_init,  self.dlg_unit.tbl_unit))
         self.dlg_unit.btn_insert.clicked.connect(partial(self.insert_single, self.dlg_unit, self.dlg_unit.txt_id))
         self.dlg_unit.btn_delete.clicked.connect(partial(self.delete_row, self.dlg_unit.tbl_unit, table_name))
@@ -222,8 +219,7 @@ class PlanningUnit(ParentAction):
             return None
 
         feature = self.get_feature_by_id(layer, feature_id, 'node_id')
-
-        if feature is not False:
+        if feature:
             self.insert_row(self.dlg_unit.tbl_unit, feature_id)
 
 
@@ -236,7 +232,7 @@ class PlanningUnit(ParentAction):
 
         # Iterate over all layers of the group
         for layer in self.layers[self.geom_type]:
-            if layer.selectedFeatureCount() > 0 and self.iface.legendInterface().isLayerVisible(layer):
+            if layer.selectedFeatureCount() > 0 and self.controller.is_layer_visible(layer):
                 # Get selected features of the layer
                 features = layer.selectedFeatures()
                 for feature in features:
@@ -248,7 +244,6 @@ class PlanningUnit(ParentAction):
 
         self.remove_selection()
         self.iface.actionPan().trigger()
-        # self.connect_signal_selection_changed(qtable)
 
 
     def select_features_by_ids(self, geom_type, expr):
@@ -265,7 +260,6 @@ class PlanningUnit(ParentAction):
                     layer.selectByIds(id_list)
                 else:
                     layer.removeSelection()
-
 
 
     def insert_row(self, qtable, selected_id):
@@ -309,9 +303,9 @@ class PlanningUnit(ParentAction):
             Set a model with selected filter.
             Attach that model to selected table
             @setEditStrategy:
-             0: OnFieldChange
-             1: OnRowChange
-             2: OnManualSubmit
+            0: OnFieldChange
+            1: OnRowChange
+            2: OnManualSubmit
         """
 
         expr = None
@@ -359,29 +353,28 @@ class PlanningUnit(ParentAction):
 
         for layer in self.layers['node']:
             if layer in self.visible_layers:
-                self.iface.legendInterface().setLayerVisible(layer, False)
+                self.controller.set_layer_visible(layer, False)
         for layer in self.layers['node']:
             if layer in self.visible_layers:
                 layer.removeSelection()
-                self.iface.legendInterface().setLayerVisible(layer, True)
+                self.controller.set_layer_visible(layer, True)
 
-        self.canvas.clear()
         self.canvas.refresh()
-        # self.canvas.setMapTool(self.previous_map_tool)
 
 
     def get_visible_layers(self, return_as_list=True):
         """ Return list or string as {...} with all visible layer in TOC """
 
         visible_layer = []
+        layers = self.controller.get_layers()
         if return_as_list:
-            for layer in self.iface.legendInterface().layers():
-                if self.iface.legendInterface().isLayerVisible(layer):
+            for layer in layers:
+                if self.controller.is_layer_visible(layer):
                     visible_layer.append(layer)
             return visible_layer
 
-        for layer in self.iface.legendInterface().layers():
-            if self.iface.legendInterface().isLayerVisible(layer):
+        for layer in layers:
+            if self.controller.is_layer_visible(layer):
                 visible_layer += '"' + str(layer.name()) + '", '
         visible_layer = visible_layer[:-2] + "}"
 

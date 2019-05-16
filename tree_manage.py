@@ -181,7 +181,7 @@ class TreeManage(QObject):
 
         # Manage action group of every toolbar
         parent = self.iface.mainWindow()           
-        for plugin_toolbar in self.plugin_toolbars.itervalues():
+        for plugin_toolbar in list(self.plugin_toolbars.values()):
             ag = QActionGroup(parent)
             for index_action in plugin_toolbar.list_actions:
                 self.add_action(index_action, plugin_toolbar.toolbar, ag)
@@ -220,12 +220,13 @@ class TreeManage(QObject):
 
     def unload(self):
         """ Removes the plugin menu item and icon from QGIS GUI """
+
         try:
-            for action in self.actions.itervalues():
+            for action in list(self.actions.values()):
                 self.iface.removePluginMenu(self.plugin_name, action)
                 self.iface.removeToolBarIcon(action)
                 
-            for plugin_toolbar in self.plugin_toolbars.itervalues():
+            for plugin_toolbar in list(self.plugin_toolbars.values()):
                 if plugin_toolbar.enabled:
                     plugin_toolbar.toolbar.setVisible(False)                
                     del plugin_toolbar.toolbar
@@ -237,8 +238,7 @@ class TreeManage(QObject):
 
         except AttributeError:
             self.controller.log_info("unload - AttributeError")
-            pass
-        except KeyError:
+        except:
             pass
     
     
@@ -265,10 +265,14 @@ class TreeManage(QObject):
         # Manage locale and corresponding 'i18n' file
         self.controller.manage_translation(self.plugin_name)
         
-        # Get schema name from table 'version' and set it in controller and in config file
+        # Get schema name from table 'version_tm' and set it in controller and in config file
         layer_version = self.controller.get_layer_by_tablename("version_tm")
+        if not layer_version:
+            self.controller.show_warning("Layer not found", parameter="version_tm")
+            return
+
         layer_source = self.controller.get_layer_source(layer_version)
-        self.schema_name = layer_source['schema']
+        self.schema_name = layer_source['schema'].replace('"', '')
         self.controller.plugin_settings_set_value("schema_name", self.schema_name)   
         self.controller.set_schema_name(self.schema_name)
 
@@ -277,8 +281,8 @@ class TreeManage(QObject):
         self.basic.set_tree_manage(self)
 
         # Get SRID from table node
-        # TODO parametrizar srid
-        self.controller.plugin_settings_set_value("srid", "25831")
+        srid = self.controller.get_srid('v_edit_node', self.schema_name)
+        self.controller.plugin_settings_set_value("srid", srid)
 
         # Manage actions of the different plugin_toolbars
         self.manage_toolbars()   

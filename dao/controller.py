@@ -81,7 +81,7 @@ class DaoController():
         
     def check_actions(self, check=True):
         """ Utility to check/uncheck all actions """
-        for action_index, action in self.actions.iteritems():   #@UnusedVariable
+        for action_index, action in self.actions.items():   #@UnusedVariable
             action.setChecked(check)    
                            
     def check_action(self, check=True, index=1):
@@ -144,7 +144,6 @@ class DaoController():
         QgsCredentials.instance().put(conn_info, layer_source['user'], layer_source['password'])
 
         return layer_source
-
 
 
     def connect_to_database(self, host, port, db, user, pwd):
@@ -295,13 +294,23 @@ class DaoController():
             msg_box.setInformativeText(inf_text);        
         msg_box.setDefaultButton(QMessageBox.No)        
         ret = msg_box.exec_()   #@UnusedVariable
-                          
+
+
+    def get_sql(self, sql, log_sql=False, params=None):
+        """ Generate SQL with params. Useful for debugging """
+
+        if params:
+            sql = self.dao.mogrify(sql, params)
+        if log_sql:
+            self.log_info(sql, stack_level_increase=2)
+
+        return sql
+
             
-    def get_row(self, sql, log_info=True, log_sql=False, commit=False):
+    def get_row(self, sql, log_info=True, log_sql=False, commit=False, params=None):
         """ Execute SQL. Check its result in log tables, and show it to the user """
         
-        if log_sql:
-            self.log_info(sql)
+        sql = self.get_sql(sql, log_sql, params)
         row = self.dao.get_row(sql, commit)   
         self.last_error = self.dao.last_error      
         if not row:
@@ -554,7 +563,7 @@ class DaoController():
         """ Iterate over all layers and get the one with selected @tablename """
         
         # Check if we have any layer loaded
-        layers = self.iface.legendInterface().layers()
+        layers = self.get_layers()
         if len(layers) == 0:
             return None
 
@@ -848,10 +857,62 @@ class DaoController():
     def get_current_user(self):
         """ Get current user connected to database """
 
-        sql = ("SELECT current_user")
+        sql = "SELECT current_user"
         row = self.get_row(sql)
         cur_user = ""
         if row:
             cur_user = str(row[0])
 
         return cur_user
+
+
+    def get_srid(self, tablename, schemaname=None):
+        """ Find SRID of selected schema """
+
+        if schemaname is None:
+            schemaname = self.schema_name
+
+        schemaname = schemaname.replace('"', '')
+        srid = None
+        sql = "SELECT Find_SRID(%s, %s, 'the_geom');"
+        params = [schemaname, tablename]
+        row = self.get_row(sql, params=params)
+        if row:
+            srid = row[0]
+
+        return srid
+
+
+    def is_layer_visible(self, layer):
+        """ Is layer visible """
+
+        visible = False
+        if layer:
+            if Qgis.QGIS_VERSION_INT < 29900:
+                visible = self.iface.legendInterface().isLayerVisible(layer)
+            else:
+                visible = QgsProject.instance().layerTreeRoot().findLayer(layer.id()).itemVisibilityChecked()
+
+        return visible
+
+
+    def set_layer_visible(self, layer, visible=True):
+        """ Set layer visible """
+
+        if layer:
+            if Qgis.QGIS_VERSION_INT < 29900:
+                self.iface.legendInterface().setLayerVisible(layer, visible)
+            else:
+                QgsProject.instance().layerTreeRoot().findLayer(layer.id()).setItemVisibilityChecked(visible)
+
+
+    def get_layers(self):
+        """ Return layers in the same order as listed in TOC """
+
+        if Qgis.QGIS_VERSION_INT < 29900:
+            layers = self.iface.legendInterface().layers()
+        else:
+            layers = [layer.layer() for layer in QgsProject.instance().layerTreeRoot().findLayers()]
+
+        return layers
+

@@ -70,10 +70,10 @@ class ParentManage(ParentAction, object):
         try:
             for layer in self.layers['node']:
                 if layer in self.visible_layers:
-                    self.iface.legendInterface().setLayerVisible(layer, False)
+                    self.controller.set_layer_visible(layer, False)
             for layer in self.layers['node']:
                 if layer in self.visible_layers:
-                    self.iface.legendInterface().setLayerVisible(layer, True)
+                    self.controller.set_layer_visible(layer, True)
                     layer.removeSelection()
         except:
             pass
@@ -312,7 +312,7 @@ class ParentManage(ParentAction, object):
 
         # Iterate over all layers of the group
         for layer in self.layers[self.geom_type]:
-            if layer.selectedFeatureCount() > 0 and self.iface.legendInterface().isLayerVisible(layer):
+            if layer.selectedFeatureCount() > 0 and self.controller.is_layer_visible(layer):
                 # Get selected features of the layer
                 features = layer.selectedFeatures()
                 for feature in features:
@@ -488,14 +488,15 @@ class ParentManage(ParentAction, object):
         """ Return list or string as {...} with all visible layer in TOC """
 
         visible_layer = []
+        layers = self.controller.get_layers()
         if return_as_list:
-            for layer in self.iface.legendInterface().layers():
-                if self.iface.legendInterface().isLayerVisible(layer):
+            for layer in layers:
+                if self.controller.is_layer_visible(layer):
                     visible_layer.append(layer)
             return visible_layer
 
-        for layer in self.iface.legendInterface().layers():
-            if self.iface.legendInterface().isLayerVisible(layer):
+        for layer in layers:
+            if self.controller.is_layer_visible(layer):
                 visible_layer += '"' + str(layer.name()) + '", '
         visible_layer = visible_layer[:-2] + "}"
 

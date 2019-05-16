@@ -31,7 +31,20 @@ class PgDao():
         self.password = password
         self.conn_string = "host="+self.host+" port="+self.port
         self.conn_string+= " dbname="+self.dbname+" user="+self.user+" password="+self.password
-        
+
+
+    def mogrify(self, sql, params):
+        """ Return a query string after arguments binding """
+
+        query = sql
+        try:
+            query = self.cursor.mogrify(sql, params)
+        except Exception as e:
+            self.last_error = e
+            print(str(e))
+        finally:
+            return query
+
         
     def get_rows(self, sql, commit=False):
         """ Get multiple rows from selected query """
@@ -162,19 +175,6 @@ class PgDao():
             self.cursor.copy_expert(sql, csv_file)
             return None
         except Exception as e:
-            return e   
-        
-        
-    def get_srid(self, schema_name, table_name):
-        """ Find SRID of selected schema """
-        
-        srid = None
-        schema_name = schema_name.replace('"', '')        
-        sql = "SELECT Find_SRID('"+schema_name+"', '"+table_name+"', 'the_geom');"
-        row = self.get_row(sql)
-        if row:
-            srid = row[0]   
-            
-        return srid        
+            return e
             
         
