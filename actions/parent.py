@@ -11,9 +11,9 @@ except:
     from qgis.core import QGis as Qgis
 
 if Qgis.QGIS_VERSION_INT < 29900:
-    from PyQt4.QtCore import Qt
-    from PyQt4.QtGui import QCursor, QIcon, QPixmap, QCompleter, QStringListModel, QApplication, QTableView
-    from PyQt4.QtSql import QSqlTableModel
+    from qgis.PyQt.QtCore import Qt
+    from qgis.PyQt.QtGui import QCursor, QIcon, QPixmap, QCompleter, QStringListModel, QApplication, QTableView
+    from qgis.PyQt.QtSql import QSqlTableModel
 else:
     from qgis.PyQt.QtCore import Qt, QStringListModel
     from qgis.PyQt.QtGui import QCursor, QIcon, QPixmap

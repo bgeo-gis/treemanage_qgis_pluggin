@@ -8,8 +8,9 @@ or (at your option) any later version.
 # -*- coding: utf-8 -*-
 from qgis.core import QgsFeatureRequest, QgsPoint, QgsRectangle, QGis
 from qgis.gui import QgsMapTool, QgsMapCanvasSnapper, QgsRubberBand
-from PyQt4.QtCore import Qt, pyqtSignal, QPoint
-from PyQt4.QtGui import QApplication, QColor
+from qgis.PyQt.QtCore import Qt, pyqtSignal, QPoint
+from qgis.PyQt.QtGui import QColor
+from qgis.PyQt.QtWidgets import QApplication
 
 
 class MultipleSelection(QgsMapTool):

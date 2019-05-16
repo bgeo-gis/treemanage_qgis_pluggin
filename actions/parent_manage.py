@@ -8,10 +8,10 @@ or (at your option) any later version.
 # -*- coding: utf-8 -*-
 from functools import partial
 
-from PyQt4.Qt import QDate
-from PyQt4.QtCore import Qt
-from PyQt4.QtGui import QCompleter, QStringListModel, QTableView, QDateEdit, QLineEdit, QTextEdit, QDateTimeEdit, QComboBox
-from PyQt4.QtSql import QSqlTableModel
+from qgis.PyQt.Qt import QDate
+from qgis.PyQt.QtCore import Qt, QStringListModel
+from qgis.PyQt.QtWidgets import QCompleter, QTableView, QDateEdit, QLineEdit, QTextEdit, QDateTimeEdit, QComboBox
+from qgis.PyQt.QtSql import QSqlTableModel
 from qgis.core import QgsFeatureRequest, QgsMapLayerRegistry
 from qgis.gui import QgsMapToolEmitPoint
 

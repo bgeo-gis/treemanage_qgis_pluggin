@@ -10,9 +10,10 @@ import os
 import sys
 from functools import partial
 
-from PyQt4.Qt import QDate
-from PyQt4.QtGui import QAbstractItemView, QTableView, QIntValidator
-from PyQt4.QtSql import QSqlTableModel
+from qgis.PyQt.Qt import QDate
+from qgis.PyQt.QtGui import QIntValidator
+from qgis.PyQt.QtWidgets import QAbstractItemView, QTableView, QIntValidator
+from qgis.PyQt.QtSql import QSqlTableModel
 
 from _utils import widget_manager
 from parent import ParentAction
@@ -24,10 +25,6 @@ from tree_manage.ui.new_prices import NewPrices
 from tree_manage.ui.price_management import PriceManagement
 from tree_manage.ui.tree_manage import TreeManage
 from tree_manage.ui.tree_selector import TreeSelector
-
-
-plugin_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-sys.path.append(plugin_path)
 
 
 class Basic(ParentAction):

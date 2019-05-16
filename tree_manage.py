@@ -6,9 +6,15 @@ or (at your option) any later version.
 """
 
 # -*- coding: utf-8 -*-
-from qgis.core import QgsExpressionContextUtils
-from PyQt4.QtCore import QObject, QSettings
-from PyQt4.QtGui import QAction, QActionGroup, QIcon
+try:
+    from qgis.core import Qgis
+except:
+    from qgis.core import QGis as Qgis
+
+from qgis.core import QgsExpressionContextUtils, QgsProject
+from qgis.PyQt.QtCore import QObject, QSettings
+from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt.QtWidgets import QAction, QActionGroup
 
 import os.path
 import sys  
@@ -44,7 +50,11 @@ class TreeManage(QObject):
 
         # Initialize svg tree_manage directory
         svg_plugin_dir = os.path.join(self.plugin_dir, 'svg')
-        QgsExpressionContextUtils.setProjectVariable('svg_path', svg_plugin_dir)   
+
+        if Qgis.QGIS_VERSION_INT < 29900:
+            QgsExpressionContextUtils.setProjectVariable('svg_path', svg_plugin_dir)
+        else:
+            QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), 'svg_path', svg_plugin_dir)
             
         # Check if config file exists    
         setting_file = os.path.join(self.plugin_dir, 'config', self.plugin_name+'.config')
@@ -67,10 +77,12 @@ class TreeManage(QObject):
                
     def set_signals(self): 
         """ Define widget and event signals """
+
         self.iface.projectRead.connect(self.project_read)
 
   
     def tr(self, message):
+
         if self.controller:
             return self.controller.tr(message)      
         
@@ -146,12 +158,14 @@ class TreeManage(QObject):
 
     def enable_actions(self, enable=True, start=1, stop=100):
         """ Utility to enable/disable all actions """
+
         for i in range(start, stop+1):
             self.enable_action(enable, i)
 
 
     def enable_action(self, enable=True, index=1):
         """ Enable/disable selected action """
+
         key = str(index).zfill(2)
         if key in self.actions:
             action = self.actions[key]

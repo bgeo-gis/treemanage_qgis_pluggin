@@ -13,11 +13,11 @@ except:
     from qgis.core import QGis as Qgis
 
 if Qgis.QGIS_VERSION_INT < 29900:
-    from PyQt4.Qt import QDate, QDateTime
-    from PyQt4.QtCore import QTime, Qt
-    from PyQt4.QtGui import QWidget, QLineEdit, QComboBox, QPushButton, QCheckBox, QLabel, QTextEdit, QDateEdit
-    from PyQt4.QtGui import QDoubleSpinBox, QSpinBox, QDateTimeEdit, QTimeEdit, QTableView
-    from PyQt4.QtGui import QPixmap, QAbstractItemView, QCompleter, QSortFilterProxyModel, QStringListModel, QDoubleValidator
+    from qgis.PyQt.Qt import QDate, QDateTime
+    from qgis.PyQt.QtCore import QTime, Qt
+    from qgis.PyQt.QtGui import QWidget, QLineEdit, QComboBox, QPushButton, QCheckBox, QLabel, QTextEdit, QDateEdit
+    from qgis.PyQt.QtGui import QDoubleSpinBox, QSpinBox, QDateTimeEdit, QTimeEdit, QTableView
+    from qgis.PyQt.QtGui import QPixmap, QAbstractItemView, QCompleter, QSortFilterProxyModel, QStringListModel, QDoubleValidator
     import sys
     if 'nt' in sys.builtin_module_names:
         import winreg as winreg

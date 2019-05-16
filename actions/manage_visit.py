@@ -7,10 +7,9 @@ or (at your option) any later version.
 
 from functools import partial
 
-from PyQt4.QtCore import Qt, QDate, pyqtSignal, QObject
-from PyQt4.QtGui import QAbstractItemView
-from PyQt4.QtGui import QCompleter, QLineEdit, QTableView, QStringListModel, QComboBox, QTabWidget, QDialogButtonBox
-from PyQt4.QtSql import QSqlTableModel
+from qgis.PyQt.QtCore import Qt, QDate, pyqtSignal, QObject, QStringListModel
+from qgis.PyQt.QtWidgets import QAbstractItemView, QCompleter, QLineEdit, QTableView, QComboBox, QTabWidget, QDialogButtonBox
+from qgis.PyQt.QtSql import QSqlTableModel
 
 from _utils import widget_manager
 from tree_manage.actions.parent_manage import ParentManage

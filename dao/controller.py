@@ -12,9 +12,9 @@ except:
     from qgis.core import QGis as Qgis
 
 if Qgis.QGIS_VERSION_INT < 29900:
-    from PyQt4.QtCore import QCoreApplication, QSettings, Qt, QTranslator
-    from PyQt4.QtGui import QCheckBox, QLabel, QMessageBox, QPushButton, QTabWidget
-    from PyQt4.QtSql import QSqlDatabase
+    from qgis.PyQt.QtCore import QCoreApplication, QSettings, Qt, QTranslator
+    from qgis.PyQt.QtGui import QCheckBox, QLabel, QMessageBox, QPushButton, QTabWidget
+    from qgis.PyQt.QtSql import QSqlDatabase
     from qgis.core import QgsDataSourceURI as QgsDataSourceUri
     from qgis.core import QgsMapLayerRegistry
 else:

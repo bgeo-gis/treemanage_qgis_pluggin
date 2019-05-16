@@ -5,16 +5,16 @@ General Public License as published by the Free Software Foundation, either vers
 or (at your option) any later version.
 """
 
-# -*- coding: latin-1 -*-
+# -*- coding: utf-8 -*-
 try:
     from qgis.core import Qgis
 except:
     from qgis.core import QGis as Qgis
 
 if Qgis.QGIS_VERSION_INT < 29900:
-    from PyQt4.QtCore import Qt
-    from PyQt4.QtGui import QIntValidator, QStringListModel, QCompleter, QTableView
-    from PyQt4.QtSql import QSqlTableModel
+    from qgis.PyQt.QtCore import Qt
+    from qgis.PyQt.QtGui import QIntValidator, QStringListModel, QCompleter, QTableView
+    from qgis.PyQt.QtSql import QSqlTableModel
 
 else:
     from qgis.PyQt.QtCore import Qt, QStringListModel
