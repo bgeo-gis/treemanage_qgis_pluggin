@@ -29,7 +29,7 @@ import sys
 import subprocess
 from functools import partial
 
-from tree_manage.dao.pg_dao import PgDao
+from .pg_dao import PgDao
 
 
 class DaoController():
