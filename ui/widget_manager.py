@@ -18,35 +18,17 @@ if Qgis.QGIS_VERSION_INT < 29900:
     from qgis.PyQt.QtGui import QWidget, QLineEdit, QComboBox, QPushButton, QCheckBox, QLabel, QTextEdit, QDateEdit
     from qgis.PyQt.QtGui import QDoubleSpinBox, QSpinBox, QDateTimeEdit, QTimeEdit, QTableView
     from qgis.PyQt.QtGui import QPixmap, QAbstractItemView, QCompleter, QSortFilterProxyModel, QStringListModel, QDoubleValidator
-    import sys
-    if 'nt' in sys.builtin_module_names:
-        import winreg as winreg
 else:
     from qgis.PyQt.QtCore import QDate, QDateTime, QTime, QSortFilterProxyModel, QStringListModel, Qt
     from qgis.PyQt.QtGui import QDoubleValidator, QPixmap
     from qgis.PyQt.QtWidgets import QAbstractItemView, QCompleter, QDateTimeEdit, QTableView, QDateEdit, QSpinBox, QTimeEdit
     from qgis.PyQt.QtWidgets import QLineEdit, QComboBox, QWidget, QDoubleSpinBox, QCheckBox, QLabel, QTextEdit
-    import sys
-    if 'nt' in sys.builtin_module_names:
-        import winreg
 
 from qgis.gui import QgsDateTimeEdit
 
 import os
 import operator
 from functools import partial
-
-
-def setDialog(p_dialog):
-    global _dialog
-    _dialog = p_dialog
-
-
-def dialog():
-    if '_dialog' in globals():
-        return _dialog
-    else:
-        return None
 
 
 def fillComboBox(dialog, widget, rows, allow_nulls=True, clear_combo=True):
@@ -351,27 +333,6 @@ def fillWidget(dialog, widget, row):
         widget.setText("")
 
 
-def get_reg(reg_hkey, reg_path, reg_name):
-
-    if 'nt' in sys.builtin_module_names:
-        reg_root = None
-        if reg_hkey == "HKEY_LOCAL_MACHINE":
-            reg_root = winreg.HKEY_LOCAL_MACHINE
-        elif reg_hkey == "HKEY_CURRENT_USER":
-            reg_root = winreg.HKEY_CURRENT_USER
-
-        if reg_root is not None:
-            try:
-                registry_key = winreg.OpenKey(reg_root, reg_path)
-                value, regtype = winreg.QueryValueEx(registry_key, reg_name)   #@UnusedVariable
-                winreg.CloseKey(registry_key)
-                return value
-            except WindowsError:
-                return None
-    else:
-        return None
-
-
 def get_settings_value(settings, parameter):
     """ Function that fix problem with network units in Windows """
 
@@ -390,6 +351,7 @@ def get_settings_value(settings, parameter):
 
 def set_table_selection_behavior(dialog, widget):
     """ Set selection behavior of @widget """
+
     if type(widget) is str or type(widget) is unicode:
         widget = dialog.findChild(QWidget, widget)
     if not widget:
@@ -411,6 +373,7 @@ def set_autocompleter(combobox, list_items=None):
 
 def filter_by_list(widget, proxy_model):
     """ Create the model """
+
     proxy_model.setFilterFixedString(widget.currentText())
 
 
@@ -499,6 +462,7 @@ def double_validator(widget, min_=0, max_=999999, decimals=3, notation=QDoubleVa
 
 def set_qtv_config(widget, selection=QAbstractItemView.SelectRows, edit_triggers=QTableView.NoEditTriggers):
     """ Set QTableView configurations """
+
     if type(widget) is str or type(widget) is unicode:
         widget = dialog.findChild(QWidget, widget)
     if not widget:
@@ -509,6 +473,7 @@ def set_qtv_config(widget, selection=QAbstractItemView.SelectRows, edit_triggers
 
 def get_col_index_by_col_name(qtable, column_name):
     """ Return column index searching by column name """
+
     column_index = False
     for x in range(0, qtable.model().columnCount()):
         if qtable.model().headerData(x, Qt.Horizontal) == column_name:

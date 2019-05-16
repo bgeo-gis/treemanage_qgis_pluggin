@@ -22,14 +22,14 @@ else:
     from qgis.PyQt.QtWidgets import QCompleter, QTableView
     from qgis.PyQt.QtSql import QSqlTableModel
 
-from qgis.core import QgsExpression, QgsFeatureRequest
+from qgis.core import QgsFeatureRequest
 
 from functools import partial
 
-from _utils import widget_manager as wm
-from tree_manage.actions.multiple_selection import MultipleSelection
-from tree_manage.actions.parent import ParentAction
-from tree_manage.ui_manager import PlaningUnit
+from ..ui import widget_manager as wm
+from .multiple_selection import MultipleSelection
+from .parent import ParentAction
+from ..ui_manager import PlaningUnit
 
 
 class PlanningUnit(ParentAction):

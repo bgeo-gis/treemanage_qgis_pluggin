@@ -15,16 +15,16 @@ from qgis.PyQt.QtGui import QIntValidator
 from qgis.PyQt.QtWidgets import QAbstractItemView, QTableView
 from qgis.PyQt.QtSql import QSqlTableModel
 
-from _utils import widget_manager
-from tree_manage.actions.parent import ParentAction
-from tree_manage.actions.manage_visit import ManageVisit
-from tree_manage.actions.planning_unit import PlanningUnit
-from tree_manage.ui.month_manage import MonthManage
-from tree_manage.ui.month_selector import MonthSelector
-from tree_manage.ui.new_prices import NewPrices
-from tree_manage.ui.price_management import PriceManagement
-from tree_manage.ui.tree_manage import TreeManage
-from tree_manage.ui.tree_selector import TreeSelector
+from ..actions.parent import ParentAction
+from .manage_visit import ManageVisit
+from .planning_unit import PlanningUnit
+from ..ui.month_manage import MonthManage
+from ..ui.month_selector import MonthSelector
+from ..ui.new_prices import NewPrices
+from ..ui.price_management import PriceManagement
+from ..ui.tree_manage import TreeManage
+from ..ui.tree_selector import TreeSelector
+from ..ui import widget_manager
 
 
 class Basic(ParentAction):

@@ -20,9 +20,9 @@ import os.path
 import sys  
 from functools import partial
 
-from actions.basic import Basic
-from dao.controller import DaoController
-from models.plugin_toolbar import PluginToolbar
+from .actions.basic import Basic
+from .dao.controller import DaoController
+from .models.plugin_toolbar import PluginToolbar
 
 
 class TreeManage(QObject):

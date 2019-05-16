@@ -11,11 +11,6 @@ try:
 except:
     from qgis.core import QGis as Qgis
 
-if Qgis.QGIS_VERSION_INT < 29900:
-    from qgis.core import QgsMapLayerRegistry as QgsProject
-else:
-    from qgis.core import QgsProject
-
 from qgis.PyQt.Qt import QDate
 from qgis.PyQt.QtCore import Qt, QStringListModel
 from qgis.PyQt.QtWidgets import QCompleter, QTableView, QDateEdit, QLineEdit, QTextEdit, QDateTimeEdit, QComboBox
@@ -25,9 +20,9 @@ from qgis.gui import QgsMapToolEmitPoint
 
 from functools import partial
 
-from _utils import widget_manager
-from tree_manage.actions.parent import ParentAction
-from tree_manage.actions.multiple_selection import MultipleSelection
+from ..ui import widget_manager
+from .parent import ParentAction
+from .multiple_selection import MultipleSelection
 
 
 class ParentManage(ParentAction, object):
