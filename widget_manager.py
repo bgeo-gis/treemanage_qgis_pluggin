@@ -13,17 +13,16 @@ except:
     from qgis.core import QGis as Qgis
 
 if Qgis.QGIS_VERSION_INT < 29900:
-    from qgis.PyQt.Qt import QDate, QDateTime
-    from qgis.PyQt.QtCore import QTime, Qt
     from qgis.PyQt.QtGui import QWidget, QLineEdit, QComboBox, QPushButton, QCheckBox, QLabel, QTextEdit, QDateEdit
     from qgis.PyQt.QtGui import QDoubleSpinBox, QSpinBox, QDateTimeEdit, QTimeEdit, QTableView
     from qgis.PyQt.QtGui import QPixmap, QAbstractItemView, QCompleter, QSortFilterProxyModel, QStringListModel, QDoubleValidator
 else:
-    from qgis.PyQt.QtCore import QDate, QDateTime, QTime, QSortFilterProxyModel, QStringListModel, Qt
+    from qgis.PyQt.QtCore import QSortFilterProxyModel, QStringListModel
     from qgis.PyQt.QtGui import QDoubleValidator, QPixmap
     from qgis.PyQt.QtWidgets import QAbstractItemView, QCompleter, QDateTimeEdit, QTableView, QDateEdit, QSpinBox, QTimeEdit
     from qgis.PyQt.QtWidgets import QLineEdit, QComboBox, QWidget, QDoubleSpinBox, QCheckBox, QLabel, QTextEdit
 
+from qgis.PyQt.QtCore import Qt, QDate, QDateTime, QTime
 from qgis.gui import QgsDateTimeEdit
 
 import os
