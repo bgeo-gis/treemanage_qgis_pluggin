@@ -6,25 +6,30 @@ or (at your option) any later version.
 """
 
 # -*- coding: utf-8 -*-
-from functools import partial
+try:
+    from qgis.core import Qgis
+except:
+    from qgis.core import QGis as Qgis
 
-from PyQt4.Qt import QDate
-from PyQt4.QtCore import Qt
-from PyQt4.QtGui import QCompleter, QStringListModel, QTableView, QDateEdit, QLineEdit, QTextEdit, QDateTimeEdit, QComboBox
-from PyQt4.QtSql import QSqlTableModel
-from qgis.core import QgsFeatureRequest, QgsMapLayerRegistry
+from qgis.PyQt.QtCore import Qt, QStringListModel, QDate
+from qgis.PyQt.QtWidgets import QCompleter, QTableView, QDateEdit, QLineEdit, QTextEdit, QDateTimeEdit, QComboBox
+from qgis.PyQt.QtSql import QSqlTableModel
+from qgis.core import QgsFeatureRequest
 from qgis.gui import QgsMapToolEmitPoint
 
-from _utils import widget_manager
-from tree_manage.actions.parent import ParentAction
-from tree_manage.actions.multiple_selection import MultipleSelection
+from functools import partial
+
+from .. import widget_manager
+from .parent import ParentAction
+from .multiple_selection import MultipleSelection
 
 
 class ParentManage(ParentAction, object):
 
     def __init__(self, iface, settings, controller, plugin_dir):
         """ Class to keep common functions of classes
-            'ManageDocument', 'ManageElement' and 'ManageVisit' of toolbar 'edit'."""
+            'ManageDocument', 'ManageElement' and 'ManageVisit' of toolbar 'edit' """
+
         super(ParentManage, self).__init__(iface, settings, controller, plugin_dir)
 
         self.x = ""
@@ -39,6 +44,7 @@ class ParentManage(ParentAction, object):
 
     def reset_lists(self):
         """ Reset list of selected records """
+
         self.ids = []
         self.list_ids = {}
         self.list_ids['node'] = []
@@ -46,23 +52,26 @@ class ParentManage(ParentAction, object):
 
     def reset_layers(self):
         """ Reset list of layers """
+
         self.layers = {}
         self.layers['node'] = []
         self.visible_layers = []
 
+
     def remove_selection(self):
         """ Remove all previous selections """
+
         try:
             for layer in self.layers['node']:
                 if layer in self.visible_layers:
-                    self.iface.legendInterface().setLayerVisible(layer, False)
+                    self.controller.set_layer_visible(layer, False)
             for layer in self.layers['node']:
                 if layer in self.visible_layers:
-                    self.iface.legendInterface().setLayerVisible(layer, True)
+                    self.controller.set_layer_visible(layer, True)
                     layer.removeSelection()
-
         except:
             pass
+
         self.canvas.refresh()
         self.canvas.setMapTool(self.previous_map_tool)
 
@@ -154,8 +163,9 @@ class ParentManage(ParentAction, object):
 
 
     def apply_lazy_init(self, widget):
-        """Apply the init function related to the model. It's necessary
-        a lazy init because model is changed everytime is loaded."""
+        """ Apply the init function related to the model. It's necessary
+        a lazy init because model is changed everytime is loaded """
+
         if self.lazy_widget is None:
             return
         if widget != self.lazy_widget:
@@ -164,9 +174,10 @@ class ParentManage(ParentAction, object):
         
 
     def lazy_configuration(self, widget, init_function):
-        """set the init_function where all necessary events are set.
+        """ set the init_function where all necessary events are set.
         This is necessary to allow a lazy setup of the events because set_table_events
-        can create a table with a None model loosing any event connection."""
+        can create a table with a None model loosing any event connection """
+
         # TODO: create a dictionary with key:widged.objectName value:initFuction
         # to allow multiple lazy initialization
         self.lazy_widget = widget
@@ -269,6 +280,7 @@ class ParentManage(ParentAction, object):
 
     def selection_init(self, table_object):
         """ Set canvas map tool to an instance of class 'MultipleSelection' """
+
         current_visible_layers = self.get_visible_layers()
         for layer in current_visible_layers:
             if layer not in self.visible_layers:
@@ -294,7 +306,7 @@ class ParentManage(ParentAction, object):
 
         # Iterate over all layers of the group
         for layer in self.layers[self.geom_type]:
-            if layer.selectedFeatureCount() > 0 and self.iface.legendInterface().isLayerVisible(layer):
+            if layer.selectedFeatureCount() > 0 and self.controller.is_layer_visible(layer):
                 # Get selected features of the layer
                 features = layer.selectedFeatures()
                 for feature in features:
@@ -470,15 +482,17 @@ class ParentManage(ParentAction, object):
         """ Return list or string as {...} with all visible layer in TOC """
 
         visible_layer = []
+        layers = self.controller.get_layers()
         if return_as_list:
-            for layer in self.iface.legendInterface().layers():
-                if self.iface.legendInterface().isLayerVisible(layer):
+            for layer in layers:
+                if self.controller.is_layer_visible(layer):
                     visible_layer.append(layer)
-            #visible_layer = [lyr for lyr in QgsMapLayerRegistry.instance().mapLayers().values()]
             return visible_layer
 
-        for layer in self.iface.legendInterface().layers():
-            if self.iface.legendInterface().isLayerVisible(layer):
+        for layer in layers:
+            if self.controller.is_layer_visible(layer):
                 visible_layer += '"' + str(layer.name()) + '", '
         visible_layer = visible_layer[:-2] + "}"
+
         return visible_layer
+

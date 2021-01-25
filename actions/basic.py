@@ -6,28 +6,22 @@ or (at your option) any later version.
 """
 
 # -*- coding: utf-8 -*-
-import os
-import sys
 from functools import partial
 
-from PyQt4.Qt import QDate
-from PyQt4.QtGui import QAbstractItemView, QTableView, QIntValidator
-from PyQt4.QtSql import QSqlTableModel
+from qgis.PyQt.QtCore import QDate
+from qgis.PyQt.QtWidgets import QAbstractItemView, QTableView
+from qgis.PyQt.QtSql import QSqlTableModel
 
-from _utils import widget_manager
-from parent import ParentAction
-from tree_manage.actions.manage_visit import ManageVisit
-from tree_manage.actions.planning_unit import PlanningUnit
-from tree_manage.ui.month_manage import MonthManage
-from tree_manage.ui.month_selector import MonthSelector
-from tree_manage.ui.new_prices import NewPrices
-from tree_manage.ui.price_management import PriceManagement
-from tree_manage.ui.tree_manage import TreeManage
-from tree_manage.ui.tree_selector import TreeSelector
-
-
-plugin_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-sys.path.append(plugin_path)
+from ..actions.parent import ParentAction
+from .manage_visit import ManageVisit
+from .planning_unit import PlanningUnit
+from ..ui.month_manage import MonthManage
+from ..ui.month_selector import MonthSelector
+from ..ui.new_prices import NewPrices
+from ..ui.price_management import PriceManagement
+from ..ui.tree_manage import TreeManage
+from ..ui.tree_selector import TreeSelector
+from .. import widget_manager
 
 
 class Basic(ParentAction):
@@ -41,6 +35,7 @@ class Basic(ParentAction):
         self.campaign_id = None
         self.campaign_name = None
         self.rows_cmb_poda_type = None
+        self.rows_cmb_builder = None
 
 
     def set_tree_manage(self, tree_manage):
@@ -78,7 +73,10 @@ class Basic(ParentAction):
         self.set_completer_object(table_name, self.dlg_new_campaign.txt_campaign, field_name)
         
         if self.rows_cmb_poda_type is None:
-            self.update_cmb_poda_type()     
+            self.update_cmb_poda_type()  
+
+        if self.rows_cmb_builder is None:
+            self.update_cmb_builder()     
 
         self.dlg_new_campaign.exec_()
 
@@ -108,6 +106,8 @@ class Basic(ParentAction):
             
             # Update contents of variable 'self.cmb_poda_type'
             self.update_cmb_poda_type()
+            # Update contents of variable 'self.cmb_builder'
+            self.update_cmb_builder()
           
         # Get id_campaign            
         id_new_camp = str(row[0])
@@ -166,14 +166,20 @@ class Basic(ParentAction):
         if not self.rows_cmb_poda_type:
             self.controller.log_info("Error in update_cmb_poda_type")                 
 
+    def update_cmb_builder(self):
+
+        sql = ("SELECT DISTINCT(id), name"
+               " FROM " + self.schema_name + ".cat_builder"
+               " ORDER BY name")
+        self.rows_cmb_builder = self.controller.get_rows(sql)
+        
+        if not self.rows_cmb_builder:
+            self.controller.log_info("Error in update_cmb_builder")
+
 
     def fill_table_prices(self, qtable, table_view, new_camp, set_edit_triggers=QTableView.NoEditTriggers):
-        """ Set a model with selected filter.
-        Attach that model to selected table
-        @setEditStrategy:
-            0: OnFieldChange
-            1: OnRowChange
-            2: OnManualSubmit
+        """ Set a model with selected filter and attach it to selected table
+        @setEditStrategy: 0: OnFieldChange, 1: OnRowChange, 2: OnManualSubmit
         """
 
         # Set model
@@ -265,9 +271,7 @@ class Basic(ParentAction):
         
 
     def tree_selector(self, update=False):
-        
-        self.controller.log_info("tree_selector_start")     
-           
+
         dlg_selector = TreeSelector()
         self.load_settings(dlg_selector)
         dlg_selector.setWindowTitle("Tree selector")
@@ -287,6 +291,12 @@ class Basic(ParentAction):
                     
         widget_manager.set_item_data(dlg_selector.cmb_poda_type, self.rows_cmb_poda_type, 1)              
         
+        # Get data to fill combo from memory
+        if self.rows_cmb_builder is None:
+            self.update_cmb_builder()   
+                    
+        widget_manager.set_item_data(dlg_selector.cmb_builder, self.rows_cmb_builder, 1)   
+
         # Populate QTableView
         self.fill_table(dlg_selector, table_view, set_edit_triggers=QTableView.NoEditTriggers, update=True)
         if update:
@@ -321,18 +331,16 @@ class Basic(ParentAction):
         
 
     def force_chk_current(self, dialog):
+
         if dialog.chk_permanent.isChecked():
             dialog.chk_current.setChecked(True)
 
 
     def fill_main_table(self, dialog, table_name, set_edit_triggers=QTableView.NoEditTriggers, refresh_model=True):
-        """ Set a model with selected filter.
-        Attach that model to selected table
-        @setEditStrategy:
-            0: OnFieldChange
-            1: OnRowChange
-            2: OnManualSubmit
+        """ Set a model with selected filter and attach it to selected table
+        @setEditStrategy: 0: OnFieldChange, 1: OnRowChange, 2: OnManualSubmit
         """
+
         # Set model
         model = QSqlTableModel()
         model.setTable(self.schema_name + "." + table_name)
@@ -374,12 +382,8 @@ class Basic(ParentAction):
 
 
     def fill_table(self, dialog, table_view, set_edit_triggers=QTableView.NoEditTriggers, update=False):
-        """ Set a model with selected filter.
-        Attach that model to selected table
-        @setEditStrategy:
-            0: OnFieldChange
-            1: OnRowChange
-            2: OnManualSubmit
+        """ Set a model with selected filter and attach it to selected table
+        @setEditStrategy: 0: OnFieldChange, 1: OnRowChange, 2: OnManualSubmit
         """
 
         # Set model
@@ -434,8 +438,8 @@ class Basic(ParentAction):
 
     def insert_into_planning(self, tableright):
         
-        sql = ("SELECT * FROM " + self.schema_name+"."+tableright + ""
-               " WHERE campaign_id::text = '" + str(self.selected_camp) + "'")
+        sql = ("SELECT * FROM " + self.schema_name + "." + tableright + " "
+               "WHERE campaign_id::text = '" + str(self.selected_camp) + "'")
         rows = self.controller.get_rows(sql)
 
         if not rows:
@@ -467,12 +471,8 @@ class Basic(ParentAction):
                    " FROM " + self.schema_name + "." + tableright + ""
                    " WHERE mu_id = '" + str(row['mu_id']) + "'"
                    " AND campaign_id ='" + str(self.campaign_id) + "'")
-            rowx = self.controller.get_row(sql)
-
-            if rowx is None:
-                #     # Put a new row in QTableView
-                #     # dialog.selected_rows.model().insertRow(dialog.selected_rows.verticalHeader().count())
-                #
+            row = self.controller.get_row(sql)
+            if row is None:
                 sql = ("INSERT INTO " + self.schema_name + "." + tableright + ""
                        " (mu_id, work_id, price, campaign_id) "
                        " VALUES (" + insert_values + ");")
@@ -500,7 +500,7 @@ class Basic(ParentAction):
         self.select_all_rows(dialog.selected_rows, id_table_right)
         if widget_manager.isChecked(dialog, dialog.chk_current):
             current_poda_type = widget_manager.get_item_data(dialog, dialog.cmb_poda_type, 0)
-            current_poda_name = widget_manager.get_item_data(dialog, dialog.cmb_poda_type, 1)
+            # current_poda_name = widget_manager.get_item_data(dialog, dialog.cmb_poda_type, 1)
             if current_poda_type is None:
                 message = "No heu seleccionat cap poda"
                 self.controller.show_warning(message)
@@ -550,12 +550,8 @@ class Basic(ParentAction):
                 message = "Aquest registre ja esta seleccionat"
                 self.controller.show_info_box(message, "Info", parameter=str(field_list[i]))
             else:
-                # Put a new row in QTableView
-                # dialog.selected_rows.model().insertRow(dialog.selected_rows.verticalHeader().count())
-
                 sql = ("INSERT INTO " + self.schema_name + "." + tableright + ""
-                       " (mu_id,  work_id, campaign_id) "
-                       " VALUES (" + values + ")")
+                       " (mu_id, work_id, campaign_id) VALUES (" + values + ")")
                 self.controller.execute_sql(sql)
                 sql = ("SELECT " + self.schema_name + ".set_plan_price(" + function_values + ")")
                 self.controller.execute_sql(sql)
@@ -626,6 +622,7 @@ class Basic(ParentAction):
             message = "No hi ha cap any planificat"
             self.controller.show_warning(message)
             return
+        
         self.controller.log_info(str(self.planned_camp_id))
         self.close_dialog(dialog)
         self.month_selector()
@@ -708,17 +705,6 @@ class Basic(ParentAction):
         plan_month_start = widget_manager.getCalendarDate(dialog, dialog.date_inici)
         plan_month_end = widget_manager.getCalendarDate(dialog, dialog.date_fi)
 
-        # Get year from string
-        calendar_year = QDate.fromString(plan_month_start, 'yyyy/MM/dd').year()
-
-        # if int(calendar_year) < int(self.planned_camp_id):
-        #     self.controller.show_details(detail_text="La data d'inici no pot ser anterior a 'Any planificacio'")
-        #     return
-        #
-        # if plan_month_start > plan_month_end:
-        #     self.controller.show_details(detail_text="La data d'inici no pot ser posterior a la data final")
-        #     return
-
         # Update values
         for i in range(0, len(left_selected_list)):
             row = left_selected_list[i].row()
@@ -746,6 +732,7 @@ class Basic(ParentAction):
             message = "Cap registre seleccionat"
             self.controller.show_warning(message)
             return
+
         # Get all selected ids
         field_list = []
         for i in range(0, len(left_selected_list)):
@@ -772,12 +759,8 @@ class Basic(ParentAction):
 
 
     def fill_table_planned_month(self, qtable, txt_filter, tableright, expression=None, set_edit_triggers=QTableView.NoEditTriggers):
-        """ Set a model with selected filter.
-        Attach that model to selected table
-        @setEditStrategy:
-            0: OnFieldChange
-            1: OnRowChange
-            2: OnManualSubmit
+        """ Set a model with selected filter and attach it to selected table
+        @setEditStrategy: 0: OnFieldChange, 1: OnRowChange, 2: OnManualSubmit
         """
 
         # Set model
@@ -792,8 +775,8 @@ class Basic(ParentAction):
             self.controller.show_warning(model.lastError().text())
 
         # Create expresion
-        expr = " mu_name ILIKE '%" + str(txt_filter.text()) + "%' "
-        expr += " AND campaign_id = '" + str(self.planned_camp_id) + "' "
+        expr = (" mu_name ILIKE '%" + str(txt_filter.text()) + "%' "
+                " AND campaign_id = '" + str(self.planned_camp_id) + "' ")
 
         if expression is not None:
             expr += expression
@@ -803,7 +786,7 @@ class Basic(ParentAction):
 
 
     def select_all_rows(self, qtable, id, clear_selection=True):
-        """ return list of index in @qtable """
+        """ Return list of index in @qtable """
                        
         # Select all rows and get all id
         qtable.selectAll()
@@ -836,10 +819,8 @@ class Basic(ParentAction):
         model.database().transaction()
         if model.submitAll():
             model.database().commit()
-
             dialog.selected_rows.selectAll()
             id_all_selected_rows = dialog.selected_rows.selectionModel().selectedRows()
-
             for x in range(0, len(id_all_selected_rows)):
                 row = id_all_selected_rows[x].row()
                 if dialog.selected_rows.model().record(row).value('work_id') is not None:
@@ -854,6 +835,7 @@ class Basic(ParentAction):
 
 
     def cancel_changes(self, dialog):
+
         model = dialog.selected_rows.model()
         model.revertAll()
         model.database().rollback()
@@ -866,5 +848,7 @@ class Basic(ParentAction):
         
 
     def open_planning_unit(self):
+
         plan_unit = PlanningUnit(self.iface, self.settings, self.controller, self.plugin_dir)
         plan_unit.open_form()
+

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-from PyQt4 import QtGui, uic
+from qgis.PyQt import uic
+from qgis.PyQt.QtWidgets import QDialog
 import os
 
 
@@ -12,22 +13,23 @@ def get_ui_class(ui_file_name):
     return uic.loadUiType(ui_file_path)[0]
 
 
-
-
 FORM_CLASS = get_ui_class('add_visit.ui')
-class AddVisit(QtGui.QDialog, FORM_CLASS):
+class AddVisit(QDialog, FORM_CLASS):
     def __init__(self):
-        QtGui.QDialog.__init__(self)
+        QDialog.__init__(self)
         self.setupUi(self)
+
 
 FORM_CLASS = get_ui_class('event_standard.ui')
-class EventStandard(QtGui.QDialog, FORM_CLASS):
+class EventStandard(QDialog, FORM_CLASS):
     def __init__(self):
-        QtGui.QDialog.__init__(self)
+        QDialog.__init__(self)
         self.setupUi(self)
 
+
 FORM_CLASS = get_ui_class('planning_unit.ui')
-class PlaningUnit(QtGui.QDialog, FORM_CLASS):
+class PlaningUnit(QDialog, FORM_CLASS):
     def __init__(self):
-        QtGui.QDialog.__init__(self)
+        QDialog.__init__(self)
         self.setupUi(self)
+

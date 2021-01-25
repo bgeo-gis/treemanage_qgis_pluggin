@@ -6,10 +6,19 @@ or (at your option) any later version.
 """
 
 # -*- coding: utf-8 -*-
-from qgis.core import QgsFeatureRequest, QgsPoint, QgsRectangle, QGis
-from qgis.gui import QgsMapTool, QgsMapCanvasSnapper, QgsRubberBand
-from PyQt4.QtCore import Qt, pyqtSignal, QPoint
-from PyQt4.QtGui import QApplication, QColor
+try:
+    from qgis.core import Qgis
+except:
+    from qgis.core import QGis as Qgis
+
+if Qgis.QGIS_VERSION_INT < 29900:
+    from qgis.gui import QgsMapCanvasSnapper
+
+from qgis.core import QgsFeatureRequest, QgsPoint, QgsRectangle
+from qgis.gui import QgsMapTool, QgsRubberBand
+from qgis.PyQt.QtCore import Qt, pyqtSignal, QPoint
+from qgis.PyQt.QtGui import QColor
+from qgis.PyQt.QtWidgets import QApplication
 
 
 class MultipleSelection(QgsMapTool):
@@ -29,12 +38,12 @@ class MultipleSelection(QgsMapTool):
         QgsMapTool.__init__(self, self.canvas)
 
         self.controller = controller
-        self.rubber_band = QgsRubberBand(self.canvas, QGis.Polygon)
+        self.rubber_band = QgsRubberBand(self.canvas, Qgis.Polygon)
         self.rubber_band.setColor(QColor(255, 100, 255))
         self.rubber_band.setFillColor(QColor(254, 178, 76, 63))
         self.rubber_band.setWidth(1)
         self.reset()
-        self.snapper = QgsMapCanvasSnapper(self.canvas)
+        self.snapper = self.get_snapper()
         self.selected_features = []
 
 
@@ -42,7 +51,7 @@ class MultipleSelection(QgsMapTool):
         
         self.start_point = self.end_point = None
         self.is_emitting_point = False
-        self.rubber_band.reset(QGis.Polygon)
+        self.rubber_band.reset(Qgis.Polygon)
 
 
     def canvasPressEvent(self, e):
@@ -72,7 +81,7 @@ class MultipleSelection(QgsMapTool):
         
         for i in range(len(self.layers)):
             layer = self.layers[i]
-            if self.iface.legendInterface().isLayerVisible(layer):
+            if self.controller.is_layer_visible(layer):
                 # if (i == len(self.layers) - 1):
                 if self.parent_manage:
                     self.parent_manage.connect_signal_selection_changed(self.table_object)
@@ -117,7 +126,7 @@ class MultipleSelection(QgsMapTool):
 
     def show_rect(self, start_point, end_point):
         
-        self.rubber_band.reset(QGis.Polygon)
+        self.rubber_band.reset(Qgis.Polygon)
         if start_point.x() == end_point.x() or start_point.y() == end_point.y():
             return
         point1 = QgsPoint(start_point.x(), start_point.y())
@@ -149,4 +158,16 @@ class MultipleSelection(QgsMapTool):
 
     def activate(self):
         pass
+
+
+    def get_snapper(self):
+        """ Return snapper """
+
+        if Qgis.QGIS_VERSION_INT < 29900:
+            snapper = QgsMapCanvasSnapper(self.canvas)
+        else:
+            # TODO: 3.x
+            snapper = QgsMapCanvas.snappingUtils()
+
+        return snapper
 

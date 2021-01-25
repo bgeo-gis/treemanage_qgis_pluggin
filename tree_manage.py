@@ -6,17 +6,28 @@ or (at your option) any later version.
 """
 
 # -*- coding: utf-8 -*-
-from qgis.core import QgsExpressionContextUtils
-from PyQt4.QtCore import QObject, QSettings
-from PyQt4.QtGui import QAction, QActionGroup, QIcon
+try:
+    from qgis.core import Qgis
+except:
+    from qgis.core import QGis as Qgis
 
-import os.path
+if Qgis.QGIS_VERSION_INT < 29900:
+    import ConfigParser as configparser
+else:
+    import configparser
+   
+from qgis.core import QgsExpressionContextUtils, QgsProject
+from qgis.PyQt.QtCore import QObject, QSettings
+from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt.QtWidgets import QAction, QActionGroup
+
+import os
 import sys  
 from functools import partial
 
-from actions.basic import Basic
-from dao.controller import DaoController
-from models.plugin_toolbar import PluginToolbar
+from .actions.basic import Basic
+from .dao.controller import DaoController
+from .models.plugin_toolbar import PluginToolbar
 
 
 class TreeManage(QObject):
@@ -38,18 +49,22 @@ class TreeManage(QObject):
         self.plugin_toolbars = {}
             
         # Initialize plugin directory
-        self.plugin_dir = os.path.dirname(__file__)    
-        self.plugin_name = os.path.basename(self.plugin_dir).lower()  
-        self.icon_folder = self.plugin_dir+'/icons/'
+        self.plugin_dir = os.path.dirname(__file__)
+        self.plugin_name = self.get_value_from_metadata('name', 'tree_manage')
+        self.icon_folder = self.plugin_dir + os.sep + 'icons' + os.sep
 
         # Initialize svg tree_manage directory
         svg_plugin_dir = os.path.join(self.plugin_dir, 'svg')
-        QgsExpressionContextUtils.setProjectVariable('svg_path', svg_plugin_dir)   
+
+        if Qgis.QGIS_VERSION_INT < 29900:
+            QgsExpressionContextUtils.setProjectVariable('svg_path', svg_plugin_dir)
+        else:
+            QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), 'svg_path', svg_plugin_dir)
             
         # Check if config file exists    
-        setting_file = os.path.join(self.plugin_dir, 'config', self.plugin_name+'.config')
+        setting_file = os.path.join(self.plugin_dir, 'config', self.plugin_name + '.config')
         if not os.path.exists(setting_file):
-            message = "Config file not found at: "+setting_file
+            message = "Config file not found at: " + setting_file
             self.iface.messageBar().pushMessage("", message, 1, 20) 
             return
 
@@ -63,18 +78,16 @@ class TreeManage(QObject):
 
         # Define signals
         self.set_signals()
-        
-        # Set default encoding 
-        reload(sys)
-        sys.setdefaultencoding('utf-8')   #@UndefinedVariable
        
                
     def set_signals(self): 
         """ Define widget and event signals """
+
         self.iface.projectRead.connect(self.project_read)
 
   
     def tr(self, message):
+
         if self.controller:
             return self.controller.tr(message)      
         
@@ -91,7 +104,7 @@ class TreeManage(QObject):
             action = self.actions[index_action]                
 
             # Basic toolbar actions
-            if int(index_action) in (00, 01, 02, 03, 04, 05):
+            if int(index_action) in (0, 1, 2, 3, 4, 5):
                 callback_function = getattr(self.basic, function_name)  
                 action.triggered.connect(callback_function)
 
@@ -132,15 +145,14 @@ class TreeManage(QObject):
             It has to be defined in the configuration file.
             Associate it to corresponding @action_group
         """
-        
-        action = None
-        text_action = self.tr(index_action+'_text')
-        function_name = self.settings.value('actions/'+str(index_action)+'_function')
+
+        text_action = self.tr(index_action + '_text')
+        function_name = self.settings.value('actions/' + str(index_action) + '_function')
         if not function_name:
             return None
             
         # Buttons NOT checkable (normally because they open a form)
-        if int(index_action) in (00, 01, 02, 03, 04, 05):
+        if int(index_action) in (0, 1, 2, 3, 4, 5):
             action = self.create_action(index_action, text_action, toolbar, False, function_name, action_group)
         # Buttons checkable (normally related with 'map_tools')                
         else:
@@ -151,12 +163,14 @@ class TreeManage(QObject):
 
     def enable_actions(self, enable=True, start=1, stop=100):
         """ Utility to enable/disable all actions """
+
         for i in range(start, stop+1):
             self.enable_action(enable, i)
 
 
     def enable_action(self, enable=True, index=1):
         """ Enable/disable selected action """
+
         key = str(index).zfill(2)
         if key in self.actions:
             action = self.actions[key]
@@ -172,7 +186,7 @@ class TreeManage(QObject):
 
         # Manage action group of every toolbar
         parent = self.iface.mainWindow()           
-        for plugin_toolbar in self.plugin_toolbars.itervalues():
+        for plugin_toolbar in list(self.plugin_toolbars.values()):
             ag = QActionGroup(parent)
             for index_action in plugin_toolbar.list_actions:
                 self.add_action(index_action, plugin_toolbar.toolbar, ag)
@@ -211,12 +225,13 @@ class TreeManage(QObject):
 
     def unload(self):
         """ Removes the plugin menu item and icon from QGIS GUI """
+
         try:
-            for action in self.actions.itervalues():
+            for action in list(self.actions.values()):
                 self.iface.removePluginMenu(self.plugin_name, action)
                 self.iface.removeToolBarIcon(action)
                 
-            for plugin_toolbar in self.plugin_toolbars.itervalues():
+            for plugin_toolbar in list(self.plugin_toolbars.values()):
                 if plugin_toolbar.enabled:
                     plugin_toolbar.toolbar.setVisible(False)                
                     del plugin_toolbar.toolbar
@@ -228,8 +243,7 @@ class TreeManage(QObject):
 
         except AttributeError:
             self.controller.log_info("unload - AttributeError")
-            pass
-        except KeyError:
+        except:
             pass
     
     
@@ -256,10 +270,14 @@ class TreeManage(QObject):
         # Manage locale and corresponding 'i18n' file
         self.controller.manage_translation(self.plugin_name)
         
-        # Get schema name from table 'version' and set it in controller and in config file
+        # Get schema name from table 'version_tm' and set it in controller and in config file
         layer_version = self.controller.get_layer_by_tablename("version_tm")
+        if not layer_version:
+            self.controller.show_warning("Layer not found", parameter="version_tm")
+            return
+
         layer_source = self.controller.get_layer_source(layer_version)
-        self.schema_name = layer_source['schema']
+        self.schema_name = layer_source['schema'].replace('"', '')
         self.controller.plugin_settings_set_value("schema_name", self.schema_name)   
         self.controller.set_schema_name(self.schema_name)
 
@@ -268,8 +286,8 @@ class TreeManage(QObject):
         self.basic.set_tree_manage(self)
 
         # Get SRID from table node
-        # TODO parametrizar srid
-        self.controller.plugin_settings_set_value("srid", "25831")
+        srid = self.controller.get_srid('v_edit_node', self.schema_name)
+        self.controller.plugin_settings_set_value("srid", srid)
 
         # Manage actions of the different plugin_toolbars
         self.manage_toolbars()   
@@ -294,3 +312,25 @@ class TreeManage(QObject):
         except KeyError as e:
             self.controller.show_warning("KeyError: "+str(e))              
        
+       
+    def get_value_from_metadata(self, parameter, default_value):
+        """ Get @parameter from metadata.txt file """
+        
+        # Check if metadata file exists
+        metadata_file = os.path.join(self.plugin_dir, 'metadata.txt')
+        if not os.path.exists(metadata_file):
+            message = "Metadata file not found: " + metadata_file
+            self.iface.messageBar().pushMessage("", message, 1, 20)
+            return default_value
+          
+        try:
+            metadata = configparser.ConfigParser()
+            metadata.read(metadata_file)
+            value = metadata.get('general', parameter)
+        except configparser.NoOptionError:
+            message = "Parameter not found: " + parameter
+            self.iface.messageBar().pushMessage("", message, 1, 20)
+            value = default_value
+        finally:
+            return value
+

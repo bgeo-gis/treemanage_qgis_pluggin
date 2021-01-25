@@ -7,27 +7,28 @@ or (at your option) any later version.
 
 from functools import partial
 
-from PyQt4.QtCore import Qt, QDate, pyqtSignal, QObject
-from PyQt4.QtGui import QAbstractItemView
-from PyQt4.QtGui import QCompleter, QLineEdit, QTableView, QStringListModel, QComboBox, QTabWidget, QDialogButtonBox
-from PyQt4.QtSql import QSqlTableModel
+from qgis.PyQt.QtCore import Qt, QDate, pyqtSignal, QObject, QStringListModel
+from qgis.PyQt.QtWidgets import QAbstractItemView, QCompleter, QLineEdit, QTableView, QComboBox, QTabWidget, QDialogButtonBox
+from qgis.PyQt.QtSql import QSqlTableModel
 
-from _utils import widget_manager
-from tree_manage.actions.parent_manage import ParentManage
-from tree_manage.dao.om_visit import OmVisit
-from tree_manage.dao.om_visit_event import OmVisitEvent
-from tree_manage.dao.om_visit_parameter import OmVisitParameter
-from tree_manage.dao.om_visit_x_node import OmVisitXNode
-from tree_manage.ui_manager import AddVisit
-from tree_manage.ui_manager import EventStandard
+from .. import widget_manager
+from .parent_manage import ParentManage
+from ..dao.om_visit import OmVisit
+from ..dao.om_visit_event import OmVisitEvent
+from ..dao.om_visit_parameter import OmVisitParameter
+from ..dao.om_visit_x_node import OmVisitXNode
+from ..ui_manager import AddVisit
+from ..ui_manager import EventStandard
 
 
 class ManageVisit(ParentManage, QObject):
+
     # event emitted when a new Visit is added when GUI is closed/accepted
     visit_added = pyqtSignal(int)
 
     def __init__(self, iface, settings, controller, plugin_dir):
         """ Class to control 'Add visit' of toolbar 'edit' """
+
         QObject.__init__(self)
         ParentManage.__init__(self, iface, settings, controller, plugin_dir)
 
@@ -37,7 +38,8 @@ class ManageVisit(ParentManage, QObject):
         if visit_id => load record related to the visit_id
         if geom_type => lock geom_type in relations tab
         if feature_id => load related feature basing on geom_type in relation
-        if single_tool notify that the tool is used called from another dialog."""
+        if single_tool notify that the tool is used called from another dialog.
+        """
 
         # parameter to set if the dialog is working as single tool or integrated in another tool
         self.single_tool_mode = single_tool
@@ -158,6 +160,7 @@ class ManageVisit(ParentManage, QObject):
 
 
     def set_combos(self, dialog, qcombo, parameter):
+
         sql = ("SELECT value FROM " + self.schema_name + ".config_param_user "
                " WHERE parameter = '"+str(parameter)+"' AND cur_user= current_user AND context='arbrat'")
         row = self.controller.get_row(sql)
@@ -166,20 +169,11 @@ class ManageVisit(ParentManage, QObject):
 
 
     def manage_accepted(self):
-        """Do all action when closed the dialog with Ok.
+        """ Do all action when closed the dialog with Ok.
         e.g. all necessary commits and cleanings.
         A) Trigger SELECT gw_fct_om_visit_multiplier (visit_id, feature_type)
-        for multiple visits management."""
-
-
-        # A) Trigger SELECT gw_fct_om_visit_multiplier (visit_id, feature_type)
-        # for multiple visits management
-        # sql = ("SELECT gw_fct_om_visit_multiplier ({}, {}})".format(self.currentVisit.id, self.feature_type.currentText().upper()))
-        # status = self.controller.execute_sql(sql)
-        # if not status:
-        #     message = "Error triggering"
-        #     self.controller.show_warning(message)
-        #     return
+        for multiple visits management.
+        """
 
         # notify that a new visit has been added
         self.visit_added.emit(self.current_visit.id)
@@ -203,8 +197,10 @@ class ManageVisit(ParentManage, QObject):
 
 
     def manage_rejected(self):
-        """Do all action when closed the dialog with Cancel or X.
-        e.g. all necessary rollbacks and cleanings."""
+        """ Do all action when closed the dialog with Cancel or X.
+        e.g. all necessary rollbacks and cleanings.
+        """
+
         self.canvas.setMapTool(self.previous_map_tool)
         # removed current working visit. This should cascade removing of all related records
         if hasattr(self, 'it_is_new_visit') and self.it_is_new_visit:
@@ -214,9 +210,8 @@ class ManageVisit(ParentManage, QObject):
         self.remove_selection()
 
 
-
     def tab_index(self, tab_name):
-        """Get the index of a tab basing on objectName."""
+        """ Get the index of a tab basing on objectName. """
 
         for idx in range(self.tabs.count()):
             if self.tabs.widget(idx).objectName() == tab_name:
@@ -225,11 +220,12 @@ class ManageVisit(ParentManage, QObject):
 
 
     def manage_visit_id_change(self, text):
-        """manage action when the visit id is changed.
+        """ manage action when the visit id is changed.
         A) Update current Visit record
         B) Fill the GUI values of the current visit
         C) load all related events in the relative table
-        D) load all related documents in the relative table."""
+        D) load all related documents in the relative table.
+        """
 
         # A) Update current Visit record
         self.current_visit.id = int(text)
@@ -254,13 +250,12 @@ class ManageVisit(ParentManage, QObject):
         self.set_feature_type_by_visit_id()
 
 
-
-
     def set_feature_type_by_visit_id(self):
-        """Set the feature_type in Relation tab basing on visit_id.
+        """ Set the feature_type in Relation tab basing on visit_id.
         The steps to follow are:
         1) check geometry type looking what table contain records related with visit_id
-        2) set gemetry type."""
+        2) set gemetry type.
+        """
 
         feature_type = None
         feature_type_index = None
@@ -293,7 +288,8 @@ class ManageVisit(ParentManage, QObject):
 
     def manage_leave_visit_tab(self):
         """ manage all the action when leaving the VisitTab
-        A) Manage sync between GUI values and Visit record in DB."""
+        A) Manage sync between GUI values and Visit record in DB
+        """
 
         # A) fill Visit basing on GUI values
         self.current_visit.id = int(self.visit_id.text())
@@ -305,14 +301,16 @@ class ManageVisit(ParentManage, QObject):
         self.current_visit.descript = self.dlg_add_visit.descript.text()
         if self.expl_id:
             self.current_visit.expl_id = self.expl_id
+
         # update or insert but without closing the transaction: autocommit=False
         self.current_visit.upsert(commit=self.autocommit)
 
 
     def update_relations(self):
-        """Save current selected features in tbl_relations. Steps are:
+        """ Save current selected features in tbl_relations. Steps are:
         A) remove all old relations related with current visit_id.
-        B) save new relations get from that listed in tbl_relations."""
+        B) save new relations get from that listed in tbl_relations.
+        """
 
         # A) remove all old relations related with current visit_id.
         db_record = None
@@ -360,8 +358,7 @@ class ManageVisit(ParentManage, QObject):
 
 
     def manage_tab_changed(self, index):
-        """Do actions when tab is exit and entered.
-        Actions depend on tab index"""
+        """ Do actions when tab is exit and entered. Actions depend on tab index """
 
         # manage leaving tab
         # tab Visit
@@ -392,12 +389,14 @@ class ManageVisit(ParentManage, QObject):
 
 
     def entered_event_tab(self):
-        """Manage actions when the Event tab is entered."""
+        """ Manage actions when the Event tab is entered """
+
         self.set_parameter_id_combo()
 
 
     def set_parameter_id_combo(self):
-        """set parameter_id combo basing on current selections."""
+        """ Set parameter_id combo basing on current selections """
+
         sql = ("SELECT id, descript"
                " FROM " + self.schema_name + ".om_visit_parameter"
                " WHERE UPPER (parameter_type) = '" + self.parameter_type_id.currentText().upper() + "'"
@@ -410,17 +409,10 @@ class ManageVisit(ParentManage, QObject):
 
 
     def config_relation_table(self, qtable):
-        """Set all actions related to the table, model and selectionModel.
+        """ Set all actions related to the table, model and selectionModel.
         It's necessary a centralised call because base class can create a None model
-        where all callbacks are lost ance can't be registered."""
-
-        # Activate Event and Document tabs if at least an element is available
-        # if self.tbl_relation.model():
-        #     has_elements = self.tbl_relation.model().rowCount()
-        # else:
-        #     has_elements = False
-        # for idx in [self.tab_index('EventTab'), self.tab_index('DocumentTab')]:
-        #     self.tabs.setTabEnabled(idx, has_elements)
+        where all callbacks are lost ance can't be registered
+        """
 
         # configure model visibility
         table_name = "v_edit_" + self.geom_type
@@ -428,9 +420,10 @@ class ManageVisit(ParentManage, QObject):
 
 
     def event_feature_type_selected(self):
-        """Manage selection change in feature_type combo box.
+        """ Manage selection change in feature_type combo box.
         THis means that have to set completer for feature_id QTextLine and
-        setup model for features to select table."""
+        setup model for features to select table.
+        """
 
         # 1) set the model linked to selecte features
         # 2) check if there are features related to the current visit
@@ -477,11 +470,6 @@ class ManageVisit(ParentManage, QObject):
         self.disconnect_signal_selection_changed()
 
 
-
-
-
-
-
     def fill_combos(self):
         """ Fill combo boxes of the form """
 
@@ -512,13 +500,7 @@ class ManageVisit(ParentManage, QObject):
                 except ValueError:
                     pass
 
-        # # Relations tab
-        # # fill feature_type
-        # sql = ("SELECT id"
-        #        " FROM " + self.schema_name + ".sys_feature_type"
-        #        " WHERE net_category = 1"
-        #        " ORDER BY id")
-        # rows = self.controller.get_rows(sql, commit=self.autocommit)
+        # Relations tab
         rows = [['node']]
         widget_manager.fillComboBox(self.dlg_add_visit, self.dlg_add_visit.feature_type, rows, allow_nulls=False)
 
@@ -528,22 +510,6 @@ class ManageVisit(ParentManage, QObject):
                " ORDER BY id")
         parameter_type_ids = self.controller.get_rows(sql, commit=self.autocommit)
         widget_manager.fillComboBox(self.dlg_add_visit, self.dlg_add_visit.parameter_type_id, parameter_type_ids, allow_nulls=False)
-
-        # now get default value to be show in parameter_type_id
-        # sql = ("SELECT value FROM " + self.schema_name + ".config_param_user"
-        #        " WHERE parameter = 'om_param_type_vdefault' AND cur_user = current_user")
-        # row = self.controller.get_row(sql, commit=self.autocommit)
-        # if row:
-        #     # if int then look for default row ans set it
-        #     try:
-        #         parameter_type_id = int(row[0])
-        #         combo_value = parameter_type_ids[parameter_type_id]
-        #         combo_index = self.parameter_type_id.findText(combo_value)
-        #         self.parameter_type_id.setCurrentIndex(combo_index)
-        #     except TypeError:
-        #         pass
-        #     except ValueError:
-        #         pass
 
 
     def set_completers(self, widget, table_name):
@@ -585,13 +551,15 @@ class ManageVisit(ParentManage, QObject):
 
 
     def event_insert(self):
-        """Add and event basing on form associated to the selected parameter_id."""
+        """ Add and event basing on form associated to the selected parameter_id """
+
         # check a parameter_id is selected (can be that no value is available)
         parameter_id = widget_manager.get_item_data(self.dlg_add_visit, self.dlg_add_visit.parameter_id, 0)
         if not parameter_id:
             message = "You need to select a valid parameter id"
             self.controller.show_info_box(message)
             return
+
         # get form associated
         sql = ("SELECT form_type FROM " + self.schema_name + ".om_visit_parameter"
                " WHERE id = '" + str(parameter_id) + "'")
@@ -599,7 +567,6 @@ class ManageVisit(ParentManage, QObject):
         form_type = str(row[0])
 
         if form_type == 'event_standard':
-
             self.dlg_event = EventStandard()
             self.load_settings(self.dlg_event)
         else:
@@ -613,7 +580,6 @@ class ManageVisit(ParentManage, QObject):
 
         # set fixed values
         self.dlg_event.parameter_id.setText(parameter_id)
-
 
         self.dlg_event.setWindowFlags(Qt.WindowStaysOnTopHint)
         ret = self.dlg_event.exec_()
@@ -645,14 +611,16 @@ class ManageVisit(ParentManage, QObject):
 
 
     def manage_events_changed(self):
-        """Action when at a Event model is changed.
-        A) if some record is available => enable OK button of VisitDialog"""
+        """ Action when at a Event model is changed.
+        A) if some record is available => enable OK button of VisitDialog
+        """
+
         state = (self.tbl_event.model().rowCount() > 0)
         self.button_box.button(QDialogButtonBox.Ok).setEnabled(state)
 
 
     def event_update(self):
-        """Update selected event."""
+        """ Update selected event """
 
         if not self.tbl_event.selectionModel().hasSelection():
             message = "Any record selected"
@@ -686,7 +654,6 @@ class ManageVisit(ParentManage, QObject):
             return
 
         if om_event_parameter.form_type == 'event_standard':
-
             self.dlg_event_standard = EventStandard()
             self.load_settings(self.dlg_event_standard)
 
@@ -701,7 +668,6 @@ class ManageVisit(ParentManage, QObject):
             value = getattr(event, field_name)
             if value:
                 getattr(self.dlg_event, field_name).setText(str(value))
-
 
         self.dlg_event_standard.setWindowFlags(Qt.WindowStaysOnTopHint)
         if self.dlg_event_standard.exec_():
@@ -723,7 +689,7 @@ class ManageVisit(ParentManage, QObject):
 
 
     def event_delete(self):
-        """Delete a selected event."""
+        """ Delete a selected event """
 
         if not self.tbl_event.selectionModel().hasSelection():
             message = "Any record selected"
@@ -764,8 +730,7 @@ class ManageVisit(ParentManage, QObject):
 
 
     def set_configuration(self, qtable, table_name):
-        """Configuration of tables. Set visibility and width of columns."""
-
+        """ Configuration of tables. Set visibility and width of columns """
 
         if not qtable:
             return

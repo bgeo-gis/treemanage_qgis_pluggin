@@ -5,17 +5,16 @@ General Public License as published by the Free Software Foundation, either vers
 or (at your option) any later version.
 """
 
-# -*- coding: latin-1 -*-
-
+# -*- coding: utf-8 -*-
 try:
     from qgis.core import Qgis
 except:
     from qgis.core import QGis as Qgis
 
-if Qgis.QGIS_VERSION_INT >= 20000 and Qgis.QGIS_VERSION_INT < 29900:
-    from PyQt4.QtCore import Qt
-    from PyQt4.QtGui import QIntValidator, QStringListModel, QCompleter, QTableView
-    from PyQt4.QtSql import QSqlTableModel
+if Qgis.QGIS_VERSION_INT < 29900:
+    from qgis.PyQt.QtCore import Qt
+    from qgis.PyQt.QtGui import QIntValidator, QStringListModel, QCompleter, QTableView
+    from qgis.PyQt.QtSql import QSqlTableModel
 
 else:
     from qgis.PyQt.QtCore import Qt, QStringListModel
@@ -23,30 +22,32 @@ else:
     from qgis.PyQt.QtWidgets import QCompleter, QTableView
     from qgis.PyQt.QtSql import QSqlTableModel
 
-from qgis.core import QgsExpression, QgsFeatureRequest
-
+from qgis.core import QgsFeatureRequest
 
 from functools import partial
 
-from _utils import widget_manager as wm
-from tree_manage.actions.multiple_selection import MultipleSelection
-from tree_manage.actions.parent import ParentAction
-from tree_manage.ui_manager import PlaningUnit
+from .. import widget_manager
+from .multiple_selection import MultipleSelection
+from .parent import ParentAction
+from ..ui_manager import PlaningUnit
 
 
 class PlanningUnit(ParentAction):
+
     def __init__(self, iface, settings, controller, plugin_dir):
         """ Class constructor """
-        ParentAction.__init__(self, iface, settings, controller, plugin_dir)
 
+        ParentAction.__init__(self, iface, settings, controller, plugin_dir)
         self.iface = iface
         self.settings = settings
         self.controller = controller
         self.plugin_dir = plugin_dir
         self.canvas = self.iface.mapCanvas()
 
+
     def reset_lists(self):
         """ Reset list of selected records """
+
         self.ids = []
         self.list_ids = {}
         self.list_ids['node'] = []
@@ -54,11 +55,13 @@ class PlanningUnit(ParentAction):
 
     def reset_layers(self):
         """ Reset list of layers """
+
         self.layers = {}
         self.layers['node'] = []
 
 
     def open_form(self):
+
         self.previous_map_tool = self.canvas.mapTool()
         # Get layers of every geom_type
         self.reset_lists()
@@ -82,15 +85,15 @@ class PlanningUnit(ParentAction):
         validator = QIntValidator(1, 9999999)
         self.dlg_unit.txt_times.setValidator(validator)
 
-        wm.set_qtv_config(self.dlg_unit.tbl_unit, edit_triggers=QTableView.DoubleClicked)
+        widget_manager.set_qtv_config(self.dlg_unit.tbl_unit, edit_triggers=QTableView.DoubleClicked)
 
         sql = ("SELECT id, name FROM " + self.schema_name + ".cat_campaign")
         rows = self.controller.get_rows(sql, log_sql=True)
-        wm.set_item_data(self.dlg_unit.cmb_campaign, rows, 1)
+        widget_manager.set_item_data(self.dlg_unit.cmb_campaign, rows, 1)
         sql = ("SELECT id, name FROM " + self.schema_name + ".cat_work")
         rows = [('', '')]
         rows.extend(self.controller.get_rows(sql))
-        wm.set_item_data(self.dlg_unit.cmb_work, rows, 1)
+        widget_manager.set_item_data(self.dlg_unit.cmb_work, rows, 1)
         self.load_default_values()
         table_name = "v_ui_planning_unit"
         self.update_table(self.dlg_unit, self.dlg_unit.tbl_unit, table_name, self.dlg_unit.cmb_campaign, self.dlg_unit.cmb_work)
@@ -109,12 +112,9 @@ class PlanningUnit(ParentAction):
         self.dlg_unit.btn_close.clicked.connect(partial(self.save_default_values))
         self.dlg_unit.btn_close.clicked.connect(partial(self.close_dialog, self.dlg_unit))
         self.dlg_unit.btn_close.clicked.connect(partial(self.remove_selection))
-
         self.dlg_unit.rejected.connect(partial(self.save_default_values))
         self.dlg_unit.rejected.connect(partial(self.close_dialog, self.dlg_unit))
         self.dlg_unit.rejected.connect(partial(self.remove_selection))
-
-
         self.dlg_unit.btn_snapping.clicked.connect(partial(self.selection_init,  self.dlg_unit.tbl_unit))
         self.dlg_unit.btn_insert.clicked.connect(partial(self.insert_single, self.dlg_unit, self.dlg_unit.txt_id))
         self.dlg_unit.btn_delete.clicked.connect(partial(self.delete_row, self.dlg_unit.tbl_unit, table_name))
@@ -123,7 +123,8 @@ class PlanningUnit(ParentAction):
 
 
     def populate_comboline(self, dialog, widget, completer):
-        _filter = wm.getWidgetText(dialog, widget)
+
+        _filter = widget_manager.getWidgetText(dialog, widget)
         sql = ("SELECT node_id FROM " + self.schema_name + ".v_edit_node "
                " WHERE node_id ILIKE '%" + str(_filter)+"%'")
         rows = self.controller.get_rows(sql, log_sql=True)
@@ -148,6 +149,7 @@ class PlanningUnit(ParentAction):
 
 
     def delete_row(self, qtable, table_name):
+
         # Get selected rows
         selected_list = qtable.selectionModel().selectedRows()
         if len(selected_list) == 0:
@@ -181,6 +183,7 @@ class PlanningUnit(ParentAction):
 
     def selection_init(self,  qtable):
         """ Set canvas map tool to an instance of class 'MultipleSelection' """
+
         multiple_selection = MultipleSelection(self.iface, self.controller, self.layers['node'], parent_manage=self, table_object=qtable)
         self.canvas.setMapTool(multiple_selection)
         self.disconnect_signal_selection_changed()
@@ -200,6 +203,7 @@ class PlanningUnit(ParentAction):
 
     def connect_signal_selection_changed(self, qtable):
         """ Connect signal selectionChanged """
+
         try:
             self.canvas.selectionChanged.connect(partial(self.selection_changed, qtable, self.geom_type))
         except Exception:
@@ -207,15 +211,15 @@ class PlanningUnit(ParentAction):
 
 
     def insert_single(self, dialog, qline):
-        feature_id = wm.getWidgetText(dialog, qline)
+
+        feature_id = widget_manager.getWidgetText(dialog, qline)
         layer = self.controller.get_layer_by_tablename('v_edit_node')
         if not layer:
             self.last_error = self.tr("Layer not found") + ": v_edit_node"
             return None
 
         feature = self.get_feature_by_id(layer, feature_id, 'node_id')
-
-        if feature is not False:
+        if feature:
             self.insert_row(self.dlg_unit.tbl_unit, feature_id)
 
 
@@ -228,7 +232,7 @@ class PlanningUnit(ParentAction):
 
         # Iterate over all layers of the group
         for layer in self.layers[self.geom_type]:
-            if layer.selectedFeatureCount() > 0 and self.iface.legendInterface().isLayerVisible(layer):
+            if layer.selectedFeatureCount() > 0 and self.controller.is_layer_visible(layer):
                 # Get selected features of the layer
                 features = layer.selectedFeatures()
                 for feature in features:
@@ -240,7 +244,6 @@ class PlanningUnit(ParentAction):
 
         self.remove_selection()
         self.iface.actionPan().trigger()
-        # self.connect_signal_selection_changed(qtable)
 
 
     def select_features_by_ids(self, geom_type, expr):
@@ -259,14 +262,14 @@ class PlanningUnit(ParentAction):
                     layer.removeSelection()
 
 
-
     def insert_row(self, qtable, selected_id):
         """ Reload @widget with contents of @tablename applying selected @expr_filter """
+
         model = qtable.model()
         record = model.record()
-        campaign_id = wm.get_item_data(self.dlg_unit, self.dlg_unit.cmb_campaign, 0)
-        work_id = wm.get_item_data(self.dlg_unit, self.dlg_unit.cmb_work, 0)
-        times = wm.getWidgetText(self.dlg_unit, self.dlg_unit.txt_times, return_string_null=False)
+        campaign_id = widget_manager.get_item_data(self.dlg_unit, self.dlg_unit.cmb_campaign, 0)
+        work_id = widget_manager.get_item_data(self.dlg_unit, self.dlg_unit.cmb_work, 0)
+        times = widget_manager.getWidgetText(self.dlg_unit, self.dlg_unit.txt_times, return_string_null=False)
         if times is None or times < 1 or times == "":
             times = "1"
 
@@ -279,8 +282,8 @@ class PlanningUnit(ParentAction):
 
     def update_table(self, dialog, qtable, table_name, combo1, combo2):
 
-        campaign_id = wm.get_item_data(dialog, combo1, 0)
-        work_id = wm.get_item_data(dialog, combo2, 0)
+        campaign_id = widget_manager.get_item_data(dialog, combo1, 0)
+        work_id = widget_manager.get_item_data(dialog, combo2, 0)
 
         expr_filter = "campaign_id =" + str(campaign_id)
         if work_id is None or work_id == "":
@@ -297,13 +300,14 @@ class PlanningUnit(ParentAction):
 
     def fill_table_unit(self, qtable, table_name,  expr_filter=None):
         """ Fill table @widget filtering query by @workcat_id
-         Set a model with selected filter.
-         Attach that model to selected table
-         @setEditStrategy:
-             0: OnFieldChange
-             1: OnRowChange
-             2: OnManualSubmit
-         """
+            Set a model with selected filter.
+            Attach that model to selected table
+            @setEditStrategy:
+            0: OnFieldChange
+            1: OnRowChange
+            2: OnManualSubmit
+        """
+
         expr = None
         if expr_filter:
             # Check expression
@@ -334,9 +338,11 @@ class PlanningUnit(ParentAction):
 
         return expr
 
+
     def get_id_list(self):
+
         self.ids = []
-        column_index = wm.get_col_index_by_col_name(self.dlg_unit.tbl_unit, 'node_id')
+        column_index = widget_manager.get_col_index_by_col_name(self.dlg_unit.tbl_unit, 'node_id')
         for x in range(0, self.dlg_unit.tbl_unit.model().rowCount()):
             _id = self.dlg_unit.tbl_unit.model().data(self.dlg_unit.tbl_unit.model().index(x, column_index))
             self.ids.append(_id)
@@ -344,49 +350,52 @@ class PlanningUnit(ParentAction):
 
     def remove_selection(self):
         """ Remove all previous selections """
+
         for layer in self.layers['node']:
             if layer in self.visible_layers:
-                self.iface.legendInterface().setLayerVisible(layer, False)
+                self.controller.set_layer_visible(layer, False)
         for layer in self.layers['node']:
             if layer in self.visible_layers:
                 layer.removeSelection()
-                self.iface.legendInterface().setLayerVisible(layer, True)
+                self.controller.set_layer_visible(layer, True)
 
-        self.canvas.clear()
         self.canvas.refresh()
-        # self.canvas.setMapTool(self.previous_map_tool)
-
 
 
     def get_visible_layers(self, return_as_list=True):
         """ Return list or string as {...} with all visible layer in TOC """
 
         visible_layer = []
+        layers = self.controller.get_layers()
         if return_as_list:
-            for layer in self.iface.legendInterface().layers():
-                if self.iface.legendInterface().isLayerVisible(layer):
+            for layer in layers:
+                if self.controller.is_layer_visible(layer):
                     visible_layer.append(layer)
-            # visible_layer = [lyr for lyr in QgsMapLayerRegistry.instance().mapLayers().values()]
             return visible_layer
 
-        for layer in self.iface.legendInterface().layers():
-            if self.iface.legendInterface().isLayerVisible(layer):
+        for layer in layers:
+            if self.controller.is_layer_visible(layer):
                 visible_layer += '"' + str(layer.name()) + '", '
         visible_layer = visible_layer[:-2] + "}"
+
         return visible_layer
 
+
     def save_default_values(self):
+
         cur_user = self.controller.get_current_user()
-        campaign = wm.get_item_data(self.dlg_unit, self.dlg_unit.cmb_campaign, 0)
-        work = wm.get_item_data(self.dlg_unit, self.dlg_unit.cmb_work, 0)
+        campaign = widget_manager.get_item_data(self.dlg_unit, self.dlg_unit.cmb_campaign, 0)
+        work = widget_manager.get_item_data(self.dlg_unit, self.dlg_unit.cmb_work, 0)
         self.controller.plugin_settings_set_value("PlanningUnit_cmb_campaign_" + cur_user, campaign)
         self.controller.plugin_settings_set_value("PlanningUnit_cmb_work_" + cur_user, work)
 
 
     def load_default_values(self):
         """ Load QGIS settings related with csv options """
+
         cur_user = self.controller.get_current_user()
         campaign = self.controller.plugin_settings_value('PlanningUnit_cmb_campaign_' + cur_user)
         work = self.controller.plugin_settings_value('PlanningUnit_cmb_work_' + cur_user)
-        wm.set_combo_itemData(self.dlg_unit.cmb_campaign, str(campaign), 0)
-        wm.set_combo_itemData(self.dlg_unit.cmb_work, str(work), 0)
+        widget_manager.set_combo_itemData(self.dlg_unit.cmb_campaign, str(campaign), 0)
+        widget_manager.set_combo_itemData(self.dlg_unit.cmb_work, str(work), 0)
+

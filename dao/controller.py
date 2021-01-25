@@ -11,19 +11,16 @@ try:
 except:
     from qgis.core import QGis as Qgis
 
-if Qgis.QGIS_VERSION_INT >= 20000 and Qgis.QGIS_VERSION_INT < 29900:
-    from PyQt4.Qt import QToolBox
-    from PyQt4.QtCore import QCoreApplication, QSettings, Qt, QTranslator
-    from PyQt4.QtGui import QCheckBox, QLabel, QMessageBox, QPushButton, QTabWidget, QApplication, QAction
-    from PyQt4.QtSql import QSqlDatabase
-    from qgis.core import QgsDataSourceURI as QgsDataSourceUri
-    from qgis.core import QgsMapLayerRegistry
+if Qgis.QGIS_VERSION_INT < 29900:
+    from qgis.PyQt.QtCore import QCoreApplication, QSettings, Qt, QTranslator
+    from qgis.PyQt.QtGui import QCheckBox, QLabel, QMessageBox, QPushButton, QTabWidget
+    from qgis.PyQt.QtSql import QSqlDatabase
+    from qgis.core import QgsDataSourceURI as QgsDataSourceUri, QgsMapLayerRegistry as QgsProject
 else:
     from qgis.PyQt.QtCore import QCoreApplication, QSettings, Qt, QTranslator
-    from qgis.PyQt.QtWidgets import QToolBox, QCheckBox, QLabel, QMessageBox, QPushButton, QTabWidget, QApplication, QAction
+    from qgis.PyQt.QtWidgets import QCheckBox, QLabel, QMessageBox, QPushButton, QTabWidget
     from qgis.PyQt.QtSql import QSqlDatabase
-    from qgis.core import QgsDataSourceUri
-    from qgis.core import QgsProject
+    from qgis.core import QgsDataSourceUri, QgsProject
 
 from qgis.core import QgsMessageLog, QgsCredentials
 
@@ -32,9 +29,7 @@ import sys
 import subprocess
 from functools import partial
 
-plugin_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-sys.path.append(plugin_path)
-from tree_manage.dao.pg_dao import PgDao
+from .pg_dao import PgDao
 
 
 class DaoController():
@@ -86,7 +81,7 @@ class DaoController():
         
     def check_actions(self, check=True):
         """ Utility to check/uncheck all actions """
-        for action_index, action in self.actions.iteritems():   #@UnusedVariable
+        for action_index, action in self.actions.items():   #@UnusedVariable
             action.setChecked(check)    
                            
     def check_action(self, check=True, index=1):
@@ -149,7 +144,6 @@ class DaoController():
         QgsCredentials.instance().put(conn_info, layer_source['user'], layer_source['password'])
 
         return layer_source
-
 
 
     def connect_to_database(self, host, port, db, user, pwd):
@@ -300,13 +294,23 @@ class DaoController():
             msg_box.setInformativeText(inf_text);        
         msg_box.setDefaultButton(QMessageBox.No)        
         ret = msg_box.exec_()   #@UnusedVariable
-                          
+
+
+    def get_sql(self, sql, log_sql=False, params=None):
+        """ Generate SQL with params. Useful for debugging """
+
+        if params:
+            sql = self.dao.mogrify(sql, params)
+        if log_sql:
+            self.log_info(sql, stack_level_increase=2)
+
+        return sql
+
             
-    def get_row(self, sql, log_info=True, log_sql=False, commit=False):
+    def get_row(self, sql, log_info=True, log_sql=False, commit=False, params=None):
         """ Execute SQL. Check its result in log tables, and show it to the user """
         
-        if log_sql:
-            self.log_info(sql)
+        sql = self.get_sql(sql, log_sql, params)
         row = self.dao.get_row(sql, commit)   
         self.last_error = self.dao.last_error      
         if not row:
@@ -546,7 +550,7 @@ class DaoController():
     def get_layer_by_layername(self, layername, log_info=False):
         """ Get layer with selected @layername (the one specified in the TOC) """
         
-        layer = QgsMapLayerRegistry.instance().mapLayersByName(layername)
+        layer = QgsProject.instance().mapLayersByName(layername)
         if layer:         
             layer = layer[0] 
         elif layer is None and log_info:
@@ -559,7 +563,7 @@ class DaoController():
         """ Iterate over all layers and get the one with selected @tablename """
         
         # Check if we have any layer loaded
-        layers = self.iface.legendInterface().layers()
+        layers = self.get_layers()
         if len(layers) == 0:
             return None
 
@@ -618,23 +622,23 @@ class DaoController():
         pos_user = uri.find(' user=')
         pos_password = uri.find(' password=')
         pos_sslmode = uri.find(' sslmode=')        
-        if pos_db <> -1 and pos_host <> -1:
+        if pos_db != -1 and pos_host != -1:
             uri_db = uri[pos_db + 8:pos_host - 1]
             layer_source['db'] = uri_db     
-        if pos_host <> -1 and pos_port <> -1:
+        if pos_host != -1 and pos_port != -1:
             uri_host = uri[pos_host + 6:pos_port]     
             layer_source['host'] = uri_host     
-        if pos_port <> -1:
-            if pos_user <> -1:
+        if pos_port != -1:
+            if pos_user != -1:
                 pos_end = pos_user
-            elif pos_sslmode <> -1:
+            elif pos_sslmode != -1:
                 pos_end = pos_sslmode
             uri_port = uri[pos_port + 6:pos_end]     
             layer_source['port'] = uri_port               
-        if pos_user <> -1 and pos_password <> -1:
+        if pos_user != -1 and pos_password != -1:
             uri_user = uri[pos_user + 7:pos_password - 1]
             layer_source['user'] = uri_user     
-        if pos_password <> -1 and pos_sslmode <> -1:
+        if pos_password != -1 and pos_sslmode != -1:
             uri_password = uri[pos_password + 11:pos_sslmode - 1]     
             layer_source['password'] = uri_password                     
          
@@ -642,7 +646,7 @@ class DaoController():
         pos_table = uri.find('table=')
         pos_end_schema = uri.rfind('.')
         pos_fi = uri.find('" ')
-        if pos_table <> -1 and pos_fi <> -1:
+        if pos_table != -1 and pos_fi != -1:
             uri_schema = uri[pos_table + 6:pos_end_schema]
             uri_table = uri[pos_end_schema + 2:pos_fi]
             layer_source['schema'] = uri_schema            
@@ -662,7 +666,7 @@ class DaoController():
         pos_ini = uri.find('table=')
         pos_end_schema = uri.rfind('.')
         pos_fi = uri.find('" ')
-        if pos_ini <> -1 and pos_fi <> -1:
+        if pos_ini != -1 and pos_fi != -1:
             uri_table = uri[pos_end_schema+2:pos_fi]
 
         return uri_table    
@@ -679,7 +683,7 @@ class DaoController():
         uri = layer.dataProvider().dataSourceUri().lower()
         pos_ini = uri.find('key=')
         pos_end = uri.rfind('srid=')
-        if pos_ini <> -1:
+        if pos_ini != -1:
             uri_pk = uri[pos_ini + 5:pos_end-2]
 
         return uri_pk
@@ -853,10 +857,62 @@ class DaoController():
     def get_current_user(self):
         """ Get current user connected to database """
 
-        sql = ("SELECT current_user")
+        sql = "SELECT current_user"
         row = self.get_row(sql)
         cur_user = ""
         if row:
             cur_user = str(row[0])
 
         return cur_user
+
+
+    def get_srid(self, tablename, schemaname=None):
+        """ Find SRID of selected schema """
+
+        if schemaname is None:
+            schemaname = self.schema_name
+
+        schemaname = schemaname.replace('"', '')
+        srid = None
+        sql = "SELECT Find_SRID(%s, %s, 'the_geom');"
+        params = [schemaname, tablename]
+        row = self.get_row(sql, params=params)
+        if row:
+            srid = row[0]
+
+        return srid
+
+
+    def is_layer_visible(self, layer):
+        """ Is layer visible """
+
+        visible = False
+        if layer:
+            if Qgis.QGIS_VERSION_INT < 29900:
+                visible = self.iface.legendInterface().isLayerVisible(layer)
+            else:
+                visible = QgsProject.instance().layerTreeRoot().findLayer(layer.id()).itemVisibilityChecked()
+
+        return visible
+
+
+    def set_layer_visible(self, layer, visible=True):
+        """ Set layer visible """
+
+        if layer:
+            if Qgis.QGIS_VERSION_INT < 29900:
+                self.iface.legendInterface().setLayerVisible(layer, visible)
+            else:
+                QgsProject.instance().layerTreeRoot().findLayer(layer.id()).setItemVisibilityChecked(visible)
+
+
+    def get_layers(self):
+        """ Return layers in the same order as listed in TOC """
+
+        if Qgis.QGIS_VERSION_INT < 29900:
+            layers = self.iface.legendInterface().layers()
+        else:
+            layers = [layer.layer() for layer in QgsProject.instance().layerTreeRoot().findLayers()]
+
+        return layers
+
