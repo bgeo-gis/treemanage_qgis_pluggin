@@ -583,6 +583,15 @@ class InfoIncident(GwDialog, FORM_CLASS):
     pass
 
 
+FORM_CLASS = get_ui_class('planning_area.ui', 'tm')
+class PlaningArea(GwDialog, FORM_CLASS):
+    pass
+
+FORM_CLASS = get_ui_class('planning_area_selection.ui', 'tm')
+class PlaningAreaSelection(GwDialog, FORM_CLASS):
+    pass
+
+
 FORM_CLASS = get_ui_class('planning_unit.ui', 'tm')
 class PlaningUnit(GwDialog, FORM_CLASS):
     pass

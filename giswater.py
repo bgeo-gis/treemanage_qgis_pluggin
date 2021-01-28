@@ -213,7 +213,7 @@ class Giswater(QObject):
                 callback_function = getattr(self.utils, function_name)
                 action.triggered.connect(callback_function)
             # Tm Basic toolbar actions
-            elif int(index_action) in (301, 302, 303, 304, 305, 309):
+            elif int(index_action) in (301, 302, 303, 304, 305, 306, 309):
                 callback_function = getattr(self.tm_basic, function_name)
                 action.triggered.connect(callback_function)
             # Generic function
@@ -327,7 +327,7 @@ class Giswater(QObject):
 
         # Buttons NOT checkable (normally because they open a form)
         list_actions = (18, 23, 25, 26, 27, 29, 32, 33, 34, 38, 41, 45, 46, 47, 48, 49, 50, 58, 59, 86, 64, 65, 66,
-                        67, 68, 69, 74, 75, 76, 81, 82, 83, 84, 98, 99, 196, 206, 301, 302, 303, 304, 305, 309)
+                        67, 68, 69, 74, 75, 76, 81, 82, 83, 84, 98, 99, 196, 206, 301, 302, 303, 304, 305, 306, 309)
 
         if int(index_action) in list_actions:
             action = self.create_action(index_action, text_action, toolbar, False, function_name, action_group)
@@ -1248,7 +1248,7 @@ class Giswater(QObject):
         """ Manage actions of the different plugin toolbars """
 
         toolbar_id = "tm_basic"
-        list_actions = ['303', '301', '302', '304', '305', '309']
+        list_actions = ['303', '301', '302', '304', '305', '306', '309']
         self.manage_toolbar(toolbar_id, list_actions)
 
         # Manage action group of every toolbar

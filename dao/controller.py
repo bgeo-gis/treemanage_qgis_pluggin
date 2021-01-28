@@ -794,7 +794,6 @@ class DaoController(object):
         else: sql = f"SELECT {function_name}("
         if parameters: sql += f"{parameters}"
         sql += f");"
-
         row = self.get_row(sql, commit=commit, log_sql=log_sql)
         if not row or not row[0]:
             return None
@@ -1271,7 +1270,6 @@ class DaoController(object):
 
         if schema_name is None:
             schema_name = self.schema_name
-
         schema_name = schema_name.replace('"', '')
         sql = ("SELECT routine_name FROM information_schema.routines "
                "WHERE lower(routine_schema) = %s "

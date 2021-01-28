@@ -17,6 +17,8 @@ from .parent import ParentAction
 from .tm_parent import TmParentAction
 from .tm_manage_visit import TmManageVisit
 from .tm_planning_unit import TmPlanningUnit
+from .tm_planning_area import TmPlanningArea
+
 from ..ui.tm.month_manage import MonthManage
 from ..ui.tm.month_selector import MonthSelector
 from ..ui.tm.new_prices import NewPrices
@@ -936,6 +938,12 @@ class TmBasic(TmParentAction):
 
         plan_unit = TmPlanningUnit(self.iface, self.settings, self.controller, self.plugin_dir)
         plan_unit.open_form()
+
+
+    def open_planning_area(self):
+
+        plan_area = TmPlanningArea(self.iface, self.settings, self.controller, self.plugin_dir)
+        plan_area.open_form()
 
 
     def open_incident_manager(self):
