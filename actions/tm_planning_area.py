@@ -6,9 +6,8 @@ or (at your option) any later version.
 """
 
 # -*- coding: utf-8 -*-
-import os
+import json
 
-from qgis.core import QgsFeatureRequest
 from qgis.PyQt.QtCore import QStringListModel, Qt
 from qgis.PyQt.QtGui import QIntValidator, QIcon
 from qgis.PyQt.QtSql import QSqlTableModel
@@ -114,7 +113,7 @@ class TmPlanningArea(TmParentAction):
         self.set_icon(self.dlg_area_selection.btn_snapping, "137")
 
         body = self.create_body()
-        result = self.controller.get_json('fct_getplanform', body)
+        result = self.controller.get_json('tm_fct_getplanform', body)
 
         # json_example = json.loads(example, object_pairs_hook=OrderedDict)
         # dict_keys = json_example.keys()
@@ -172,8 +171,10 @@ class TmPlanningArea(TmParentAction):
             if chk_values != []:
                 json_values[f"{grbox.objectName()}"] = chk_values
 
-        test_json = f'{{"ids":{self.ids}, "values":{json_values}}}'
-        print(f"TEST JSON -> {test_json}")
+        extras = f'{{"ids":{json.dumps(self.ids)}, "values":{json.dumps(json_values)}}}'
+
+        body = self.create_body(extras=extras)
+        self.controller.get_json('tm_fct_setplan_zone', body, log_sql=True)
 
 
 
