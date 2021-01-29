@@ -73,23 +73,18 @@ class TmPlanningArea(TmParentAction):
 
         validator = QIntValidator(1, 9999999)
 
-        # utils_giswater.set_qtv_config(self.dlg_area.tbl_area, edit_triggers=QTableView.DoubleClicked)
         utils_giswater.set_qtv_config(self.dlg_area.tbl_area, edit_triggers=QTableView.NoEditTriggers)
 
-        sql = "SELECT id, name FROM cat_campaign"
-        rows = self.controller.get_rows(sql, log_sql=True)
-        utils_giswater.set_item_data(self.dlg_area.cmb_campaign, rows, 1)
+
         sql = "SELECT id, name FROM cat_work"
         rows = self.controller.get_rows(sql, add_empty_row=True)
         utils_giswater.set_item_data(self.dlg_area.cmb_work, rows, 1)
 
         self.load_default_values()
-        table_name = "v_ui_planning_area"
-        # table_name = "planning_area"
+        table_name = "v_ui_planning_unit_zone"
         self.update_table(self.dlg_area, self.dlg_area.tbl_area, table_name)
 
         # Signals
-        self.dlg_area.cmb_campaign.currentIndexChanged.connect(partial(self.update_table, self.dlg_area, self.dlg_area.tbl_area, table_name))
         self.dlg_area.cmb_work.currentIndexChanged.connect(partial(self.update_table, self.dlg_area, self.dlg_area.tbl_area, table_name))
 
         self.dlg_area.btn_close.clicked.connect(partial(self.save_default_values))
@@ -115,8 +110,6 @@ class TmPlanningArea(TmParentAction):
         body = self.create_body()
         result = self.controller.get_json('tm_fct_getplanform', body)
 
-        # json_example = json.loads(example, object_pairs_hook=OrderedDict)
-        # dict_keys = json_example.keys()
         main_layout = self.dlg_area_selection.findChild(QGridLayout, 'grl_main')
 
         for row in result['body']['data']['info']:
@@ -131,7 +124,6 @@ class TmPlanningArea(TmParentAction):
                     lbl.setObjectName(f"lbl_{value}")
                     lbl.setText(f"{value}")
                     lbl.setMinimumSize(160, 0)
-                    # lbl.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
                     grid_layout.addWidget(lbl, i, 0)
 
                     chk = QCheckBox()
@@ -171,7 +163,7 @@ class TmPlanningArea(TmParentAction):
             if chk_values != []:
                 json_values[f"{grbox.objectName()}"] = chk_values
 
-        extras = f'{{"ids":{json.dumps(self.ids)}, "values":{json.dumps(json_values)}}}'
+        extras = f'"ids":{json.dumps(self.ids)}, "values":{json.dumps(json_values)}'
 
         body = self.create_body(extras=extras)
         self.controller.get_json('tm_fct_setplan_zone', body, log_sql=True)
@@ -229,15 +221,7 @@ class TmPlanningArea(TmParentAction):
 
     def update_table(self, dialog, qtable, table_name):
 
-        campaign_id = utils_giswater.get_item_data(dialog, dialog.cmb_campaign, 0)
-        work_id = utils_giswater.get_item_data(dialog, dialog.cmb_work, 0, add_quote=True)
-
-        expr_filter = f"campaign_id ='{campaign_id}'"
-
-        if work_id: expr_filter += f" AND work_id ='{work_id}'"
-        self.fill_table_area(qtable, table_name, expr_filter=expr_filter)
-
-        # self.manage_combos(qtable, table_name, expr_filter)
+        self.fill_table_area(qtable, table_name)
 
         self.get_id_list()
 
