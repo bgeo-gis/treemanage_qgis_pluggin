@@ -22,7 +22,7 @@
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
     <layout class="QGridLayout" name="gridLayout_3">
-     <item row="0" column="0">
+     <item row="0" column="3">
       <widget class="QPushButton" name="btn_snapping">
        <property name="text">
         <string/>
@@ -30,6 +30,16 @@
       </widget>
      </item>
      <item row="0" column="1">
+      <widget class="QDateEdit" name="executed_date">
+       <property name="calendarPopup">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="0">
+      <widget class="QComboBox" name="cmb_priority"/>
+     </item>
+     <item row="0" column="2">
       <spacer name="horizontalSpacer_2">
        <property name="orientation">
         <enum>Qt::Horizontal</enum>

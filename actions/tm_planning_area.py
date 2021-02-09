@@ -57,9 +57,9 @@ class TmPlanningArea(TmParentAction):
         self.reset_lists()
         self.reset_layers()
         self.geom_type = 'node'
-        layer = self.controller.get_layer_by_tablename('v_edit_node')
+        layer = self.controller.get_layer_by_tablename('v_edit_node_zone')
         if not layer:
-            self.last_error = self.tr("Layer not found") + ": v_edit_node"
+            self.last_error = self.tr("Layer not found") + ": v_edit_node_zone"
             return None
         self.layers['node'] = [layer]
 
@@ -106,6 +106,13 @@ class TmPlanningArea(TmParentAction):
 
         # Set snapping button icon
         self.set_icon(self.dlg_area_selection.btn_snapping, "137")
+
+        # Populate widgets
+        sql = "SELECT id, name FROM cat_priority"
+        rows = self.controller.get_rows(sql, add_empty_row=True)
+        utils_giswater.set_item_data(self.dlg_area_selection.cmb_priority, rows, 1)
+
+        utils_giswater.setCalendarDate(self.dlg_area_selection, self.dlg_area_selection.executed_date, None, True)
 
         body = self.create_body()
         result = self.controller.get_json('tm_fct_getplanform', body)
@@ -163,7 +170,15 @@ class TmPlanningArea(TmParentAction):
             if chk_values != []:
                 json_values[f"{grbox.objectName()}"] = chk_values
 
-        extras = f'"ids":{json.dumps(self.ids)}, "values":{json.dumps(json_values)}'
+        extras = f'"ids":{json.dumps(self.ids)}, "values":{json.dumps(json_values)}, ' \
+                 f'"plan_execute_date":"{utils_giswater.getCalendarDate(self.dlg_area_selection, self.dlg_area_selection.executed_date)}"'
+
+        priority_value = utils_giswater.getWidgetText(self.dlg_area_selection, self.dlg_area_selection.cmb_priority,
+                                                      return_string_null=False)
+        if priority_value != "":
+            extras += f', "priority":"{priority_value}"'
+        else:
+            extras += f', "priority":null'
 
         body = self.create_body(extras=extras)
         self.controller.get_json('tm_fct_setplan_zone', body, log_sql=True)
@@ -223,7 +238,7 @@ class TmPlanningArea(TmParentAction):
 
         self.fill_table_area(qtable, table_name)
 
-        self.get_id_list()
+        # self.get_id_list()
 
 
     def fill_table_area(self, qtable, table_name,  expr_filter=None):
