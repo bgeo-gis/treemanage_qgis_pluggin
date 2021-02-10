@@ -8,8 +8,7 @@ or (at your option) any later version.
 # -*- coding: utf-8 -*-
 import json
 
-from qgis.PyQt.QtCore import QStringListModel, Qt
-from qgis.PyQt.QtGui import QIntValidator, QIcon
+from qgis.PyQt.QtCore import QStringListModel, Qt, QDate
 from qgis.PyQt.QtSql import QSqlTableModel
 from qgis.PyQt.QtWidgets import QCompleter, QTableView, QGridLayout, QGroupBox, QLabel, QCheckBox
 
@@ -71,21 +70,23 @@ class TmPlanningArea(TmParentAction):
 
         self.set_icon(self.dlg_area.btn_selection, "100")
 
-        validator = QIntValidator(1, 9999999)
-
         utils_giswater.set_qtv_config(self.dlg_area.tbl_area, edit_triggers=QTableView.NoEditTriggers)
-
-
-        sql = "SELECT id, name FROM cat_work"
-        rows = self.controller.get_rows(sql, add_empty_row=True)
-        utils_giswater.set_item_data(self.dlg_area.cmb_work, rows, 1)
 
         self.load_default_values()
         table_name = "v_ui_planning_unit_zone"
         self.update_table(self.dlg_area, self.dlg_area.tbl_area, table_name)
 
         # Signals
-        self.dlg_area.cmb_work.currentIndexChanged.connect(partial(self.update_table, self.dlg_area, self.dlg_area.tbl_area, table_name))
+        self.dlg_area.cmb_element.currentIndexChanged.connect(
+            partial(self.update_table, self.dlg_area, self.dlg_area.tbl_area, table_name))
+        self.dlg_area.cmb_work.currentIndexChanged.connect(
+            partial(self.update_table, self.dlg_area, self.dlg_area.tbl_area, table_name))
+        self.dlg_area.cmb_priority.currentIndexChanged.connect(
+            partial(self.update_table, self.dlg_area, self.dlg_area.tbl_area, table_name))
+        self.dlg_area.start_date.dateChanged.connect(partial(self.update_table, self.dlg_area, self.dlg_area.tbl_area, table_name))
+        self.dlg_area.end_date.dateChanged.connect(partial(self.update_table, self.dlg_area, self.dlg_area.tbl_area, table_name))
+        self.dlg_area.cmb_element.currentIndexChanged.connect(
+            partial(self.update_cmb_work))
 
         self.dlg_area.btn_close.clicked.connect(partial(self.save_default_values))
         self.dlg_area.btn_close.clicked.connect(partial(self.close_dialog, self.dlg_area))
@@ -95,7 +96,50 @@ class TmPlanningArea(TmParentAction):
         self.dlg_area.rejected.connect(partial(self.remove_selection))
         self.dlg_area.btn_selection.clicked.connect(partial(self.open_selection_form))
 
+        # set timeStart and timeEnd as the min/max dave values get from model
+        current_date = QDate.currentDate()
+        sql = ('SELECT MIN(plan_date), MAX(plan_date)'
+               ' FROM v_ui_planning_unit_zone')
+        row = self.controller.get_row(sql)
+        if row:
+            if row[0]:
+                self.dlg_area.start_date.setDate(row[0])
+            if row[1]:
+                self.dlg_area.end_date.setDate(row[1])
+            else:
+                self.dlg_area.end_date.setDate(current_date)
+
+        # Populate combos
+        sql = "SELECT id, idval FROM om_visit_class"
+        rows = self.controller.get_rows(sql, add_empty_row=True)
+        utils_giswater.set_item_data(self.dlg_area.cmb_element, rows, 1)
+
+        sql = "SELECT distinct(om_visit_parameter.descript), om_visit_parameter.descript param FROM verd_urba.om_visit_class " \
+              "JOIN verd_urba.om_visit_class_x_parameter ON om_visit_class_x_parameter.class_id = om_visit_class.id " \
+              "JOIN verd_urba.om_visit_parameter ON om_visit_class_x_parameter.parameter_id=om_visit_parameter.id"
+        rows = self.controller.get_rows(sql, add_empty_row=True)
+        utils_giswater.set_item_data(self.dlg_area.cmb_work, rows, 1)
+        self.update_cmb_work()
+
+        sql = "SELECT id, name FROM cat_priority"
+        rows = self.controller.get_rows(sql, add_empty_row=True)
+        utils_giswater.set_item_data(self.dlg_area.cmb_priority, rows, 1)
+
         self.open_dialog(self.dlg_area)
+
+
+    def update_cmb_work(self):
+
+        element_id = utils_giswater.get_item_data(self.dlg_area, self.dlg_area.cmb_element, 0)
+        if element_id:
+            sql = f"SELECT distinct(om_visit_parameter.descript), om_visit_parameter.descript param " \
+                  f"FROM verd_urba.om_visit_class " \
+                  f"JOIN verd_urba.om_visit_class_x_parameter ON om_visit_class_x_parameter.class_id = om_visit_class.id " \
+                  f"JOIN verd_urba.om_visit_parameter ON om_visit_class_x_parameter.parameter_id=om_visit_parameter.id " \
+                  f" WHERE om_visit_class.id = '{element_id}'"
+
+            rows = self.controller.get_rows(sql, add_empty_row=True)
+            utils_giswater.set_item_data(self.dlg_area.cmb_work, rows, 1)
 
 
     def open_selection_form(self):
@@ -236,7 +280,24 @@ class TmPlanningArea(TmParentAction):
 
     def update_table(self, dialog, qtable, table_name):
 
-        self.fill_table_area(qtable, table_name)
+        element_id = utils_giswater.get_item_data(dialog, dialog.cmb_element, 1)
+        work_id = utils_giswater.get_item_data(dialog, dialog.cmb_work, 1, add_quote=True)
+        priority = utils_giswater.get_item_data(dialog, dialog.cmb_priority, 1)
+
+        # Create interval dates
+        format_date = 'yyyy/MM/dd'
+        start_date = dialog.start_date.date()
+        end_date = dialog.end_date.date()
+        interval = f"'{start_date.toString(format_date)}'::timestamp AND '{end_date.toString(format_date)}'::timestamp"
+
+
+        # expr_filter = f" plan_date::timestamp BETWEEN {interval}"
+        expr_filter = f" 1=1 "
+        if str(element_id) not in "-1": expr_filter += f" AND work like '%{element_id}%'"
+        if str(work_id) not in "-1": expr_filter += f" AND work like '%{work_id}%'"
+        if str(priority) not in "-1": expr_filter += f" AND priority = '{priority}'"
+
+        self.fill_table_area(qtable, table_name, expr_filter=expr_filter)
 
         # self.get_id_list()
 
@@ -255,6 +316,8 @@ class TmPlanningArea(TmParentAction):
         if expr_filter:
             # Check expression
             (is_valid, expr) = self.check_expression(expr_filter)  # @UnusedVariable
+            print(f"aa -> {is_valid}")
+            print(f"bb -> {expr}")
             if not is_valid:
                 return expr
 
@@ -326,19 +389,9 @@ class TmPlanningArea(TmParentAction):
 
     def save_default_values(self):
         return
-        cur_user = self.controller.get_current_user()
-        campaign = utils_giswater.get_item_data(self.dlg_area, self.dlg_area.cmb_campaign, 0)
-        work = utils_giswater.get_item_data(self.dlg_area, self.dlg_area.cmb_work, 0)
-        self.controller.plugin_settings_set_value("PlanningUnit_cmb_campaign_" + cur_user, campaign)
-        self.controller.plugin_settings_set_value("PlanningUnit_cmb_work_" + cur_user, work)
 
 
     def load_default_values(self):
         """ Load QGIS settings related with csv options """
         return
-        cur_user = self.controller.get_current_user()
-        campaign = self.controller.plugin_settings_value('PlanningUnit_cmb_campaign_' + cur_user)
-        work = self.controller.plugin_settings_value('PlanningUnit_cmb_work_' + cur_user)
-        utils_giswater.set_combo_itemData(self.dlg_area.cmb_campaign, str(campaign), 0)
-        utils_giswater.set_combo_itemData(self.dlg_area.cmb_work, str(work), 0)
 
