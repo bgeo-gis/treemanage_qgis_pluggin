@@ -58,7 +58,7 @@ class TmPlanningArea(TmParentAction):
         self.geom_type = 'node'
         layer = self.controller.get_layer_by_tablename('v_edit_node_zone')
         if not layer:
-            self.last_error = self.tr("Layer not found") + ": v_edit_node_zone"
+            self.last_error = self.controller.tr("Layer not found") + ": v_edit_node_zone"
             return None
         self.layers['node'] = [layer]
 
