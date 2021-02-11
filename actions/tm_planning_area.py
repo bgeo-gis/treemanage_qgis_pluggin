@@ -217,10 +217,9 @@ class TmPlanningArea(TmParentAction):
         extras = f'"ids":{json.dumps(self.ids)}, "values":{json.dumps(json_values)}, ' \
                  f'"plan_execute_date":"{utils_giswater.getCalendarDate(self.dlg_area_selection, self.dlg_area_selection.executed_date)}"'
 
-        priority_value = utils_giswater.getWidgetText(self.dlg_area_selection, self.dlg_area_selection.cmb_priority,
-                                                      return_string_null=False)
-        if priority_value != "":
-            extras += f', "priority":"{priority_value}"'
+        priority = utils_giswater.get_item_data(self.dlg_area_selection, self.dlg_area_selection.cmb_priority, 0)
+        if priority != "":
+            extras += f', "priority":{priority}'
         else:
             extras += f', "priority":null'
 
