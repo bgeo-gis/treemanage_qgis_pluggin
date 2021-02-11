@@ -226,6 +226,9 @@ class TmPlanningArea(TmParentAction):
         body = self.create_body(extras=extras)
         self.controller.get_json('tm_fct_setplan_zone', body, log_sql=True)
 
+        # Close dialog
+        self.close_dialog(self.dlg_area_selection)
+
 
 
     def selection_init(self):
